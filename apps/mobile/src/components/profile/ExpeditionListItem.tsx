@@ -57,7 +57,7 @@ export function ExpeditionListItem({ expedition }: ExpeditionListItemProps) {
               </Text>
               <Text style={[styles.meta, { color: colors.textTertiary }]}>
                 {expedition.category?.toUpperCase()}
-                {expedition.region ? ` · ${expedition.region.toUpperCase()}` : ''}
+                {(expedition.locationName || expedition.region) ? ` · ${(expedition.locationName || expedition.region)!.toUpperCase()}` : ''}
               </Text>
             </View>
             <View style={styles.statsRow}>

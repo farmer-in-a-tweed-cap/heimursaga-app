@@ -320,6 +320,9 @@ export interface ExplorerProfile {
   you?: boolean;
   creator?: boolean;
   isGuide?: boolean;
+  phoneNumber?: string;
+  preferredContactMethod?: 'email' | 'phone' | 'message';
+  contactEmail?: string;
   stripeAccountConnected?: boolean;
   activeExpeditionLocation?: {
     lat: number; lon: number; name: string;
@@ -554,7 +557,7 @@ export const explorerApi = {
    * Get current user's profile settings (requires auth)
    */
   getProfileSettings: () =>
-    api.get<{ username?: string; email?: string; name?: string; bio?: string; from?: string; livesIn?: string; locationVisibility?: string; website?: string; twitter?: string; instagram?: string; youtube?: string; picture?: string; coverPhoto?: string; equipment?: string[]; notificationPreferences?: Record<string, boolean> }>('/user/settings/profile'),
+    api.get<{ username?: string; email?: string; name?: string; bio?: string; from?: string; livesIn?: string; locationVisibility?: string; website?: string; twitter?: string; instagram?: string; youtube?: string; picture?: string; coverPhoto?: string; equipment?: string[]; notificationPreferences?: Record<string, boolean>; isGuide?: boolean; phoneNumber?: string; preferredContactMethod?: 'email' | 'phone' | 'message' }>('/user/settings/profile'),
 
   /**
    * Update current user's profile settings (requires auth)
@@ -564,11 +567,15 @@ export const explorerApi = {
     bio?: string;
     from?: string;
     livesIn?: string;
+    locationVisibility?: string;
     website?: string;
     twitter?: string;
     instagram?: string;
     youtube?: string;
+    equipment?: string[];
     notificationPreferences?: Record<string, boolean>;
+    phoneNumber?: string;
+    preferredContactMethod?: 'email' | 'phone' | 'message';
   }) =>
     api.put<void>('/user/settings/profile', payload),
 

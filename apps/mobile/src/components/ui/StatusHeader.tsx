@@ -1,18 +1,19 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 import { statusColors, mono } from '@/theme/tokens';
 
 interface StatusHeaderProps {
-  status: 'active' | 'planned' | 'completed' | 'cancelled';
+  status: 'active' | 'planned' | 'completed' | 'cancelled' | 'published';
   label: string;
   right?: string;
   dotColor?: string;
   /** 'card' (default): gray bar with colored dot. 'detail': full status-colored bar, white text, no dot. */
   variant?: 'card' | 'detail';
+  onRightPress?: () => void;
 }
 
-export function StatusHeader({ status, label, right, dotColor, variant = 'card' }: StatusHeaderProps) {
+export function StatusHeader({ status, label, right, dotColor, variant = 'card', onRightPress }: StatusHeaderProps) {
   const { dark, colors } = useTheme();
   const isDetail = variant === 'detail';
   const barColor = dotColor ?? statusColors[status];
@@ -31,16 +32,31 @@ export function StatusHeader({ status, label, right, dotColor, variant = 'card' 
         <Text style={[styles.label, { color: isDetail ? '#ffffff' : colors.text }]} numberOfLines={1}>{label}</Text>
       </View>
       {right ? (
-        <Text
-          style={[
-            styles.right,
-            !isDetail && styles.rightCard,
-            { color: isDetail ? 'rgba(255,255,255,0.7)' : colors.textSecondary },
-          ]}
-          numberOfLines={1}
-        >
-          {right}
-        </Text>
+        onRightPress ? (
+          <Pressable onPress={onRightPress} hitSlop={8} style={styles.rightPressable}>
+            <Text
+              style={[
+                styles.right,
+                !isDetail && styles.rightCard,
+                { color: isDetail ? '#ffffff' : colors.textSecondary },
+              ]}
+              numberOfLines={1}
+            >
+              {right} ›
+            </Text>
+          </Pressable>
+        ) : (
+          <Text
+            style={[
+              styles.right,
+              !isDetail && styles.rightCard,
+              { color: isDetail ? 'rgba(255,255,255,0.7)' : colors.textSecondary },
+            ]}
+            numberOfLines={1}
+          >
+            {right}
+          </Text>
+        )
       ) : null}
     </View>
   );
@@ -79,6 +95,10 @@ const styles = StyleSheet.create({
   },
   rightCard: {
     fontSize: 10,
+    flexShrink: 0,
+    marginLeft: 8,
+  },
+  rightPressable: {
     flexShrink: 0,
     marginLeft: 8,
   },

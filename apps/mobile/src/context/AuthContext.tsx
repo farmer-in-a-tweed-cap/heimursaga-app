@@ -28,6 +28,7 @@ interface User {
   picture?: string;
   is_pro?: boolean;
   isPremium?: boolean;
+  role?: string;
   isGuide?: boolean;
   stripeAccountConnected?: boolean;
   created_at?: string;
@@ -56,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUserRaw] = useState<User | null>(null);
   const setUser = (u: User | null) => {
     if (u) {
-      u.is_pro = u.is_pro || u.isPremium || false;
+      u.is_pro = u.role === 'creator' || u.is_pro || u.isPremium || false;
     }
     setUserRaw(u);
   };
@@ -97,7 +98,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(res.data);
         analytics.identify(String(res.data.id), {
           username: res.data.username,
-          email: res.data.email,
           is_pro: res.data.is_pro,
         });
       } catch (err) {
@@ -124,7 +124,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setHasStoredSession(false);
       analytics.identify(String(res.data.user.id), {
         username: res.data.user.username,
-        email: res.data.user.email,
         is_pro: res.data.user.is_pro,
       });
       analytics.track('login', { method: 'password' });

@@ -35,9 +35,10 @@ import {
   QUICK_PICK_CATEGORIES, type POIResult,
 } from '@/utils/poiSearch';
 
-type RouteMode = 'straight' | 'walking' | 'cycling' | 'driving' | 'trail' | 'waterway';
+type RouteMode = 'straight' | 'passage' | 'walking' | 'cycling' | 'driving' | 'trail' | 'waterway';
 const ROUTE_MODES: { value: RouteMode; label: string }[] = [
   { value: 'straight', label: 'LINE' },
+  { value: 'passage', label: 'PASSAGE' },
   { value: 'walking', label: 'WALK' },
   { value: 'cycling', label: 'CYCLE' },
   { value: 'driving', label: 'DRIVE' },
@@ -47,12 +48,15 @@ const ROUTE_MODES: { value: RouteMode; label: string }[] = [
 
 const ROUTE_MODE_STYLES: Record<RouteMode, { color: string; label: string; dash: number[] | null }> = {
   straight: { color: '#999999', label: 'Straight Line', dash: [2, 2] },
+  passage:  { color: '#89b4d4', label: 'Passage', dash: [6, 3] },
   walking:  { color: '#4676ac', label: 'Walking', dash: null },
   cycling:  { color: '#9b59b6', label: 'Cycling', dash: null },
   driving:  { color: '#d35400', label: 'Driving', dash: null },
   trail:    { color: '#598636', label: 'Trail', dash: [4, 2] },
   waterway: { color: '#ac6d46', label: 'Waterway', dash: [6, 3] },
 };
+
+const isStraightLike = (mode: string) => mode === 'straight' || mode === 'passage';
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -138,6 +142,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedCat, setSelectedCat] = useState('');
+  const [expeditionMode, setExpeditionMode] = useState('');
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [startDateStr, setStartDateStr] = useState('');
   const [endDateStr, setEndDateStr] = useState('');
@@ -155,6 +160,13 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
   const [isRoundTrip, setIsRoundTrip] = useState(false);
   const [routeMode, setRouteMode] = useState<RouteMode>('straight');
   const [waterwayProfile, setWaterwayProfile] = useState<'canoe' | 'motorboat'>('canoe');
+  const [vesselName, setVesselName] = useState('');
+  const [vesselType, setVesselType] = useState('');
+  const [vesselLengthM, setVesselLengthM] = useState('');
+  const [vesselDraftM, setVesselDraftM] = useState('');
+  const [vesselCrewSize, setVesselCrewSize] = useState('');
+  const [passageSpeedKn, setPassageSpeedKn] = useState('6');
+  const [waterwayObstacles, setWaterwayObstacles] = useState<import('@/services/api').RouteObstacle[]>([]);
   const [directionsGeometry, setDirectionsGeometry] = useState<[number, number][] | null>(null);
   const [directionsDistanceKm, setDirectionsDistanceKm] = useState<number | null>(null);
   const [directionsLoading, setDirectionsLoading] = useState(false);
@@ -242,8 +254,14 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
         if (exp.notesVisibility) setNotesVisibility(exp.notesVisibility);
         if (exp.notesAccessThreshold) setNotesAccessThreshold(String(exp.notesAccessThreshold));
         if (exp.earlyAccessEnabled) setEarlyAccessEnabled(true);
+        if (exp.mode) setExpeditionMode(exp.mode);
         if (exp.isRoundTrip) setIsRoundTrip(true);
         if (exp.routeMode && exp.routeMode !== 'straight') setRouteMode(exp.routeMode as RouteMode);
+        if (exp.vesselName) setVesselName(exp.vesselName);
+        if (exp.vesselType) setVesselType(exp.vesselType);
+        if (exp.vesselLengthM != null) setVesselLengthM(String(exp.vesselLengthM));
+        if (exp.vesselDraftM != null) setVesselDraftM(String(exp.vesselDraftM));
+        if (exp.vesselCrewSize != null) setVesselCrewSize(String(exp.vesselCrewSize));
 
         // Map API waypoints to builder format
         if (exp.waypoints && exp.waypoints.length > 0) {
@@ -272,6 +290,20 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
     })();
     return () => { cancelled = true; };
   }, [isEditMode, ready, editExpeditionId]);
+
+  // Auto-set default route mode when expedition mode changes
+  const DEFAULT_ROUTE_MODES: Record<string, RouteMode> = {
+    sail: 'passage',
+    paddle: 'waterway',
+    hike: 'trail',
+    bike: 'cycling',
+    drive: 'driving',
+  };
+  const handleExpeditionModeChange = useCallback((mode: string) => {
+    setExpeditionMode(mode);
+    const defaultRoute = DEFAULT_ROUTE_MODES[mode];
+    if (defaultRoute) setRouteMode(defaultRoute);
+  }, []);
 
   const updateWaypoint = useCallback((index: number, updates: Partial<WaypointEntry>) => {
     setWaypoints((prev) => prev.map((wp, i) => i === index ? { ...wp, ...updates } : wp));
@@ -395,6 +427,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
         if (!abort.signal.aborted) {
           setDirectionsGeometry(res.coordinates);
           setDirectionsDistanceKm(Math.round(res.totalDistance * 10) / 10);
+          setWaterwayObstacles(profile === 'waterway' && res.obstacles?.length ? res.obstacles : []);
         }
         clearTimeout(timeout);
         if (!abort.signal.aborted) setDirectionsLoading(false);
@@ -465,12 +498,13 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
       directionsTimerRef.current = null;
     }
 
-    if (routeMode === 'straight' || waypoints.length < 2) {
+    if (isStraightLike(routeMode) || waypoints.length < 2) {
       lastDirectionsFingerprintRef.current = '';
       setDirectionsGeometry(null);
       setDirectionsDistanceKm(null);
       setDirectionsError(null);
       setDirectionsLoading(false);
+      setWaterwayObstacles([]);
       return;
     }
 
@@ -503,7 +537,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
 
   // Effective route coords: directions geometry when available, else straight line
   const effectiveRouteCoords = useMemo(() => {
-    if (routeMode !== 'straight' && directionsGeometry && directionsGeometry.length > 0) {
+    if (!isStraightLike(routeMode) && directionsGeometry && directionsGeometry.length > 0) {
       return directionsGeometry;
     }
     return routeCoords.length > 1 ? routeCoords : undefined;
@@ -524,7 +558,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
 
   const handleRouteSearch = useCallback(async (categoryId: string) => {
     if (waypoints.length < 2) return;
-    if (routeMode !== 'straight' && directionsLoading) return;
+    if (!isStraightLike(routeMode) && directionsLoading) return;
 
     // Abort previous search
     routeSearchAbortRef.current?.abort();
@@ -537,7 +571,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
 
     try {
       // Use directions geometry if available, otherwise straight-line coords
-      const coords = (routeMode !== 'straight' && directionsGeometry && directionsGeometry.length > 0)
+      const coords = (!isStraightLike(routeMode) && directionsGeometry && directionsGeometry.length > 0)
         ? directionsGeometry
         : waypoints
             .filter(wp => wp.lng != null && wp.lat != null)
@@ -697,17 +731,23 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
       const fullPayload = {
         title: name.trim(),
         description: description.trim() || undefined,
+        mode: expeditionMode || undefined,
         endDate: endDateStr || undefined,
         visibility: VISIBILITY_OPTIONS[visibility].label.toLowerCase() as Expedition['visibility'],
-        goal: fundingEnabled && fundingGoal && !isNaN(parseFloat(fundingGoal.replace(/,/g, ''))) ? parseFloat(fundingGoal.replace(/,/g, '')) : 0,
+        goal: fundingEnabled && fundingGoal && !isNaN(parseFloat(fundingGoal.replace(/,/g, ''))) ? parseFloat(fundingGoal.replace(/,/g, '')) : undefined,
         notesVisibility,
-        notesAccessThreshold: notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
+        notesAccessThreshold: notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : undefined,
         earlyAccessEnabled: fundingEnabled ? earlyAccessEnabled : false,
         coverImage: coverImageUrl || undefined,
         isRoundTrip,
-        routeMode: routeMode !== 'straight' ? routeMode : undefined,
-        routeGeometry: routeMode !== 'straight' && directionsGeometry ? directionsGeometry : null,
+        routeMode: isStraightLike(routeMode) ? (routeMode === 'passage' ? 'passage' : undefined) : routeMode,
+        routeGeometry: !isStraightLike(routeMode) && directionsGeometry ? directionsGeometry : undefined,
         routeDistanceKm: directionsDistanceKm ?? undefined,
+        vesselName: vesselName || undefined,
+        vesselType: vesselType || undefined,
+        vesselLengthM: vesselLengthM ? parseFloat(vesselLengthM) : undefined,
+        vesselDraftM: vesselDraftM ? parseFloat(vesselDraftM) : undefined,
+        vesselCrewSize: vesselCrewSize ? parseInt(vesselCrewSize) : undefined,
       } as Partial<Expedition>;
 
       // Completed expeditions can only update title, description, cover image, and route
@@ -737,7 +777,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
     } finally {
       setSubmitting(false);
     }
-  }, [editExpeditionId, name, description, endDateStr, visibility, fundingEnabled, fundingGoal, notesVisibility, notesAccessThreshold, earlyAccessEnabled, waypoints, router, coverImageUrl, isRoundTrip, routeMode, directionsGeometry]);
+  }, [editExpeditionId, name, description, endDateStr, visibility, fundingEnabled, fundingGoal, notesVisibility, notesAccessThreshold, earlyAccessEnabled, waypoints, router, coverImageUrl, isRoundTrip, routeMode, directionsGeometry, vesselName, vesselType, vesselLengthM, vesselDraftM, vesselCrewSize]);
 
   // ── Edit mode: delete expedition ──
   const handleDeleteExpedition = useCallback(() => {
@@ -803,6 +843,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
         description: description.trim() || undefined,
         category: selectedCat || undefined,
         region: selectedRegions.length > 0 ? selectedRegions.join(', ') : undefined,
+        mode: expeditionMode || undefined,
         startDate: startDateStr || undefined,
         endDate: endDateStr || undefined,
         visibility: VISIBILITY_OPTIONS[visibility].label.toLowerCase(),
@@ -812,8 +853,13 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
         earlyAccessEnabled: fundingEnabled ? earlyAccessEnabled : false,
         status: isDraft ? 'planned' : derivedStatus,
         coverImage: coverImageUrl || undefined,
-        routeMode: routeMode !== 'straight' ? routeMode : undefined,
-        routeGeometry: routeMode !== 'straight' && directionsGeometry ? directionsGeometry : null,
+        routeMode: isStraightLike(routeMode) ? (routeMode === 'passage' ? 'passage' : undefined) : routeMode,
+        routeGeometry: !isStraightLike(routeMode) && directionsGeometry ? directionsGeometry : null,
+        vesselName: vesselName || undefined,
+        vesselType: vesselType || undefined,
+        vesselLengthM: vesselLengthM ? parseFloat(vesselLengthM) : undefined,
+        vesselDraftM: vesselDraftM ? parseFloat(vesselDraftM) : undefined,
+        vesselCrewSize: vesselCrewSize ? parseInt(vesselCrewSize) : undefined,
       });
 
       // Save waypoints to the newly created expedition
@@ -841,7 +887,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
     } finally {
       setSubmitting(false);
     }
-  }, [name, description, selectedCat, selectedRegions, startDateStr, endDateStr, visibility, fundingEnabled, fundingGoal, waypoints, router, coverImageUrl, derivedStatus, routeMode, directionsGeometry]);
+  }, [name, description, selectedCat, selectedRegions, expeditionMode, startDateStr, endDateStr, visibility, fundingEnabled, fundingGoal, waypoints, router, coverImageUrl, derivedStatus, routeMode, directionsGeometry, vesselName, vesselType, vesselLengthM, vesselDraftM, vesselCrewSize]);
 
   // Locked field helpers for edit mode
   const isCompletedExpedition = isEditMode && editExpedition?.status === 'completed';
@@ -1018,10 +1064,123 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
             </View>
 
             {/* Directions error */}
-            {directionsError && routeMode !== 'straight' && (
+            {directionsError && !isStraightLike(routeMode) && (
               <View style={[styles.routeErrorBar, { borderColor: brandColors.copper }]}>
                 <Text style={[styles.routeErrorText, { color: brandColors.copper }]} numberOfLines={2}>
                   {directionsError} — showing straight line
+                </Text>
+              </View>
+            )}
+
+            {/* Vessel & Passage section */}
+            {(expeditionMode === 'sail' || expeditionMode === 'paddle') && (
+              <View style={[styles.vesselSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.vesselSectionTitle, { color: colors.text }]}>VESSEL & PASSAGE</Text>
+                <View style={styles.vesselRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.vesselLabel, { color: colors.textSecondary }]}>VESSEL NAME</Text>
+                    <TextInput
+                      style={[styles.vesselInput, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }]}
+                      value={vesselName}
+                      onChangeText={setVesselName}
+                      placeholder="e.g. SV Wanderer"
+                      placeholderTextColor={colors.textTertiary}
+                      maxLength={100}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.vesselLabel, { color: colors.textSecondary }]}>VESSEL TYPE</Text>
+                    <View style={styles.vesselTypeRow}>
+                      {(['monohull', 'catamaran', 'trimaran', 'other'] as const).map(vt => (
+                        <TouchableOpacity
+                          key={vt}
+                          style={[styles.vesselTypeChip, {
+                            backgroundColor: vesselType === vt ? brandColors.blue : colors.inputBackground,
+                            borderColor: vesselType === vt ? brandColors.blue : colors.border,
+                          }]}
+                          onPress={() => setVesselType(vesselType === vt ? '' : vt)}
+                        >
+                          <Text style={[styles.vesselTypeChipText, { color: vesselType === vt ? '#fff' : colors.textTertiary }]}>
+                            {vt.toUpperCase()}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.vesselRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.vesselLabel, { color: colors.textSecondary }]}>LENGTH (m)</Text>
+                    <TextInput
+                      style={[styles.vesselInput, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }]}
+                      value={vesselLengthM}
+                      onChangeText={setVesselLengthM}
+                      keyboardType="decimal-pad"
+                      placeholder="0"
+                      placeholderTextColor={colors.textTertiary}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.vesselLabel, { color: colors.textSecondary }]}>DRAFT (m)</Text>
+                    <TextInput
+                      style={[styles.vesselInput, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }]}
+                      value={vesselDraftM}
+                      onChangeText={setVesselDraftM}
+                      keyboardType="decimal-pad"
+                      placeholder="0"
+                      placeholderTextColor={colors.textTertiary}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.vesselLabel, { color: colors.textSecondary }]}>CREW</Text>
+                    <TextInput
+                      style={[styles.vesselInput, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }]}
+                      value={vesselCrewSize}
+                      onChangeText={setVesselCrewSize}
+                      keyboardType="number-pad"
+                      placeholder="1"
+                      placeholderTextColor={colors.textTertiary}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.vesselLabel, { color: colors.textSecondary }]}>SPEED (kn)</Text>
+                    <TextInput
+                      style={[styles.vesselInput, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }]}
+                      value={passageSpeedKn}
+                      onChangeText={setPassageSpeedKn}
+                      keyboardType="decimal-pad"
+                      placeholder="6"
+                      placeholderTextColor={colors.textTertiary}
+                    />
+                  </View>
+                </View>
+                <Text style={[styles.vesselHint, { color: colors.textTertiary }]}>
+                  Average speed estimates passage time. Default: 6 kn.
+                </Text>
+              </View>
+            )}
+
+            {/* Waterway obstacle warnings */}
+            {waterwayObstacles.length > 0 && (
+              <View style={[styles.obstacleWarning, { borderColor: brandColors.red, backgroundColor: dark ? '#3a1f1f' : '#fdf2f2' }]}>
+                <View style={styles.obstacleHeader}>
+                  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={brandColors.red} strokeWidth={2}>
+                    <Path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <Line x1={12} y1={9} x2={12} y2={13} />
+                    <Line x1={12} y1={17} x2={12.01} y2={17} />
+                  </Svg>
+                  <Text style={[styles.obstacleTitle, { color: brandColors.red }]}>
+                    {waterwayObstacles.length} obstacle{waterwayObstacles.length !== 1 ? 's' : ''} detected
+                  </Text>
+                </View>
+                {waterwayObstacles.map((obs, i) => (
+                  <Text key={i} style={[styles.obstacleItem, { color: brandColors.red }]}>
+                    {'\u2022'} {obs.type.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase())}
+                    {obs.name ? ` — ${obs.name}` : ''}
+                  </Text>
+                ))}
+                <Text style={[styles.obstacleHintText, { color: brandColors.red }]}>
+                  Portage may be required
                 </Text>
               </View>
             )}
@@ -1147,6 +1306,8 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                 interactive
                 waypoints={allMapMarkers}
                 routeCoords={effectiveRouteCoords}
+                routeColor={ROUTE_MODE_STYLES[routeMode].color}
+                nauticalOverlay={routeMode === 'passage' || routeMode === 'waterway'}
                 onMapPress={addWaypointFromMap}
                 onZoomChange={setMapZoom}
                 onWaypointPress={(i) => {
@@ -1329,7 +1490,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                                 {i > 0 && leg.cumDist > 0 ? ` · ${formatDistanceKm(leg.cumDist)} total` : ''}
                               </Text>
                             )}
-                            {directionsLoading && routeMode !== 'straight' && (
+                            {directionsLoading && !isStraightLike(routeMode) && (
                               <ActivityIndicator size="small" color={brandColors.copper} />
                             )}
                           </View>
@@ -1542,6 +1703,31 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                     </View>
                   </View>
 
+                  {/* Expedition mode/type */}
+                  <View style={[styles.fieldGroup, isCategoryLocked && { opacity: 0.4 }]}>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>TYPE{isCategoryLocked ? ' (LOCKED)' : ''}</Text>
+                    <View style={styles.chipGrid}>
+                      {(['hike', 'paddle', 'bike', 'sail', 'drive', 'mixed'] as const).map((m) => (
+                        <TouchableOpacity
+                          key={m}
+                          style={[
+                            styles.chip,
+                            {
+                              backgroundColor: expeditionMode === m ? brandColors.blue : colors.inputBackground,
+                              borderColor: expeditionMode === m ? brandColors.blue : colors.border,
+                            },
+                          ]}
+                          onPress={isCategoryLocked ? undefined : () => handleExpeditionModeChange(expeditionMode === m ? '' : m)}
+                          activeOpacity={isCategoryLocked ? 1 : 0.7}
+                        >
+                          <Text style={[styles.chipText, { color: expeditionMode === m ? '#fff' : colors.textTertiary }]}>
+                            {m.toUpperCase()}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+
                   {/* Region chips – grouped by macro-region */}
                   <View style={[styles.fieldGroup, isRegionLocked && { opacity: 0.4 }]}>
                     <Text style={[styles.label, { color: colors.textSecondary }]}>REGION{isRegionLocked ? ' (LOCKED)' : ''}</Text>
@@ -1732,7 +1918,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
               </HCard>
 
               {/* Notes visibility — only for Pro users with Stripe Connect and non-private expeditions */}
-              {(user?.is_pro || user?.isPremium) && user?.stripeAccountConnected && visibility !== 2 && (
+              {user?.is_pro && user?.stripeAccountConnected && visibility !== 2 && (
                 <>
                   <View style={[styles.sectionHeader, { marginTop: 16 }]}>
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>EXPEDITION NOTES</Text>
@@ -2711,5 +2897,86 @@ const styles = StyleSheet.create({
   fieldHelp: {
     fontSize: 12,
     lineHeight: 17,
+  },
+  // ── Vessel & Passage ──
+  vesselSection: {
+    borderWidth: borders.thick,
+    padding: 10,
+  },
+  vesselSectionTitle: {
+    fontFamily: mono,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    marginBottom: 8,
+  },
+  vesselRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  vesselLabel: {
+    fontFamily: mono,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
+  vesselInput: {
+    borderWidth: borders.thick,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    fontSize: 13,
+    fontFamily: mono,
+  },
+  vesselTypeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 3,
+  },
+  vesselTypeChip: {
+    borderWidth: borders.thick,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+  },
+  vesselTypeChipText: {
+    fontFamily: mono,
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  vesselHint: {
+    fontFamily: mono,
+    fontSize: 10,
+    fontWeight: '500',
+    lineHeight: 14,
+  },
+  // ── Obstacle warnings ──
+  obstacleWarning: {
+    borderWidth: 1,
+    padding: 10,
+  },
+  obstacleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  obstacleTitle: {
+    fontFamily: mono,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  obstacleItem: {
+    fontFamily: mono,
+    fontSize: 11,
+    marginLeft: 20,
+    lineHeight: 16,
+  },
+  obstacleHintText: {
+    fontFamily: mono,
+    fontSize: 10,
+    marginTop: 4,
+    opacity: 0.75,
   },
 });

@@ -106,6 +106,10 @@ export interface IUserDetail {
   followed?: boolean;
   you?: boolean;
   creator?: boolean;
+  isGuide?: boolean;
+  phoneNumber?: string;
+  preferredContactMethod?: 'email' | 'phone' | 'message';
+  contactEmail?: string;
   stripeAccountConnected?: boolean;
 
   postsCount?: number;
@@ -166,6 +170,9 @@ export interface IUserSettingsProfileGetResponse {
   youtube?: string;
   equipment?: string[];
   notificationPreferences?: Record<string, boolean>;
+  isGuide?: boolean;
+  phoneNumber?: string;
+  preferredContactMethod?: 'email' | 'phone' | 'message';
 }
 
 export interface IUserSettingsProfileUpdatePayload {
@@ -184,6 +191,8 @@ export interface IUserSettingsProfileUpdatePayload {
   youtube?: string;
   equipment?: string[];
   notificationPreferences?: Record<string, boolean>;
+  phoneNumber?: string;
+  preferredContactMethod?: 'email' | 'phone' | 'message';
 }
 
 export interface IUserPostsQueryResponse {
@@ -1006,6 +1015,7 @@ export interface ITripDetail {
   adoptionsCount?: number;
   averageRating?: number;
   ratingsCount?: number;
+  viewerHasReviewed?: boolean;
   sourceBlueprint?: {
     id: string;
     title: string;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ExternalLink, Globe, Twitter, Instagram, Youtube, Linkedin, Camera, AlertTriangle, Loader2, ShieldAlert } from 'lucide-react';
+import { ExternalLink, Globe, Twitter, Instagram, Youtube, Linkedin, Camera, AlertTriangle, Loader2, ShieldAlert, Phone, Mail, MessageSquare, X } from 'lucide-react';
 import { ReportModal } from '@/app/components/ReportModal';
 import { ExplorerExpeditionsMap } from '@/app/components/ExplorerExpeditionsMap';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
@@ -87,6 +87,7 @@ export function ExplorerProfilePage() {
   const [expeditionsLimit, setExpeditionsLimit] = useState(5);
   const [entriesLimit, setEntriesLimit] = useState(5);
   const [reportOpen, setReportOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   // Handle bookmark explorer profile
   const handleBookmarkExplorer = async () => {
@@ -582,7 +583,19 @@ export function ExplorerProfilePage() {
               </div>
             );
           })()}
-          
+
+          {/* Guide Header Bar - Based In (replaces explorer status bar for guides) */}
+          {explorer.accountType === 'expedition-guide' && (
+            <div className="absolute top-0 left-0 right-0 py-1.5 px-3 md:py-2 md:px-6 z-10 bg-[#598636]">
+              <div className="flex items-center justify-start gap-2 md:gap-6 text-white text-xs md:text-sm font-mono">
+                <div className="flex items-center gap-1 md:gap-2">
+                  <span className="text-xs text-white/80">BASED IN:</span>
+                  <span className="font-bold truncate">{explorer.fromLocation || 'Unknown'}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Banner Content */}
           <div className="absolute inset-0 flex flex-col p-4 pt-14 md:p-6 md:pt-16">
             <div className="flex items-start gap-3 md:gap-6 w-full">
@@ -602,30 +615,34 @@ export function ExplorerProfilePage() {
                 </div>
                 <h2 className="text-sm md:text-xl text-[#ac6d46] mb-2 md:mb-3 truncate">{explorer.journalName}</h2>
                 <div className="space-y-0.5 md:space-y-1 text-xs md:text-sm text-white">
-                  <div className="flex items-center gap-2">
-                    <span className="text-white/60 text-xs md:text-xs uppercase">From:</span>
-                    <span className="font-bold truncate">{explorer.fromLocation || 'Unknown'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white/60 text-xs md:text-xs uppercase">Currently:</span>
-                    {explorer.onExpedition && explorer.activeExpeditionId && (
-                      <Link
-                        href={`/expedition/${explorer.activeExpeditionId}`}
-                        className="bg-[#ac6d46] text-white text-[10px] font-bold px-2 py-0.5 hover:bg-[#8a5738] transition-colors flex-shrink-0"
-                      >
-                        ON EXPEDITION
-                      </Link>
-                    )}
-                    {explorer.onExpedition && !explorer.activeExpeditionId && (
-                      <span className="bg-[#6b5c4e] text-white text-[10px] font-bold px-2 py-0.5 flex-shrink-0">
-                        ON EXPEDITION
-                      </span>
-                    )}
-                    <span className="font-bold truncate">{explorer.currentLocation || 'Unknown'}</span>
-                    {explorer.currentCoordinates && (
-                      <span className="text-white/40 text-xs flex-shrink-0">({explorer.currentCoordinates})</span>
-                    )}
-                  </div>
+                  {explorer.accountType !== 'expedition-guide' && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white/60 text-xs md:text-xs uppercase">From:</span>
+                        <span className="font-bold truncate">{explorer.fromLocation || 'Unknown'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white/60 text-xs md:text-xs uppercase">Currently:</span>
+                        {explorer.onExpedition && explorer.activeExpeditionId && (
+                          <Link
+                            href={`/expedition/${explorer.activeExpeditionId}`}
+                            className="bg-[#ac6d46] text-white text-[10px] font-bold px-2 py-0.5 hover:bg-[#8a5738] transition-colors flex-shrink-0"
+                          >
+                            ON EXPEDITION
+                          </Link>
+                        )}
+                        {explorer.onExpedition && !explorer.activeExpeditionId && (
+                          <span className="bg-[#6b5c4e] text-white text-[10px] font-bold px-2 py-0.5 flex-shrink-0">
+                            ON EXPEDITION
+                          </span>
+                        )}
+                        <span className="font-bold truncate">{explorer.currentLocation || 'Unknown'}</span>
+                        {explorer.currentCoordinates && (
+                          <span className="text-white/40 text-xs flex-shrink-0">({explorer.currentCoordinates})</span>
+                        )}
+                      </div>
+                    </>
+                  )}
                   <div className="hidden md:flex items-center gap-2">
                     <span className="text-white/60 text-xs uppercase">Joined:</span>
                     <span className="font-bold">{explorer.joined}</span>
@@ -765,7 +782,7 @@ export function ExplorerProfilePage() {
               <div className="text-lg md:text-2xl font-medium text-[#ac6d46]">
                 {expeditions.reduce((sum, e) => sum + (e.adoptionsCount ?? 0), 0)}
               </div>
-              <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Adoptions</div>
+              <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Launches</div>
             </div>
             <div className="p-2 md:p-4 flex flex-col items-center justify-center">
               <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{explorer.stats.followers}</div>
@@ -836,6 +853,22 @@ export function ExplorerProfilePage() {
             >
               {followLoading && <Loader2 size={14} className="md:w-4 md:h-4 animate-spin" />}
               {isFollowing ? 'FOLLOWING' : 'FOLLOW'}
+            </button>
+          )}
+          {/* Contact button - Guide profiles only, not on own profile */}
+          {!isOwnProfile && profile.isGuide && (
+            <button
+              onClick={() => {
+                if (!isAuthenticated) {
+                  router.push(`/auth?redirect=${encodeURIComponent(`/journal/${profile.username}`)}`);
+                  return;
+                }
+                setContactOpen(true);
+              }}
+              className="px-2 py-1.5 md:px-3 md:py-2 bg-[#598636] text-white hover:bg-[#476b2b] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#598636] text-xs md:text-sm font-bold font-mono flex items-center gap-1.5 md:gap-2 min-h-[36px] md:min-h-[44px] whitespace-nowrap flex-shrink-0"
+            >
+              <Phone size={14} className="md:w-4 md:h-4" strokeWidth={2} />
+              CONTACT
             </button>
           )}
           {/* Sponsor button - Visible when explorer is Pro with Stripe Connect and active/planned expedition */}
@@ -1416,6 +1449,114 @@ export function ExplorerProfilePage() {
           contentId={username}
         />
       )}
+
+      {contactOpen && profile?.isGuide && (
+        <GuideContactModal
+          profile={profile}
+          onClose={() => setContactOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+interface GuideContactModalProps {
+  profile: ExplorerProfile;
+  onClose: () => void;
+}
+
+function GuideContactModal({ profile, onClose }: GuideContactModalProps) {
+  const displayName = profile.name || profile.username;
+  const method = profile.preferredContactMethod ?? 'message';
+  const phone = profile.phoneNumber?.trim() || '';
+  const email = profile.contactEmail?.trim() || '';
+
+  // Close on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-[#598636] text-white px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Phone size={16} strokeWidth={2} />
+            <h2 className="text-sm font-bold font-mono tracking-wide">CONTACT {displayName.toUpperCase()}</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-white/20 transition-colors"
+            aria-label="Close"
+          >
+            <X size={16} strokeWidth={2} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+            {displayName} is an <span className="font-bold text-[#598636]">Expedition Guide</span>. Reach out to discuss booking an in-person guided expedition.
+          </p>
+
+          {/* Preferred method — primary action */}
+          {method === 'phone' && phone && (
+            <a
+              href={`tel:${phone.replace(/[^+0-9]/g, '')}`}
+              className="block w-full px-4 py-3 bg-[#598636] text-white hover:bg-[#476b2b] transition-all active:scale-[0.98] text-sm font-bold font-mono text-center"
+            >
+              <Phone size={14} strokeWidth={2} className="inline-block mr-2 -mt-0.5" />
+              CALL {phone}
+            </a>
+          )}
+
+          {method === 'email' && email && (
+            <a
+              href={`mailto:${email}?subject=${encodeURIComponent('Expedition inquiry via Heimursaga')}`}
+              className="block w-full px-4 py-3 bg-[#598636] text-white hover:bg-[#476b2b] transition-all active:scale-[0.98] text-sm font-bold font-mono text-center break-all"
+            >
+              <Mail size={14} strokeWidth={2} className="inline-block mr-2 -mt-0.5" />
+              EMAIL {email}
+            </a>
+          )}
+
+          {method === 'message' && (
+            <Link
+              href={`/messages?to=${encodeURIComponent(profile.username)}`}
+              className="block w-full px-4 py-3 bg-[#598636] text-white hover:bg-[#476b2b] transition-all active:scale-[0.98] text-sm font-bold font-mono text-center"
+            >
+              <MessageSquare size={14} strokeWidth={2} className="inline-block mr-2 -mt-0.5" />
+              SEND MESSAGE
+            </Link>
+          )}
+
+          {/* Fallback: preferred method is phone/email but the guide hasn't filled it in */}
+          {((method === 'phone' && !phone) || (method === 'email' && !email)) && (
+            <Link
+              href={`/messages?to=${encodeURIComponent(profile.username)}`}
+              className="block w-full px-4 py-3 bg-[#598636] text-white hover:bg-[#476b2b] transition-all active:scale-[0.98] text-sm font-bold font-mono text-center"
+            >
+              <MessageSquare size={14} strokeWidth={2} className="inline-block mr-2 -mt-0.5" />
+              SEND MESSAGE
+            </Link>
+          )}
+
+          <div className="pt-2 border-t-2 border-[#b5bcc4] dark:border-[#3a3a3a]">
+            <p className="text-[10px] text-[#616161] dark:text-[#b5bcc4] font-mono">
+              HEIMURSAGA DOES NOT ARRANGE OR FACILITATE IN-PERSON EXPEDITIONS. ANY AGREEMENT IS BETWEEN YOU AND THE GUIDE.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

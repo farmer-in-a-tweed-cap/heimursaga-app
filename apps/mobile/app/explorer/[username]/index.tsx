@@ -367,7 +367,9 @@ export default function ExplorerProfileScreen() {
                         styles.linkItem,
                         i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderThin },
                       ]}
-                      onPress={() => Linking.openURL(link.value)}
+                      onPress={() => {
+                        if (/^https?:\/\//i.test(link.value)) Linking.openURL(link.value);
+                      }}
                     >
                       <Text style={styles.linkLabel}>{link.label}</Text>
                       <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>

@@ -81,10 +81,11 @@ export interface Expedition {
   id: string;
   title: string;
   description?: string;
-  status: 'active' | 'planned' | 'completed' | 'cancelled';
+  status: 'active' | 'planned' | 'completed' | 'cancelled' | 'published';
   coverImage?: string;
   category?: string;
   region?: string;
+  locationName?: string;
   startDate?: string;
   endDate?: string;
   visibility?: 'public' | 'off-grid' | 'private';
@@ -114,6 +115,49 @@ export interface Expedition {
   waypoints?: Waypoint[];
   isOwner?: boolean;
   bookmarked?: boolean;
+  // Route stats
+  routeDistanceKm?: number;
+  totalDistanceKm?: number;
+  elevationMinM?: number;
+  elevationMaxM?: number;
+  elevationGainM?: number;
+  estimatedDurationH?: number;
+  // Vessel fields
+  vesselName?: string;
+  vesselType?: string;
+  vesselLengthM?: number;
+  vesselDraftM?: number;
+  vesselCrewSize?: number;
+  // Blueprint fields
+  isBlueprint?: boolean;
+  mode?: string;
+  adoptionsCount?: number;
+  averageRating?: number;
+  ratingsCount?: number;
+  isRouteLocked?: boolean;
+  sourceBlueprint?: {
+    id: string;
+    title: string;
+    author?: {
+      username: string;
+      name?: string;
+      picture?: string;
+      stripeAccountConnected?: boolean;
+      isGuide?: boolean;
+    };
+  };
+}
+
+export interface BlueprintReview {
+  id: string;
+  rating: number;
+  text?: string;
+  createdAt?: string;
+  explorer?: {
+    username: string;
+    name?: string;
+    picture?: string;
+  };
 }
 
 export interface Waypoint {

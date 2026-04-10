@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, ComponentType } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Share, Alert } from 'react-native';
 // SafeAreaView no longer needed – NavBar handles top inset
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -17,6 +17,7 @@ import { Svg, Path, Circle } from 'react-native-svg';
 import { QuickSponsorButton } from '@/components/ui/QuickSponsorButton';
 import { TopoBackground } from '@/components/ui/TopoBackground';
 import { mono, heading, colors as brandColors, borders } from '@/theme/tokens';
+import type { HeimuMapProps, WaypointMarker } from '@/components/map/HeimuMap';
 import type { Entry, Comment } from '@/types/api';
 
 export default function EntryDetailScreen() {
@@ -34,6 +35,15 @@ export default function EntryDetailScreen() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
 
+  // Defer map import
+  const [MapComponent, setMapComponent] = useState<ComponentType<HeimuMapProps> | null>(null);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      import('@/components/map/HeimuMap').then((mod) => setMapComponent(() => mod.default));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, []);
+
   const { data: entry, loading, refetch: refetchEntry } = useApi<Entry>(
     id ? `/posts/${id}` : null,
   );
@@ -44,7 +54,7 @@ export default function EntryDetailScreen() {
 
   // Fetch sibling entries from the same expedition
   const tripId = entry?.trip?.id;
-  const { data: expeditionData } = useApi<{ title?: string; status?: string; startDate?: string; endDate?: string; description?: string; coverImage?: string; entries?: { id: string; title?: string; place?: string; expeditionDay?: number }[] }>(
+  const { data: expeditionData } = useApi<{ title?: string; status?: string; startDate?: string; endDate?: string; description?: string; coverImage?: string; mode?: string; entries?: { id: string; title?: string; place?: string; expeditionDay?: number }[] }>(
     tripId ? `/trips/${tripId}` : null,
   );
   const siblingEntries = (expeditionData?.entries ?? [])
@@ -161,8 +171,8 @@ export default function EntryDetailScreen() {
       <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         <StatusHeader
           status={(entry.trip?.status as any) ?? 'active'}
-          label={`JOURNAL ENTRY${entry.entryNumber != null ? ` #${entry.entryNumber}` : ''}`}
-          right={entry.expeditionDay != null ? `DAY ${entry.expeditionDay}` : undefined}
+          label="JOURNAL ENTRY"
+          right={entry.entryType?.toUpperCase()}
           variant="detail"
         />
 
@@ -297,6 +307,19 @@ export default function EntryDetailScreen() {
           )}
         </View>
 
+        {/* Location map */}
+        {entry.lat != null && entry.lon != null && MapComponent && (
+          <View style={[styles.entryMapWrap, { borderColor: colors.border }]}>
+            <MapComponent
+              style={{ height: 180 }}
+              center={[entry.lon, entry.lat]}
+              zoom={10}
+              waypoints={[{ coordinates: [entry.lon, entry.lat], type: 'origin' as const, label: entry.place || entry.title }]}
+              interactive={false}
+            />
+          </View>
+        )}
+
         {/* Quick Sponsor */}
         {entry.author?.creator && entry.author?.stripeAccountConnected && user?.username !== entry.author.username && (
           <View style={styles.quickSponsorWrap}>
@@ -308,14 +331,27 @@ export default function EntryDetailScreen() {
           </View>
         )}
 
-        {/* Comments */}
+        {/* Notes */}
         {entry.commentsEnabled !== false && (
-          <View style={styles.contentWrap}>
-            <View style={styles.commentsHeader}>
-              <Text style={[styles.commentsTitle, { color: colors.text }]}>
+          <View style={styles.sectionWrap}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[styles.sectionHeaderText, { color: colors.text }]}>
                 NOTES ({comments.length})
               </Text>
-              <View style={[styles.commentsLine, { backgroundColor: colors.border }]} />
+              <View style={[styles.sectionHeaderLine, { backgroundColor: colors.border }]} />
+            </View>
+
+            <View style={[styles.inputRow, { borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.commentInput, { color: colors.text }]}
+                placeholder="Write a note..."
+                placeholderTextColor={colors.textTertiary}
+                value={commentText}
+                onChangeText={setCommentText}
+              />
+              <TouchableOpacity style={styles.postBtn} onPress={handlePostComment}>
+                <Text style={styles.postBtnText}>POST</Text>
+              </TouchableOpacity>
             </View>
 
             {comments.map((comment) => (
@@ -468,28 +504,15 @@ export default function EntryDetailScreen() {
               </HCard>
             ))}
 
-            {/* Comment input */}
-            <View style={[styles.inputRow, { borderColor: colors.border }]}>
-              <TextInput
-                style={[styles.commentInput, { color: colors.text }]}
-                placeholder="Write a note..."
-                placeholderTextColor={colors.textTertiary}
-                value={commentText}
-                onChangeText={setCommentText}
-              />
-              <TouchableOpacity style={styles.postBtn} onPress={handlePostComment}>
-                <Text style={styles.postBtnText}>POST</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         )}
 
         {/* Related entries */}
         {entry.trip && siblingEntries.length > 0 && (
-          <View style={styles.relatedWrap}>
-            <View style={styles.relatedHeader}>
-              <Text style={[styles.relatedTitle, { color: colors.text }]}>FROM THIS EXPEDITION</Text>
-              <View style={[styles.relatedLine, { backgroundColor: colors.border }]} />
+          <View style={styles.sectionWrap}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[styles.sectionHeaderText, { color: colors.text }]}>FROM THIS EXPEDITION</Text>
+              <View style={[styles.sectionHeaderLine, { backgroundColor: colors.border }]} />
             </View>
             <View style={styles.relatedCards}>
               {siblingEntries.map((sibling) => (
@@ -516,15 +539,14 @@ export default function EntryDetailScreen() {
 
         {/* Expedition context */}
         {entry.trip && (
-          <View style={styles.expeditionContextWrap}>
-            <View style={styles.relatedHeader}>
-              <Text style={[styles.relatedTitle, { color: colors.text }]}>EXPEDITION CONTEXT</Text>
-              <View style={[styles.relatedLine, { backgroundColor: colors.border }]} />
+          <View style={styles.sectionWrap}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[styles.sectionHeaderText, { color: colors.text }]}>EXPEDITION CONTEXT</Text>
+              <View style={[styles.sectionHeaderLine, { backgroundColor: colors.border }]} />
             </View>
             <HCard>
               <View style={styles.expContextCard}>
                 <Text style={[styles.expContextName, { color: colors.text }]}>{entry.trip.title}</Text>
-
                 <View style={styles.expContextRows}>
                   {entry.trip.status && (
                     <View style={styles.expContextRow}>
@@ -556,7 +578,6 @@ export default function EntryDetailScreen() {
                     </View>
                   )}
                 </View>
-
                 <TouchableOpacity
                   style={styles.expContextBtn}
                   onPress={() => router.replace(`/expedition/${entry.trip!.id}`)}
@@ -662,20 +683,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 28,
     marginTop: 16,
-    marginBottom: 32,
-  },
-  commentsHeader: {
-    marginBottom: 12,
-  },
-  commentsTitle: {
-    fontFamily: mono,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.66,
-    marginBottom: 6,
-  },
-  commentsLine: {
-    height: 2,
+    marginBottom: 16,
   },
   commentCard: {
     padding: 12,
@@ -723,6 +731,7 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     borderWidth: borders.thick,
+    marginBottom: 12,
   },
   commentInput: {
     flex: 1,
@@ -744,13 +753,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#ffffff',
   },
-  quickSponsorWrap: { paddingHorizontal: 16, paddingBottom: 8 },
+  sectionWrap: { paddingHorizontal: 16, paddingTop: 16 },
+  sectionHeaderRow: { marginBottom: 12 },
+  sectionHeaderText: { fontFamily: mono, fontSize: 11, fontWeight: '700', letterSpacing: 0.66, marginBottom: 6 },
+  sectionHeaderLine: { height: 2 },
+  quickSponsorWrap: { paddingHorizontal: 16, paddingBottom: 4 },
+  entryMapWrap: { marginHorizontal: 16, marginBottom: 16, borderWidth: borders.thick, overflow: 'hidden' as const },
   spacer: { height: 32 },
   photoCaption: { fontSize: 12, fontStyle: 'italic', textAlign: 'center', marginBottom: 20 },
-  relatedWrap: { padding: 16, paddingTop: 20 },
-  relatedHeader: { marginBottom: 12 },
-  relatedTitle: { fontFamily: mono, fontSize: 11, fontWeight: '700', letterSpacing: 0.66, marginBottom: 6 },
-  relatedLine: { height: 2 },
   relatedCards: { flexDirection: 'row', gap: 8 },
   relatedCardBody: { padding: 8, paddingHorizontal: 10 },
   relatedDay: { fontFamily: mono, fontSize: 12, fontWeight: '700', color: brandColors.copper },
@@ -795,7 +805,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: 1,
   },
-  expeditionContextWrap: { padding: 16, paddingTop: 4 },
   expContextCard: { padding: 14 },
   expContextName: {
     fontFamily: heading,

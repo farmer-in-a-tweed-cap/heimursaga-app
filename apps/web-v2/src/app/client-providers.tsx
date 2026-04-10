@@ -47,6 +47,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
           onClose={clearNewSignup}
           onSaveComplete={refreshUser}
           username={user.username}
+          isGuide={user.isGuide}
         />
       )}
 

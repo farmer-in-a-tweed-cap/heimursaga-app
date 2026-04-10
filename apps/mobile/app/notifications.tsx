@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
@@ -147,9 +148,15 @@ export default function NotificationsScreen() {
   const notifications = rawData?.data?.data ?? [];
   const groups = useMemo(() => groupNotifications(notifications), [notifications]);
 
+  // Clear app icon badge when opening notifications
+  useEffect(() => {
+    Notifications.setBadgeCountAsync(0);
+  }, []);
+
   const handleMarkAllRead = useCallback(async () => {
     try {
       await notificationsApi.markAllRead();
+      await Notifications.setBadgeCountAsync(0);
       refetch();
     } catch (err: any) {
       Alert.alert('Error', err.message ?? 'Failed to mark notifications as read');

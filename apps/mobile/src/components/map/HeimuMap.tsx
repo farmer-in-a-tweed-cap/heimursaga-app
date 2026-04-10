@@ -61,6 +61,8 @@ export interface HeimuMapProps {
   bounds?: { ne: [number, number]; sw: [number, number]; padding?: number };
   /** Ordered array of [lng, lat] pairs that form the route polyline */
   routeCoords?: [number, number][];
+  /** Override route line color — defaults to copper */
+  routeColor?: string;
   /** Point markers to render on the map */
   waypoints?: WaypointMarker[];
   /** When false the map ignores all touch gestures — defaults to true */
@@ -73,6 +75,8 @@ export interface HeimuMapProps {
   onZoomChange?: (zoom: number) => void;
   /** Index of the selected waypoint to highlight */
   selectedIndex?: number;
+  /** When true, display OpenSeaMap nautical chart overlay */
+  nauticalOverlay?: boolean;
 }
 
 export interface HeimuMapRef {
@@ -249,20 +253,25 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
   zoom = 2,
   bounds,
   routeCoords,
+  routeColor,
   waypoints,
   interactive = true,
   onMapPress,
   onWaypointPress,
   onZoomChange,
   selectedIndex,
+  nauticalOverlay,
 }, ref) {
   const { mode } = useTheme();
   const [useFallbackStyle, setUseFallbackStyle] = useState(false);
   const [tokenReady, setTokenReady] = useState(_tokenReady);
   const cameraRef = useRef<MapboxGL.Camera>(null);
   const mapViewRef = useRef<MapboxGL.MapView>(null);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
   useImperativeHandle(ref, () => ({
     flyTo: (coords: [number, number], zoomLevel?: number) => {
+      if (!mountedRef.current) return;
       cameraRef.current?.setCamera({
         centerCoordinate: coords,
         zoomLevel: zoomLevel ?? 10,
@@ -270,7 +279,7 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
       });
     },
     fitBounds: (coords: [number, number][], padding = 80) => {
-      if (coords.length === 0) return;
+      if (!mountedRef.current || coords.length === 0) return;
       let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
       for (const [lng, lat] of coords) {
         if (lng < minLng) minLng = lng;
@@ -291,6 +300,7 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
       });
     },
     getVisibleBounds: async () => {
+      if (!mountedRef.current) return null;
       try {
         const bounds = await mapViewRef.current?.getVisibleBounds();
         if (!bounds) return null;
@@ -300,6 +310,7 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
       }
     },
     getZoom: async () => {
+      if (!mountedRef.current) return null;
       try {
         return await mapViewRef.current?.getZoom() ?? null;
       } catch {
@@ -478,12 +489,26 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
           )}
         />
 
+        {/* ── Nautical chart overlay (OpenSeaMap) ──────── */}
+        {nauticalOverlay && (
+          <MapboxGL.RasterSource
+            id="openseamap-source"
+            tileUrlTemplates={['https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png']}
+            tileSize={256}
+          >
+            <MapboxGL.RasterLayer
+              id="openseamap-layer"
+              style={{ rasterOpacity: 0.85 }}
+            />
+          </MapboxGL.RasterSource>
+        )}
+
         {/* ── Route polyline (always mounted, below waypoints) ──────── */}
         <MapboxGL.ShapeSource id="heimu-route-source" shape={routeGeoJSON}>
           <MapboxGL.LineLayer
             id="heimu-route-line"
             style={{
-              lineColor: brandColors.copper,
+              lineColor: routeColor ?? brandColors.copper,
               lineWidth: 3,
               lineCap: 'round',
               lineJoin: 'round',

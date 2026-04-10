@@ -5,9 +5,11 @@ import {
 } from '@repo/types';
 import {
   IsArray,
+  IsIn,
   IsObject,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
 } from 'class-validator';
 
@@ -129,4 +131,22 @@ export class ExplorerSettingsProfileUpdateDto
   @IsOptional()
   @IsObject()
   notificationPreferences?: Record<string, boolean>;
+
+  @ApiProperty({ required: false })
+  @SanitizeText()
+  @IsString()
+  @IsOptional()
+  @MaxLength(30, { message: 'Phone number must be less than 30 characters' })
+  @Matches(/^[+0-9\s().-]*$/, {
+    message: 'Phone number contains invalid characters',
+  })
+  phoneNumber?: string;
+
+  @ApiProperty({ required: false, enum: ['email', 'phone', 'message'] })
+  @IsOptional()
+  @IsString()
+  @IsIn(['email', 'phone', 'message'], {
+    message: 'Preferred contact method must be email, phone, or message',
+  })
+  preferredContactMethod?: 'email' | 'phone' | 'message';
 }

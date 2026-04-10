@@ -462,6 +462,7 @@ export default function CreateScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <NavBar
+        onBack={() => router.back()}
         title="LOG ENTRY"
         right={
           <TouchableOpacity onPress={() => handlePublish(true)} disabled={submitting}>

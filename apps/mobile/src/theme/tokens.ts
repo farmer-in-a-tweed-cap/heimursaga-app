@@ -16,6 +16,7 @@ export const statusColors = {
   planned: colors.blue,
   completed: colors.darkGray,
   cancelled: colors.red,
+  published: colors.green,
 } as const;
 
 // ─── Surface Color Schema ───
@@ -96,6 +97,17 @@ export const borders = {
   thin: 1,
   radius: 0,
 } as const;
+
+// ─── Route Mode Styles ───
+export const ROUTE_MODE_STYLES: Record<string, { color: string; label: string; dash: number[] | null }> = {
+  straight: { color: '#999999', label: 'Straight Line', dash: [2, 2] },
+  passage:  { color: '#89b4d4', label: 'Passage', dash: [6, 3] },
+  walking:  { color: '#4676ac', label: 'Walking', dash: null },
+  cycling:  { color: '#9b59b6', label: 'Cycling', dash: null },
+  driving:  { color: '#d35400', label: 'Driving', dash: null },
+  trail:    { color: '#598636', label: 'Trail', dash: [4, 2] },
+  waterway: { color: '#ac6d46', label: 'Waterway', dash: [6, 3] },
+};
 
 // ─── Stats Bar ───
 export const statsBarColors = {

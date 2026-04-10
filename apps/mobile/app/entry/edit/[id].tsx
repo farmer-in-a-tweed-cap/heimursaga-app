@@ -59,9 +59,10 @@ export default function EditEntryScreen() {
   const [coverIndex, setCoverIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
-  // Entry type & date
+  // Entry type & date/time
   const [entryType, setEntryType] = useState(0);
   const [dateStr, setDateStr] = useState(() => todayISO());
+  const [timeStr, setTimeStr] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
 
@@ -69,22 +70,27 @@ export default function EditEntryScreen() {
   const [commentsEnabled, setCommentsEnabled] = useState(true);
   const [isMilestone, setIsMilestone] = useState(false);
 
-  // Metadata (standard / photo)
-  const [weather, setWeather] = useState('');
-  const [mood, setMood] = useState('');
-  const [distanceTraveled, setDistanceTraveled] = useState('');
-  const [expenses, setExpenses] = useState('');
-
   // Video URL
   const [videoUrl, setVideoUrl] = useState('');
 
-  // Metadata (data)
+  // Metadata (data type)
+  const [distanceTraveled, setDistanceTraveled] = useState('');
   const [temperature, setTemperature] = useState('');
   const [humidity, setHumidity] = useState('');
   const [windSpeed, setWindSpeed] = useState('');
   const [pressure, setPressure] = useState('');
   const [elevationGain, setElevationGain] = useState('');
   const [duration, setDuration] = useState('');
+  const [avgSpeed, setAvgSpeed] = useState('');
+
+  // Marine data (data type + sail/paddle mode)
+  const [waveHeight, setWaveHeight] = useState('');
+  const [waterTemp, setWaterTemp] = useState('');
+  const [seaState, setSeaState] = useState('');
+  const [tidalState, setTidalState] = useState('');
+  const [heading, setHeading] = useState('');
+  const [currentSpeed, setCurrentSpeed] = useState('');
+  const [sailConfig, setSailConfig] = useState('');
 
   const [hydrated, setHydrated] = useState(false);
 
@@ -98,7 +104,11 @@ export default function EditEntryScreen() {
     setLocation(entry.place ?? '');
     if (entry.lat != null) setLat(entry.lat);
     if (entry.lon != null) setLon(entry.lon);
-    if (entry.date) setDateStr(entry.date.split('T')[0]);
+    if (entry.date) {
+      setDateStr(entry.date.split('T')[0]);
+      const timePart = entry.date.split('T')[1];
+      if (timePart) setTimeStr(timePart.slice(0, 5));
+    }
     if (entry.commentsEnabled === false) setCommentsEnabled(false);
     if (entry.isMilestone) setIsMilestone(true);
     if (entry.entryType) {
@@ -128,18 +138,24 @@ export default function EditEntryScreen() {
     // Restore metadata
     const meta = (entry as any).metadata;
     if (meta) {
-      if (meta.weather) setWeather(String(meta.weather));
-      if (meta.mood) setMood(String(meta.mood));
-      if (meta.distanceTraveled != null) setDistanceTraveled(String(meta.distanceTraveled));
-      if (meta.expenses != null) setExpenses(String(meta.expenses));
       if (meta.temperature != null) setTemperature(String(meta.temperature));
       if (meta.humidity != null) setHumidity(String(meta.humidity));
       if (meta.windSpeed != null) setWindSpeed(String(meta.windSpeed));
       if (meta.pressure != null) setPressure(String(meta.pressure));
       if (meta.elevationGain != null) setElevationGain(String(meta.elevationGain));
       if (meta.duration != null) setDuration(String(meta.duration));
-      if (meta.distanceCovered != null && !meta.distanceTraveled) setDistanceTraveled(String(meta.distanceCovered));
+      if (meta.distanceTraveled != null) setDistanceTraveled(String(meta.distanceTraveled));
+      else if (meta.distanceCovered != null) setDistanceTraveled(String(meta.distanceCovered));
+      if (meta.avgSpeed != null) setAvgSpeed(String(meta.avgSpeed));
       if (meta.videoUrl) setVideoUrl(String(meta.videoUrl));
+      // Marine data
+      if (meta.waveHeight != null) setWaveHeight(String(meta.waveHeight));
+      if (meta.waterTemp != null) setWaterTemp(String(meta.waterTemp));
+      if (meta.seaState) setSeaState(String(meta.seaState));
+      if (meta.tidalState) setTidalState(String(meta.tidalState));
+      if (meta.heading != null) setHeading(String(meta.heading));
+      if (meta.currentSpeed != null) setCurrentSpeed(String(meta.currentSpeed));
+      if (meta.sailConfig) setSailConfig(String(meta.sailConfig));
     }
   }, [entry, hydrated]);
 
@@ -147,7 +163,9 @@ export default function EditEntryScreen() {
 
   const expeditionTitle = entry?.trip?.title ?? entry?.expedition?.title;
   const expeditionVisibility = entry?.trip?.visibility ?? 'public';
+  const expeditionMode = (entry as any)?.trip?.mode ?? (entry as any)?.expedition?.mode;
   const isExpeditionEntry = !!expeditionTitle;
+  const isSailMode = expeditionMode === 'sail' || expeditionMode === 'paddle';
 
   // ─── Photo Upload ──────────────────────────────────────────────────────────
 
@@ -261,12 +279,6 @@ export default function EditEntryScreen() {
       const metadata: Record<string, unknown> = {};
       const typeValue = ENTRY_TYPE_VALUES[entryType];
 
-      if (typeValue === 'standard' || typeValue === 'photo') {
-        if (weather.trim()) metadata.weather = weather.trim();
-        if (mood.trim()) metadata.mood = mood.trim();
-        const dist = safeFloat(distanceTraveled); if (dist !== undefined) metadata.distanceTraveled = dist;
-        const exp = safeFloat(expenses); if (exp !== undefined) metadata.expenses = exp;
-      }
       if (typeValue === 'video' && videoUrl.trim()) {
         metadata.videoUrl = videoUrl.trim();
       }
@@ -278,6 +290,15 @@ export default function EditEntryScreen() {
         const elev = safeFloat(elevationGain); if (elev !== undefined) metadata.elevationGain = elev;
         const dur = safeFloat(duration); if (dur !== undefined) metadata.duration = dur;
         const distCov = safeFloat(distanceTraveled); if (distCov !== undefined) metadata.distanceCovered = distCov;
+        const spd = safeFloat(avgSpeed); if (spd !== undefined) metadata.avgSpeed = spd;
+        // Marine data
+        const wh = safeFloat(waveHeight); if (wh !== undefined) metadata.waveHeight = wh;
+        const wt = safeFloat(waterTemp); if (wt !== undefined) metadata.waterTemp = wt;
+        if (seaState.trim()) metadata.seaState = seaState.trim();
+        if (tidalState.trim()) metadata.tidalState = tidalState.trim();
+        const hdg = safeFloat(heading); if (hdg !== undefined) metadata.heading = hdg;
+        const cs = safeFloat(currentSpeed); if (cs !== undefined) metadata.currentSpeed = cs;
+        if (sailConfig.trim()) metadata.sailConfig = sailConfig.trim();
       }
 
       const entryData: Record<string, unknown> = {
@@ -286,7 +307,7 @@ export default function EditEntryScreen() {
         place: location.trim() || undefined,
         lat: lat ?? undefined,
         lon: lon ?? undefined,
-        date: dateStr,
+        date: timeStr ? `${dateStr}T${timeStr}` : dateStr,
         visibility: isExpeditionEntry ? undefined : VISIBILITY_OPTIONS[visibility].label.toLowerCase(),
         entryType: typeValue,
         commentsEnabled,
@@ -307,10 +328,10 @@ export default function EditEntryScreen() {
       setSubmitting(false);
     }
   }, [
-    title, body, location, visibility, lat, lon, dateStr, id,
+    title, body, location, visibility, lat, lon, dateStr, timeStr, id,
     photos, coverIndex, entryType, commentsEnabled, isMilestone, isExpeditionEntry,
-    weather, mood, distanceTraveled, expenses,
-    temperature, humidity, windSpeed, pressure, elevationGain, duration,
+    videoUrl, distanceTraveled, temperature, humidity, windSpeed, pressure, elevationGain, duration, avgSpeed,
+    waveHeight, waterTemp, seaState, tidalState, heading, currentSpeed, sailConfig,
     router,
   ]);
 
@@ -359,20 +380,33 @@ export default function EditEntryScreen() {
 
           <HTextField label="TITLE" placeholder="Give your entry a title" value={title} onChangeText={setTitle} />
 
-          {/* Date picker */}
+          {/* Date & time */}
           <View style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>DATE</Text>
-            <TouchableOpacity
-              style={[styles.selector, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Text style={[styles.selectorText, { color: colors.text }]}>
-                {fmtDateDisplay(dateStr)}
-              </Text>
-              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
-                <Path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
-              </Svg>
-            </TouchableOpacity>
+            <View style={styles.metaRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>DATE</Text>
+                <TouchableOpacity
+                  style={[styles.selector, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Text style={[styles.selectorText, { color: colors.text }]}>
+                    {fmtDateDisplay(dateStr)}
+                  </Text>
+                  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
+                    <Path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
+                  </Svg>
+                </TouchableOpacity>
+              </View>
+              <View style={{ flex: 1 }}>
+                <HTextField
+                  label="TIME"
+                  placeholder="HH:MM"
+                  value={timeStr}
+                  onChangeText={(t) => setTimeStr(t.replace(/[^0-9:]/g, '').slice(0, 5))}
+                  keyboardType="numbers-and-punctuation"
+                />
+              </View>
+            </View>
             <CalendarPicker
               visible={showDatePicker}
               value={dateStr}
@@ -450,29 +484,6 @@ export default function EditEntryScreen() {
             )}
           </View>
 
-          {/* Type-specific metadata */}
-          {(typeValue === 'standard' || typeValue === 'photo') && (
-            <View style={styles.fieldGroup}>
-              <SectionDivider title="METADATA" />
-              <View style={styles.metaRow}>
-                <View style={styles.metaField}>
-                  <HTextField label="WEATHER" placeholder="Sunny, Rainy..." value={weather} onChangeText={setWeather} />
-                </View>
-                <View style={styles.metaField}>
-                  <HTextField label="MOOD" placeholder="Energetic..." value={mood} onChangeText={setMood} />
-                </View>
-              </View>
-              <View style={styles.metaRow}>
-                <View style={styles.metaField}>
-                  <HTextField label="DISTANCE (KM)" placeholder="0" value={distanceTraveled} onChangeText={setDistanceTraveled} keyboardType="decimal-pad" />
-                </View>
-                <View style={styles.metaField}>
-                  <HTextField label="EXPENSES" placeholder="0.00" value={expenses} onChangeText={setExpenses} keyboardType="decimal-pad" />
-                </View>
-              </View>
-            </View>
-          )}
-
           {typeValue === 'video' && (
             <View style={styles.fieldGroup}>
               <SectionDivider title="VIDEO" />
@@ -516,10 +527,43 @@ export default function EditEntryScreen() {
               </View>
               <View style={styles.metaRow}>
                 <View style={styles.metaField}>
-                  <HTextField label="DURATION (MIN)" placeholder="0" value={duration} onChangeText={setDuration} keyboardType="decimal-pad" />
+                  <HTextField label="DURATION (HRS)" placeholder="0" value={duration} onChangeText={setDuration} keyboardType="decimal-pad" />
                 </View>
-                <View style={styles.metaField} />
+                <View style={styles.metaField}>
+                  <HTextField label="AVG. SPEED (KN)" placeholder="0" value={avgSpeed} onChangeText={setAvgSpeed} keyboardType="decimal-pad" />
+                </View>
               </View>
+            </View>
+          )}
+
+          {typeValue === 'data' && isSailMode && (
+            <View style={styles.fieldGroup}>
+              <SectionDivider title="MARINE DATA" />
+              <View style={styles.metaRow}>
+                <View style={styles.metaField}>
+                  <HTextField label="WAVE HEIGHT (M)" placeholder="0" value={waveHeight} onChangeText={setWaveHeight} keyboardType="decimal-pad" />
+                </View>
+                <View style={styles.metaField}>
+                  <HTextField label="WATER TEMP (\u00B0C)" placeholder="0" value={waterTemp} onChangeText={setWaterTemp} keyboardType="decimal-pad" />
+                </View>
+              </View>
+              <View style={styles.metaRow}>
+                <View style={styles.metaField}>
+                  <HTextField label="SEA STATE" placeholder="Calm, Moderate..." value={seaState} onChangeText={setSeaState} />
+                </View>
+                <View style={styles.metaField}>
+                  <HTextField label="TIDAL STATE" placeholder="High, Low..." value={tidalState} onChangeText={setTidalState} />
+                </View>
+              </View>
+              <View style={styles.metaRow}>
+                <View style={styles.metaField}>
+                  <HTextField label="HEADING (\u00B0)" placeholder="0" value={heading} onChangeText={setHeading} keyboardType="decimal-pad" />
+                </View>
+                <View style={styles.metaField}>
+                  <HTextField label="CURRENT (KN)" placeholder="0" value={currentSpeed} onChangeText={setCurrentSpeed} keyboardType="decimal-pad" />
+                </View>
+              </View>
+              <HTextField label="SAIL CONFIGURATION" placeholder="Main + jib, reefed..." value={sailConfig} onChangeText={setSailConfig} />
             </View>
           )}
 
@@ -584,6 +628,35 @@ export default function EditEntryScreen() {
             <HButton variant="copper" onPress={handleSave} disabled={submitting}>
               {submitting ? 'SAVING...' : 'SAVE CHANGES'}
             </HButton>
+          </View>
+
+          <View style={styles.deleteWrap}>
+            <Pressable
+              style={[styles.deleteBtn, { borderColor: brandColors.red }]}
+              onPress={() => {
+                Alert.alert(
+                  'Delete Entry',
+                  'This action cannot be undone. Are you sure?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Delete',
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await entryApi.deleteEntry(resolvedId as any);
+                          router.dismiss(2);
+                        } catch (err: any) {
+                          Alert.alert('Error', err.message ?? 'Failed to delete entry');
+                        }
+                      },
+                    },
+                  ],
+                );
+              }}
+            >
+              <Text style={styles.deleteBtnText}>DELETE ENTRY</Text>
+            </Pressable>
           </View>
         </View>
 
@@ -711,6 +784,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: brandColors.copper,
+  },
+  deleteWrap: {
+    paddingTop: 24,
+  },
+  deleteBtn: {
+    borderWidth: borders.thick,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  deleteBtnText: {
+    fontFamily: mono,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 1,
+    color: brandColors.red,
   },
   spacer: { height: 32 },
 });

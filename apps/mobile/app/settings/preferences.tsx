@@ -10,7 +10,7 @@ import { RadioOption } from '@/components/ui/RadioOption';
 import { mono, colors as brandColors } from '@/theme/tokens';
 
 const THEME_OPTIONS = ['Light', 'Dark', 'System'];
-const UNIT_OPTIONS = ['Metric (km)', 'Imperial (mi)'];
+const UNIT_OPTIONS = ['Metric (km)', 'Imperial (mi)', 'Nautical (nm)'];
 
 const DISTANCE_UNIT_KEY = 'heimursaga_distance_unit';
 
@@ -25,6 +25,7 @@ export default function PreferencesScreen() {
   useEffect(() => {
     SecureStore.getItemAsync(DISTANCE_UNIT_KEY).then((val: string | null) => {
       if (val === 'imperial') setDistanceUnit(1);
+      else if (val === 'nautical') setDistanceUnit(2);
     });
   }, []);
 
@@ -36,7 +37,7 @@ export default function PreferencesScreen() {
 
   const handleDistanceChange = async (index: number) => {
     setDistanceUnit(index);
-    await SecureStore.setItemAsync(DISTANCE_UNIT_KEY, index === 1 ? 'imperial' : 'metric');
+    await SecureStore.setItemAsync(DISTANCE_UNIT_KEY, index === 2 ? 'nautical' : index === 1 ? 'imperial' : 'metric');
   };
 
   if (!ready) return null;
@@ -75,7 +76,7 @@ export default function PreferencesScreen() {
                 <RadioOption
                   key={opt}
                   label={opt.toUpperCase()}
-                  description={i === 0 ? 'Kilometers, meters' : 'Miles, feet'}
+                  description={i === 0 ? 'Kilometers, meters' : i === 1 ? 'Miles, feet' : 'Nautical miles, knots'}
                   selected={distanceUnit === i}
                   onSelect={() => handleDistanceChange(i)}
                 />

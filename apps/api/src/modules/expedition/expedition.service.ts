@@ -347,7 +347,7 @@ export class ExpeditionService {
           elevation_max_m: true,
           elevation_gain_m: true,
           estimated_duration_h: true,
-          _count: { select: { entries: { where: { deleted_at: null } } } },
+          _count: { select: { entries: { where: { deleted_at: null, is_draft: false } } } },
           author_id: true,
           author: {
             select: {
@@ -610,7 +610,7 @@ export class ExpeditionService {
           adoptions_count: true,
           average_rating: true,
           ratings_count: true,
-          _count: { select: { entries: { where: { deleted_at: null } } } },
+          _count: { select: { entries: { where: { deleted_at: null, is_draft: false } } } },
           author_id: true,
           start_date: true,
           end_date: true,
@@ -784,7 +784,17 @@ export class ExpeditionService {
               : row.waypoints.filter(
                   (w) => (w.waypoint as any)._count?.entries === 0,
                 ).length,
-            waypoints: [],
+            // Blueprints need waypoint coords for the route-map preview in the
+            // cover area. Regular expedition listings use a cover image instead.
+            waypoints: (row as any).is_blueprint
+              ? row.waypoints.map((ew) => ({
+                  id: (ew.waypoint as any).id,
+                  title: (ew.waypoint as any).title || '',
+                  lat: (ew.waypoint as any).lat,
+                  lon: (ew.waypoint as any).lon,
+                  sequence: ew.sequence,
+                }))
+              : [],
             currentLocation:
               resolvedLoc && isPublicLoc
                 ? {
@@ -921,6 +931,7 @@ export class ExpeditionService {
             author_id: true,
             source_blueprint: {
               select: {
+                id: true,
                 public_id: true,
                 title: true,
                 author: {
@@ -1126,6 +1137,21 @@ export class ExpeditionService {
         });
         this.logger.log(`Follow result: ${JSON.stringify(follow)}`);
         isFollowingAuthor = !!follow;
+      }
+
+      // Check if the current user has already reviewed the source blueprint
+      let viewerHasReviewed = false;
+      if (explorerId && source_blueprint) {
+        const existingReview = await this.prisma.blueprintReview.findUnique({
+          where: {
+            blueprint_id_explorer_id: {
+              blueprint_id: source_blueprint.id ?? 0,
+              explorer_id: explorerId,
+            },
+          },
+          select: { id: true },
+        });
+        viewerHasReviewed = !!existingReview;
       }
 
       // Calculate date range from waypoints/entries if explicit dates not set
@@ -1360,6 +1386,7 @@ export class ExpeditionService {
                 : undefined,
             }
           : undefined,
+        viewerHasReviewed,
         bookmarked: isBookmarked,
         followingAuthor: isFollowingAuthor,
         author: author
@@ -3431,7 +3458,13 @@ export class ExpeditionService {
             elevationGainM: row.elevation_gain_m ?? undefined,
             estimatedDurationH: row.estimated_duration_h ?? undefined,
             waypointsCount: row.waypoints.length,
-            waypoints: [],
+            waypoints: row.waypoints.map((ew) => ({
+              id: (ew.waypoint as any).id,
+              title: (ew.waypoint as any).title || '',
+              lat: (ew.waypoint as any).lat,
+              lon: (ew.waypoint as any).lon,
+              sequence: ew.sequence,
+            })),
             isBlueprint: true,
             mode: row.mode || undefined,
             vesselName: (row as any).vessel_name || undefined,

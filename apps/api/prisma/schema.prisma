@@ -136,6 +136,8 @@ model ExplorerProfile {
   website                      String?   @db.VarChar(200)
   equipment                    Json?     @default("[]")
   notification_preferences     Json?     @default("{}")
+  phone_number                 String?   @db.VarChar(30)
+  preferred_contact_method     String?   @db.VarChar(20)
   explorer                     Explorer  @relation(fields: [explorer_id], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")

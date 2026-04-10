@@ -6,7 +6,9 @@ import { StatusHeader } from '@/components/ui/StatusHeader';
 import { Avatar } from '@/components/ui/Avatar';
 import { StatsBar } from '@/components/ui/StatsBar';
 import { FundingBar } from '@/components/ui/FundingBar';
-import { mono, colors as brandColors, borders } from '@/theme/tokens';
+import { useHeimuMap } from '@/hooks/useHeimuMap';
+import type { WaypointMarker } from '@/components/map/HeimuMap';
+import { mono, colors as brandColors, borders, ROUTE_MODE_STYLES } from '@/theme/tokens';
 import type { Expedition } from '@/types/api';
 import { fmtAmount } from '@/utils/formatAmount';
 
@@ -50,22 +52,60 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
     ? `${fmtDate(expedition.startDate)} \u2192 ${expedition.endDate ? fmtDate(expedition.endDate) : 'ONGOING'}`
     : '';
 
-  const rightLabel = expedition.category?.toUpperCase()
+  const rightLabel = expedition.mode?.toUpperCase()
+    || expedition.category?.toUpperCase()
     || (expedition.visibility && expedition.visibility !== 'public'
       ? expedition.visibility.toUpperCase()
       : undefined);
+
+  const isBlueprint = !!expedition.isBlueprint;
+  const MapComponent = useHeimuMap(isBlueprint ? 100 : 99999);
+
+  // Build map data for blueprint cards
+  const blueprintMapData = isBlueprint ? (() => {
+    const wps = (expedition.waypoints ?? []).filter(w => w.lat != null && w.lon != null).sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+    if (wps.length === 0) return null;
+    const routeCoords: [number, number][] = wps.map(w => [w.lon!, w.lat!]);
+    const routeStyle = ROUTE_MODE_STYLES[expedition.routeMode ?? 'straight'] ?? ROUTE_MODE_STYLES.straight;
+    const markers: WaypointMarker[] = wps.map((w, i) => ({
+      coordinates: [w.lon!, w.lat!] as [number, number],
+      type: i === 0 ? 'origin' : i === wps.length - 1 ? 'destination' : 'waypoint',
+      text: i === 0 ? 'S' : i === wps.length - 1 ? 'E' : String(i),
+    }));
+    const lats = wps.map(w => w.lat!);
+    const lons = wps.map(w => w.lon!);
+    return {
+      routeCoords,
+      routeColor: routeStyle.color,
+      markers,
+      bounds: {
+        ne: [Math.max(...lons), Math.max(...lats)] as [number, number],
+        sw: [Math.min(...lons), Math.min(...lats)] as [number, number],
+        padding: 30,
+      },
+    };
+  })() : null;
 
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${expedition.title} expedition`} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
       <HCard>
         <StatusHeader
           status={expedition.status}
-          label={`${expedition.status.toUpperCase()} EXPEDITION`}
-          dotColor={expedition.status === 'active' ? brandColors.copper : undefined}
+          label={isBlueprint ? 'EXPEDITION BLUEPRINT' : `${expedition.status.toUpperCase()} EXPEDITION`}
+          dotColor={isBlueprint ? brandColors.green : expedition.status === 'active' ? brandColors.copper : undefined}
           right={rightLabel}
         />
         <View style={styles.heroWrap}>
-          {expedition.coverImage ? (
+          {isBlueprint && MapComponent && blueprintMapData ? (
+            <MapComponent
+              style={StyleSheet.absoluteFillObject}
+              bounds={blueprintMapData.bounds}
+              routeCoords={blueprintMapData.routeCoords.length > 1 ? blueprintMapData.routeCoords : undefined}
+              routeColor={blueprintMapData.routeColor}
+              waypoints={blueprintMapData.markers}
+              interactive={false}
+            />
+          ) : expedition.coverImage ? (
             <Image source={{ uri: expedition.coverImage }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
           ) : (
             <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#1a2332' }]} />
@@ -78,9 +118,9 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
             {dateRange !== '' && (
               <Text style={styles.heroDate}>{dateRange}</Text>
             )}
-            {expedition.region && (
+            {(expedition.locationName || expedition.region) && (
               <Text style={styles.heroRegion}>
-                {expedition.region.toUpperCase()}
+                {(expedition.locationName || expedition.region)!.toUpperCase()}
               </Text>
             )}
           </View>
@@ -103,7 +143,24 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
 
         <View style={[styles.statsWrap, { borderTopColor: colors.border }]}>
           <StatsBar
-            stats={[
+            stats={isBlueprint ? [
+              ...((expedition.estimatedDurationH ?? 0) > 0 ? [{
+                value: expedition.estimatedDurationH! >= 24
+                  ? `${Math.round(expedition.estimatedDurationH! / 24)}d`
+                  : `${Math.round(expedition.estimatedDurationH!)}h`,
+                label: 'TRAVEL',
+              }] : []),
+              ...(((expedition.totalDistanceKm || expedition.routeDistanceKm) ?? 0) > 0 ? [{
+                value: `${Math.round((expedition.totalDistanceKm || expedition.routeDistanceKm)!)}`,
+                suffix: ' km',
+                label: 'DISTANCE',
+              }] : []),
+              ...(expedition.elevationMinM != null && expedition.elevationMaxM != null ? [{
+                value: `${Math.round(expedition.elevationMinM)}-${Math.round(expedition.elevationMaxM)}`,
+                suffix: 'm',
+                label: 'ELEVATION',
+              }] : []),
+            ] : [
               {
                 value: dateStat.value,
                 label: dateStat.label,

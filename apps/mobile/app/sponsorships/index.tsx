@@ -183,14 +183,6 @@ export default function SponsorshipsScreen() {
           {/* SPONSORS */}
           {!needsUpgrade && activeTabName === 'SPONSORS' && (
             <>
-              <SearchBar placeholder="Search sponsors..." />
-              <View style={styles.filterRow}>
-                {['ALL', 'ONE-TIME', 'MONTHLY', 'ACTIVE'].map((f) => (
-                  <TouchableOpacity key={f} style={[styles.filterChip, { borderColor: colors.border }]}>
-                    <Text style={[styles.filterText, { color: colors.textTertiary }]}>{f}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
               {received.map((s) => {
                 const sponsor = s.user;
                 return (
@@ -322,7 +314,14 @@ export default function SponsorshipsScreen() {
                             ${s.amount.toFixed(0)}/mo · Since {s.createdAt ? new Date(s.createdAt).toLocaleDateString() : ''}
                           </Text>
                         </View>
-                        <HButton variant="copper" outline small onPress={() => {}}>MANAGE</HButton>
+                        <HButton variant="copper" outline small onPress={() => Alert.alert(
+                          'Cancel Subscription',
+                          'Are you sure you want to cancel this monthly sponsorship?',
+                          [
+                            { text: 'Keep', style: 'cancel' },
+                            { text: 'Cancel Subscription', style: 'destructive', onPress: () => {} },
+                          ],
+                        )}>CANCEL</HButton>
                       </View>
                     </HCard>
                   ))

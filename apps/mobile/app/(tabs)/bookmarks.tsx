@@ -40,11 +40,7 @@ export default function BookmarksScreen() {
       author: e.author ?? (e.explorer ? { ...e.explorer, creator: e.stripeAccountConnected } : undefined),
     }));
   const entries = entriesData?.data ?? [];
-  // Normalize: bookmarked explorers API returns isPremium instead of creator
-  const explorers: ExplorerProfile[] = (explorersRaw?.data ?? []).map((e: any) => ({
-    ...e,
-    creator: e.creator ?? e.isPremium,
-  }));
+  const explorers: ExplorerProfile[] = explorersRaw?.data ?? [];
   const loading = loadingExp || loadingEnt || loadingExpl;
   const isEmpty = expeditions.length === 0 && entries.length === 0 && explorers.length === 0;
 

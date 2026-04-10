@@ -1356,18 +1356,19 @@ export class EntryService {
           });
         }
 
-        // update the explorer
-        await tx.explorer.update({
-          where: { id: explorerId },
-          data: { entries_count: { increment: 1 } },
-        });
-
-        // update the expedition entry count
-        if (expeditionDbId) {
-          await tx.expedition.update({
-            where: { id: expeditionDbId },
+        // update entry counts (only for published entries, not drafts)
+        if (!isDraft) {
+          await tx.explorer.update({
+            where: { id: explorerId },
             data: { entries_count: { increment: 1 } },
           });
+
+          if (expeditionDbId) {
+            await tx.expedition.update({
+              where: { id: expeditionDbId },
+              data: { entries_count: { increment: 1 } },
+            });
+          }
         }
 
         return { entry };
@@ -1779,6 +1780,21 @@ export class EntryService {
             await tx.entry.update({
               where: { id: entry.id },
               data: { expedition_id: null },
+            });
+          }
+        }
+
+        // Increment entry counts when publishing a draft
+        if (isBecomingPublished) {
+          await tx.explorer.update({
+            where: { id: explorerId },
+            data: { entries_count: { increment: 1 } },
+          });
+
+          if (entry.expedition_id) {
+            await tx.expedition.update({
+              where: { id: entry.expedition_id },
+              data: { entries_count: { increment: 1 } },
             });
           }
         }

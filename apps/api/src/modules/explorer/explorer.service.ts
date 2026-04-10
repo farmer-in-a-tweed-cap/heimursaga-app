@@ -387,6 +387,7 @@ export class ExplorerService {
         select: {
           id: true,
           username: true,
+          email: true,
           role: true,
           is_guide: true,
           is_stripe_account_connected: true,
@@ -410,6 +411,8 @@ export class ExplorerService {
               instagram: true,
               youtube: true,
               equipment: true,
+              phone_number: true,
+              preferred_contact_method: true,
             },
           },
           followers: explorerId
@@ -537,6 +540,23 @@ export class ExplorerService {
         you: explorerId ? explorerId === explorer.id : false,
         creator: explorer.role === UserRole.CREATOR,
         isGuide: explorer.is_guide ?? false,
+        // Contact info is only exposed on guide profiles — guides opt in
+        // to being contacted about in-person guided expeditions.
+        phoneNumber: explorer.is_guide
+          ? (explorer.profile?.phone_number ?? undefined)
+          : undefined,
+        preferredContactMethod: explorer.is_guide
+          ? ((explorer.profile?.preferred_contact_method as
+              | 'email'
+              | 'phone'
+              | 'message'
+              | null) ?? undefined)
+          : undefined,
+        contactEmail:
+          explorer.is_guide &&
+          explorer.profile?.preferred_contact_method === 'email'
+            ? explorer.email
+            : undefined,
         stripeAccountConnected: explorer.is_stripe_account_connected,
         locationFrom:
           (explorer.profile?.location_visibility || 'hidden') !== 'hidden'
@@ -1681,8 +1701,8 @@ export class SessionExplorerService {
               goal: true,
               raised: true,
               sponsors_count: true,
-              entries_count: true,
               bookmarks_count: true,
+              _count: { select: { entries: { where: { deleted_at: null, is_draft: false } } } },
               author: {
                 select: {
                   username: true,
@@ -1710,7 +1730,7 @@ export class SessionExplorerService {
           goal: bookmark.expedition.goal,
           raised: bookmark.expedition.raised,
           sponsorsCount: bookmark.expedition.sponsors_count,
-          entriesCount: bookmark.expedition.entries_count,
+          entriesCount: (bookmark.expedition as any)._count?.entries ?? 0,
           bookmarksCount: bookmark.expedition.bookmarks_count,
           stripeAccountConnected:
             bookmark.expedition.author.is_stripe_account_connected === true,
@@ -1743,6 +1763,7 @@ export class SessionExplorerService {
             select: {
               id: true,
               username: true,
+              role: true,
               is_premium: true,
               is_guide: true,
               profile: {
@@ -1791,6 +1812,7 @@ export class SessionExplorerService {
             : undefined,
           locationFrom: bookmarked_explorer.profile?.location_from,
           locationLives: bookmarked_explorer.profile?.location_lives,
+          creator: bookmarked_explorer.role === UserRole.CREATOR,
           isPremium: bookmarked_explorer.is_premium,
           isGuide: bookmarked_explorer.is_guide ?? false,
           entriesCount: bookmarked_explorer._count.entries,
@@ -1837,6 +1859,7 @@ export class SessionExplorerService {
                 email: true,
                 username: true,
                 is_email_verified: true,
+                is_guide: true,
                 profile: {
                   select: {
                     name: true,
@@ -1856,44 +1879,63 @@ export class SessionExplorerService {
                     youtube: true,
                     equipment: true,
                     notification_preferences: true,
+                    phone_number: true,
+                    preferred_contact_method: true,
                   },
                 },
               },
             })
-            .then(({ email, username, is_email_verified, profile }) => {
-              return {
+            .then(
+              ({
                 email,
                 username,
-                isEmailVerified: is_email_verified,
-                picture: profile?.picture
-                  ? getStaticMediaUrl(profile?.picture)
-                  : '',
-                coverPhoto: profile?.cover_photo
-                  ? getStaticMediaUrl(profile?.cover_photo)
-                  : '',
-                name: profile?.name,
-                bio: profile?.bio,
-                from: profile?.location_from,
-                livesIn: profile?.location_lives,
-                locationFrom: profile?.location_from,
-                locationLives: profile?.location_lives,
-                locationVisibility: profile?.location_visibility || 'hidden',
-                sponsorsFund: profile?.sponsors_fund,
-                sponsorsFundType: profile?.sponsors_fund_type,
-                sponsorsFundExpeditionId: profile?.sponsors_fund_expedition_id,
-                portfolio: profile?.portfolio,
-                website: profile?.website,
-                twitter: profile?.twitter,
-                instagram: profile?.instagram,
-                youtube: profile?.youtube,
-                equipment: (profile?.equipment as string[]) || [],
-                notificationPreferences:
-                  (profile?.notification_preferences as Record<
-                    string,
-                    boolean
-                  >) || {},
-              } as IUserSettingsProfileGetResponse;
-            });
+                is_email_verified,
+                is_guide,
+                profile,
+              }) => {
+                return {
+                  email,
+                  username,
+                  isEmailVerified: is_email_verified,
+                  isGuide: is_guide ?? false,
+                  picture: profile?.picture
+                    ? getStaticMediaUrl(profile?.picture)
+                    : '',
+                  coverPhoto: profile?.cover_photo
+                    ? getStaticMediaUrl(profile?.cover_photo)
+                    : '',
+                  name: profile?.name,
+                  bio: profile?.bio,
+                  from: profile?.location_from,
+                  livesIn: profile?.location_lives,
+                  locationFrom: profile?.location_from,
+                  locationLives: profile?.location_lives,
+                  locationVisibility: profile?.location_visibility || 'hidden',
+                  sponsorsFund: profile?.sponsors_fund,
+                  sponsorsFundType: profile?.sponsors_fund_type,
+                  sponsorsFundExpeditionId:
+                    profile?.sponsors_fund_expedition_id,
+                  portfolio: profile?.portfolio,
+                  website: profile?.website,
+                  twitter: profile?.twitter,
+                  instagram: profile?.instagram,
+                  youtube: profile?.youtube,
+                  equipment: (profile?.equipment as string[]) || [],
+                  notificationPreferences:
+                    (profile?.notification_preferences as Record<
+                      string,
+                      boolean
+                    >) || {},
+                  phoneNumber: profile?.phone_number ?? '',
+                  preferredContactMethod:
+                    (profile?.preferred_contact_method as
+                      | 'email'
+                      | 'phone'
+                      | 'message'
+                      | null) ?? undefined,
+                } as IUserSettingsProfileGetResponse;
+              },
+            );
           this.logger.log(
             `Profile settings response: ${JSON.stringify(response)}`,
           );
@@ -1944,6 +1986,8 @@ export class SessionExplorerService {
         youtube,
         equipment,
         notificationPreferences,
+        phoneNumber,
+        preferredContactMethod,
       } = payload as any;
 
       this.logger.log(`Updating profile for explorer ${explorerId}`);
@@ -1997,6 +2041,12 @@ export class SessionExplorerService {
             ...(equipment !== undefined && { equipment }),
             ...(notificationPreferences !== undefined && {
               notification_preferences: notificationPreferences,
+            }),
+            ...(phoneNumber !== undefined && {
+              phone_number: phoneNumber || null,
+            }),
+            ...(preferredContactMethod !== undefined && {
+              preferred_contact_method: preferredContactMethod || null,
             }),
           };
 

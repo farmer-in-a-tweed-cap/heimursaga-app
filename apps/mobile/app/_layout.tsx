@@ -378,7 +378,7 @@ function LaunchScreen() {
       {/* Bottom loader + version */}
       <View style={launchStyles.bottomContent}>
         <LoadingBar />
-        <Text style={launchStyles.version}>v1.0.0</Text>
+        <Text style={launchStyles.version}>v{require('expo-constants').default.expoConfig?.version ?? '1.0.0'}</Text>
       </View>
     </View>
   );
@@ -505,7 +505,8 @@ function RootNav() {
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         const url = response.notification.request.content.data?.url;
-        if (typeof url === 'string' && url) {
+        const ALLOWED_PUSH_ROUTES = /^(expedition|entry|explorer|notifications)(\/[\w-]+)?$/;
+        if (typeof url === 'string' && ALLOWED_PUSH_ROUTES.test(url)) {
           router.push(`/${url}` as any);
         } else {
           router.push('/notifications');
@@ -589,7 +590,7 @@ export default function RootLayout() {
   if (!fontsLoaded) return null; // native splash stays visible
 
   const stripeKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
-  if (__DEV__ && !stripeKey) {
+  if (!stripeKey) {
     console.warn('EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set — Stripe features will not work.');
   }
 

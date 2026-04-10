@@ -1,9 +1,8 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
 
-const MAPBOX_DOWNLOAD_TOKEN = process.env.MAPBOX_DOWNLOADS_TOKEN;
-if (!MAPBOX_DOWNLOAD_TOKEN) {
-  throw new Error('MAPBOX_DOWNLOADS_TOKEN env var is required for Mapbox SDK builds');
-}
+const MAPBOX_DOWNLOAD_TOKEN = process.env.MAPBOX_DOWNLOADS_TOKEN ?? '';
+
+const EAS_PROJECT_ID = 'f4482299-df6f-4316-adf8-0802de176580';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -14,8 +13,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
   scheme: 'heimursaga',
+  extra: {
+    eas: {
+      projectId: EAS_PROJECT_ID,
+    },
+  },
   updates: {
-    url: 'https://u.expo.dev/heimursaga',
+    url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
     fallbackToCacheTimeout: 0,
   },
   runtimeVersion: {
@@ -32,7 +36,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       ITSAppUsesNonExemptEncryption: false,
       NSFaceIDUsageDescription: 'Authenticate to unlock Heimursaga',
       NSPhotoLibraryUsageDescription: 'Upload photos to your journal entries',
-      NSCameraUsageDescription: 'Take photos for your journal entries',
       NSLocationWhenInUseUsageDescription: 'Show your location on the Explorer Atlas',
     },
     privacyManifests: {
@@ -96,7 +99,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-image-picker',
       {
         photosPermission: 'Upload photos to your journal entries',
-        cameraPermission: 'Take photos for your journal entries',
       },
     ],
     [

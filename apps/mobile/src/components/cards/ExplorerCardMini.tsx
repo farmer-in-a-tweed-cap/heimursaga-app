@@ -68,8 +68,7 @@ export function ExplorerCardMini({ explorer, onPress, action }: ExplorerCardMini
 
 const styles = StyleSheet.create({
   wrapper: {
-    width: '48%',
-    flexGrow: 0,
+    flex: 1,
   },
   inner: {
     padding: 14,

@@ -112,13 +112,19 @@ export default function ProfileScreen() {
         {(() => {
           const status = getExplorerStatus(expeditions, profile?.activeExpeditionOffGrid);
           const cfg = explorerStatusConfig[status];
+          const activeExpId = profile?.activeExpeditionLocation?.expeditionId;
+          const activeExpTitle = profile?.activeExpeditionLocation?.expeditionTitle;
+          const plannedExp = !activeExpId ? expeditions.find(e => e.status === 'planned') : undefined;
+          const expId = activeExpId ?? plannedExp?.id;
+          const expTitle = activeExpTitle ?? plannedExp?.title;
           return (
             <StatusHeader
               status="active"
               label={cfg.label}
               dotColor={cfg.color}
-              right={profile?.activeExpeditionLocation?.expeditionTitle}
+              right={expTitle}
               variant="detail"
+              onRightPress={expId ? () => router.push(`/expedition/${expId}`) : undefined}
             />
           );
         })()}

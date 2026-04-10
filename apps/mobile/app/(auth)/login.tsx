@@ -49,6 +49,7 @@ export default function LoginScreen() {
   // Login fields
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Register fields
   const [regEmail, setRegEmail] = useState('');
@@ -165,17 +166,42 @@ export default function LoginScreen() {
                 onSubmitEditing={() => passwordRef.current?.focus()}
                 blurOnSubmit={false}
               />
-              <HTextField
-                ref={passwordRef}
-                label="PASSWORD"
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                textContentType="password"
-                returnKeyType="go"
-                onSubmitEditing={handleLogin}
-              />
+              <View style={styles.passwordWrap}>
+                <HTextField
+                  ref={passwordRef}
+                  label="PASSWORD"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  textContentType="password"
+                  returnKeyType="go"
+                  onSubmitEditing={handleLogin}
+                />
+                <Pressable
+                  style={styles.eyeBtn}
+                  onPress={() => setShowPassword(v => !v)}
+                  hitSlop={8}
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                  accessibilityRole="button"
+                >
+                  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
+                    {showPassword ? (
+                      <>
+                        <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <Circle cx={12} cy={12} r={3} />
+                      </>
+                    ) : (
+                      <>
+                        <Path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                        <Path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                        <Path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                        <Path d="M1 1l22 22" />
+                      </>
+                    )}
+                  </Svg>
+                </Pressable>
+              </View>
 
               <HButton onPress={handleLogin} disabled={submitting}>
                 {submitting ? 'SIGNING IN...' : 'LOGIN TO ACCOUNT'}
@@ -327,6 +353,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   divider: { height: 2, marginBottom: 16 },
+  passwordWrap: { position: 'relative' },
+  eyeBtn: { position: 'absolute', right: 14, bottom: 28 },
   forgotCard: { marginTop: 16, padding: 12 },
   forgotInner: {
     flexDirection: 'row',

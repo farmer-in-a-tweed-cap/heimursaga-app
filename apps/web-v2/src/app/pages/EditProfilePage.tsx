@@ -5,7 +5,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import Link from 'next/link';
 import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Camera, Shield, Home, Navigation, Info, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Camera, Shield, Home, Navigation, Info, Loader2, Image as ImageIcon, Phone, Mail, MessageSquare } from 'lucide-react';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
 // import { useProFeatures } from '@/app/hooks/useProFeatures';
@@ -16,6 +16,10 @@ import {
   parseLocationString,
   type LocationPrivacyLevel
 } from '@/app/utils/locationPrivacy';
+import {
+  getPhoneValidationError,
+  normalizePhoneInput,
+} from '@/app/utils/phoneValidation';
 import { explorerApi } from '@/app/services/api';
 import { toast } from 'sonner';
 
@@ -56,6 +60,10 @@ export function EditProfilePage() {
     instagram: '',
     youtube: '',
     equipment: '',
+
+    // Guide contact fields
+    phoneNumber: '',
+    preferredContactMethod: 'message' as 'email' | 'phone' | 'message',
   });
 
   const [, setIsLoading] = useState(true);
@@ -98,9 +106,20 @@ export function EditProfilePage() {
           instagram: settings.instagram || '',
           youtube: settings.youtube || '',
           equipment: Array.isArray(settings.equipment) ? settings.equipment.join('\n') : (settings.equipment || ''),
-          locationPrivacyLevel: settings.locationVisibility
-            ? (settings.locationVisibility.toUpperCase() as LocationPrivacyLevel)
-            : 'HIDDEN',
+          // Guides are restricted to CONTINENT / COUNTRY / REGIONAL levels — default to
+          // REGIONAL_LEVEL so their "Based In" is visible by default, and upgrade any
+          // disallowed saved value (HIDDEN / CITY_LEVEL / PRECISE_COORDINATES).
+          locationPrivacyLevel: (() => {
+            const saved = settings.locationVisibility?.toUpperCase() as LocationPrivacyLevel | undefined;
+            if (user?.isGuide) {
+              const guideAllowed: LocationPrivacyLevel[] = ['CONTINENT_LEVEL', 'COUNTRY_LEVEL', 'REGIONAL_LEVEL'];
+              return saved && guideAllowed.includes(saved) ? saved : 'REGIONAL_LEVEL';
+            }
+            return saved || 'HIDDEN';
+          })(),
+          phoneNumber: settings.phoneNumber || '',
+          preferredContactMethod:
+            (settings.preferredContactMethod as 'email' | 'phone' | 'message') || 'message',
         }));
         // Set existing images as previews
         if (settings.picture) {
@@ -190,6 +209,21 @@ export function EditProfilePage() {
   };
 
   const handleSave = async () => {
+    // Block save if guide contact fields are invalid. `isDirty`-aware UI
+    // already disables the button, but guard here so programmatic callers
+    // (and edge cases) can't bypass it.
+    if (user?.isGuide) {
+      const phoneErr = getPhoneValidationError(formData.phoneNumber);
+      if (phoneErr) {
+        toast.error(phoneErr);
+        return;
+      }
+      if (formData.preferredContactMethod === 'phone' && !formData.phoneNumber.trim()) {
+        toast.error('Add a phone number — Phone is your preferred contact method.');
+        return;
+      }
+    }
+
     setSaveStatus('saving');
 
     const payload = {
@@ -203,6 +237,12 @@ export function EditProfilePage() {
       instagram: formData.instagram,
       youtube: formData.youtube,
       equipment: formData.equipment.split('\n').map(s => s.trim()).filter(Boolean),
+      // Only guides have contact fields, but send from all users to keep the
+      // payload shape stable (server ignores when not a guide).
+      ...(user?.isGuide && {
+        phoneNumber: formData.phoneNumber.trim(),
+        preferredContactMethod: formData.preferredContactMethod,
+      }),
     };
 
     try {
@@ -243,6 +283,17 @@ export function EditProfilePage() {
   };
 
   if (!user) return null;
+
+  // Guide contact: phone number validation (only enforced for guide accounts).
+  const phoneValidationError = user.isGuide
+    ? getPhoneValidationError(formData.phoneNumber)
+    : null;
+  const phoneRequiredButMissing =
+    user.isGuide &&
+    formData.preferredContactMethod === 'phone' &&
+    !formData.phoneNumber.trim();
+  const hasBlockingGuideContactError =
+    !!phoneValidationError || phoneRequiredButMissing;
 
   // Get privacy level info for display
   const privacyLevelInfo = LOCATION_PRIVACY_OPTIONS.find(
@@ -345,14 +396,14 @@ export function EditProfilePage() {
 
               <div>
                 <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                  JOURNAL NAME
+                  {user?.isGuide ? 'BUSINESS NAME' : 'JOURNAL NAME'}
                 </label>
                 <input
                   type="text"
                   value={formData.journalName}
                   onChange={(e) => handleChange('journalName', e.target.value)}
                   className="w-full px-3 py-2 border-2 border-[#202020] dark:border-[#616161] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] text-sm focus:outline-none focus:border-[#4676ac]"
-                  placeholder="My Journal Name"
+                  placeholder={user?.isGuide ? 'My Guide Business' : 'My Journal Name'}
                 />
               </div>
 
@@ -495,9 +546,9 @@ export function EditProfilePage() {
 
           {/* Location Privacy Settings */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
-            <div className="bg-[#ac6d46] text-white px-4 py-2 font-bold text-sm flex items-center gap-2">
+            <div className={`${user?.isGuide ? 'bg-[#598636]' : 'bg-[#ac6d46]'} text-white px-4 py-2 font-bold text-sm flex items-center gap-2`}>
               <Shield size={16} strokeWidth={2} />
-              LOCATION & PRIVACY SETTINGS
+              {user?.isGuide ? 'LOCATION' : 'LOCATION & PRIVACY SETTINGS'}
             </div>
             <div className="p-4 lg:p-6 space-y-6">
               {/* Privacy Level Selector */}
@@ -510,11 +561,19 @@ export function EditProfilePage() {
                   onChange={(e) => handleChange('locationPrivacyLevel', e.target.value as LocationPrivacyLevel)}
                   className="w-full px-3 py-2 border-2 border-[#202020] dark:border-[#616161] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] text-sm focus:outline-none focus:border-[#4676ac]"
                 >
-                  {LOCATION_PRIVACY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label} - {option.description}
-                    </option>
-                  ))}
+                  {LOCATION_PRIVACY_OPTIONS
+                    .filter((option) =>
+                      user?.isGuide
+                        ? option.value !== 'HIDDEN' &&
+                          option.value !== 'CITY_LEVEL' &&
+                          option.value !== 'PRECISE_COORDINATES'
+                        : true,
+                    )
+                    .map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label} - {option.description}
+                      </option>
+                    ))}
                 </select>
                 {privacyLevelInfo && (
                   <div className={`mt-2 p-3 border-2 ${
@@ -547,8 +606,8 @@ export function EditProfilePage() {
                           ABOUT PRECISE COORDINATES
                         </div>
                         <div className="text-xs text-[#202020] dark:text-[#e5e5e5]">
-                          This setting shares your exact GPS location with your audience. Many explorers prefer City Level or Regional Level 
-                          during active expeditions to maintain some location privacy while still sharing their journey. You can change this 
+                          This setting shares your exact GPS location with your audience. Many explorers prefer City Level or Regional Level
+                          during active expeditions to maintain some location privacy while still sharing their journey. You can change this
                           setting anytime.
                         </div>
                       </div>
@@ -557,11 +616,11 @@ export function EditProfilePage() {
                 )}
               </div>
 
-              {/* Home/From Location */}
+              {/* Home/From Location (Based In for guides) */}
               <div>
                 <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5] flex items-center gap-2">
-                  <Home className="w-4 h-4 text-[#4676ac]" strokeWidth={2} />
-                  HOME / FROM LOCATION (ORIGIN)
+                  <Home className={`w-4 h-4 ${user?.isGuide ? 'text-[#598636]' : 'text-[#4676ac]'}`} strokeWidth={2} />
+                  {user?.isGuide ? 'BASED IN' : 'HOME / FROM LOCATION (ORIGIN)'}
                 </label>
                 <LocationAutocompleteInput
                   value={formData.fromLocation}
@@ -578,7 +637,7 @@ export function EditProfilePage() {
                     setIsDirty(true);
                     setSaveStatus('idle');
                   }}
-                  placeholder="Search for your home location..."
+                  placeholder={user?.isGuide ? 'Search for the region you guide in...' : 'Search for your home location...'}
                 />
                 <div className="mt-2 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#3a3a3a]">
                   <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">
@@ -594,12 +653,14 @@ export function EditProfilePage() {
                   )}
                 </div>
                 <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                  Your home base or starting point. This location is static and won't change during expeditions.
+                  {user?.isGuide
+                    ? 'The region where you operate as a guide. Shown at the top of your profile so travellers know where to find you.'
+                    : "Your home base or starting point. This location is static and won't change during expeditions."}
                 </p>
               </div>
 
-              {/* Current Location Sync */}
-              {hasActiveExpedition && (
+              {/* Current Location Sync — hidden for guides */}
+              {!user?.isGuide && hasActiveExpedition && (
                 <div>
                   <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5] flex items-center gap-2">
                     <Navigation className="w-4 h-4 text-[#ac6d46]" strokeWidth={2} />
@@ -633,8 +694,8 @@ export function EditProfilePage() {
                 </div>
               )}
 
-              {/* Current Location Manual Input (only if not auto-syncing) */}
-              {(!hasActiveExpedition || !formData.autoSyncFromExpedition) && (
+              {/* Current Location Manual Input (only if not auto-syncing) — hidden for guides */}
+              {!user?.isGuide && (!hasActiveExpedition || !formData.autoSyncFromExpedition) && (
                 <div>
                   <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5] flex items-center gap-2">
                     <Navigation className="w-4 h-4 text-[#ac6d46]" strokeWidth={2} />
@@ -679,8 +740,8 @@ export function EditProfilePage() {
                 </div>
               )}
 
-              {/* Auto-synced Current Location Display (read-only) */}
-              {hasActiveExpedition && formData.autoSyncFromExpedition && (
+              {/* Auto-synced Current Location Display (read-only) — hidden for guides */}
+              {!user?.isGuide && hasActiveExpedition && formData.autoSyncFromExpedition && (
                 <div>
                   <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5] flex items-center gap-2">
                     <Navigation className="w-4 h-4 text-[#ac6d46]" strokeWidth={2} />
@@ -720,7 +781,6 @@ export function EditProfilePage() {
                   onChange={(e) => handleChange('equipment', e.target.value)}
                   rows={6}
                   className="w-full px-3 py-2 border-2 border-[#202020] dark:border-[#616161] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] text-sm focus:outline-none focus:border-[#4676ac] font-mono"
-                  placeholder="Canon EOS R5&#10;DJI Mavic 3 Pro&#10;Toyota Land Cruiser&#10;Starlink Mini&#10;Goal Zero Yeti 1000&#10;Jackery Solar Panels"
                 />
                 <div className="mt-2 text-xs text-[#616161] dark:text-[#b5bcc4]">
                   List your expedition gear, one item per line. This helps sponsors and followers understand your setup.
@@ -801,11 +861,103 @@ export function EditProfilePage() {
             </div>
           </div>
 
+          {/* Guide Contact Preferences — only visible to guide accounts */}
+          {user?.isGuide && (
+            <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
+              <div className="bg-[#598636] text-white px-4 py-2 font-bold text-sm flex items-center gap-2">
+                <Phone size={16} strokeWidth={2} />
+                GUIDE CONTACT
+              </div>
+              <div className="p-4 lg:p-6 space-y-4">
+                <div className="p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#598636] text-xs text-[#616161] dark:text-[#b5bcc4]">
+                  How should explorers reach out when they want to book an in-person guided expedition? Your choice appears as a <span className="font-bold text-[#202020] dark:text-[#e5e5e5]">Contact</span> button on your public profile.
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
+                    PREFERRED CONTACT METHOD
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    {([
+                      { value: 'message', label: 'IN-APP MESSAGE', Icon: MessageSquare, desc: 'Explorer Pro members DM you on Heimursaga.' },
+                      { value: 'email', label: 'EMAIL', Icon: Mail, desc: 'Your account email is shown publicly.' },
+                      { value: 'phone', label: 'PHONE', Icon: Phone, desc: 'Phone number below is shown publicly.' },
+                    ] as const).map(({ value, label, Icon, desc }) => {
+                      const selected = formData.preferredContactMethod === value;
+                      return (
+                        <button
+                          type="button"
+                          key={value}
+                          onClick={() => handleChange('preferredContactMethod', value)}
+                          className={`p-3 text-left border-2 transition-all ${
+                            selected
+                              ? 'border-[#598636] bg-[#598636]/10 dark:bg-[#598636]/20'
+                              : 'border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#616161]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <Icon size={14} strokeWidth={2} className={selected ? 'text-[#598636]' : 'text-[#616161] dark:text-[#b5bcc4]'} />
+                            <span className={`text-xs font-bold ${selected ? 'text-[#598636]' : 'text-[#202020] dark:text-[#e5e5e5]'}`}>
+                              {label}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] leading-snug">
+                            {desc}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {formData.preferredContactMethod === 'message' && (
+                    <p className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mt-2 leading-snug">
+                      Note: In-app messaging is an Explorer Pro feature, so only Explorer Pro members will be able to reach you this way. Free explorers will see Email or Phone as fallbacks if you provide them.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
+                    PHONE NUMBER {formData.preferredContactMethod !== 'phone' && (
+                      <span className="text-[#616161] dark:text-[#b5bcc4]">(OPTIONAL)</span>
+                    )}
+                  </label>
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={formData.phoneNumber}
+                    onChange={(e) => handleChange('phoneNumber', normalizePhoneInput(e.target.value))}
+                    maxLength={30}
+                    aria-invalid={phoneValidationError ? true : undefined}
+                    className={`w-full px-3 py-2 border-2 dark:bg-[#2a2a2a] dark:text-[#e5e5e5] text-sm focus:outline-none font-mono ${
+                      phoneValidationError
+                        ? 'border-[#994040] focus:border-[#994040]'
+                        : 'border-[#202020] dark:border-[#616161] focus:border-[#598636]'
+                    }`}
+                    placeholder="+1 555 123 4567"
+                  />
+                  <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
+                    Include the country code. Only shown on your public profile when Phone is your preferred method.
+                  </p>
+                  {phoneValidationError && (
+                    <p className="text-xs text-[#994040] mt-1">{phoneValidationError}</p>
+                  )}
+                </div>
+
+                {formData.preferredContactMethod === 'phone' && !formData.phoneNumber.trim() && (
+                  <div className="p-3 bg-[#fff7ed] dark:bg-[#2a1f15] border-l-2 border-[#ac6d46] text-xs text-[#ac6d46]">
+                    Add a phone number above — Phone is selected as your preferred contact method.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex gap-3">
             <button
               onClick={handleSave}
-              disabled={!isDirty || saveStatus === 'saving'}
+              disabled={!isDirty || saveStatus === 'saving' || hasBlockingGuideContactError}
               className={`px-6 py-3 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] font-bold text-sm flex items-center gap-2 disabled:active:scale-100 disabled:bg-[#b5bcc4] ${
                 saveStatus === 'saving' ? 'disabled:cursor-wait' : 'disabled:cursor-default'
               }`}

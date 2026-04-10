@@ -28,7 +28,7 @@ export function EntryListItem({ entry, showAuthor = false }: EntryListItemProps)
     <TouchableOpacity onPress={() => router.push(`/entry/${entry.id}`)}>
       <HCard>
         <StatusHeader
-          status={(entry.trip?.status as 'active' | 'planned' | 'completed' | 'cancelled') ?? 'active'}
+          status={(entry.trip?.status as 'active' | 'planned' | 'completed' | 'cancelled' | 'published') ?? 'active'}
           label="JOURNAL ENTRY"
           right={dateStr}
         />

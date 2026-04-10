@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useNavigation } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import {
   View,
@@ -65,6 +66,7 @@ export default function HomeScreen() {
   const [badgeCount, setBadgeCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const atlasMapRef = useRef<HeimuMapRef>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const previewAbortRef = useRef<AbortController | null>(null);
 
   // Fetch expedition route when an entry with an expedition is selected
@@ -114,7 +116,10 @@ export default function HomeScreen() {
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const coords: [number, number] = [loc.coords.longitude, loc.coords.latitude];
       atlasMapRef.current?.flyTo(coords, 8);
-      if (!atlasExpanded) setAtlasExpanded(true);
+      if (!atlasExpanded) {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+        setAtlasExpanded(true);
+      }
     } catch {
       Alert.alert('Location Unavailable', 'Could not determine your location. Please try again.');
     }
@@ -122,22 +127,29 @@ export default function HomeScreen() {
 
   // Poll notification badge count
   const userId = user?.id;
+  const navigation = useNavigation();
+  const fetchBadge = useCallback(() => {
+    if (!userId) return;
+    notificationsApi.getBadgeCount()
+      .then((res) => setBadgeCount(res.data.notifications ?? 0))
+      .catch(() => {});
+  }, [userId]);
   useEffect(() => {
     if (!userId) return;
-    let cancelled = false;
-    const fetchBadge = () => {
-      notificationsApi.getBadgeCount()
-        .then((res) => { if (!cancelled) setBadgeCount(res.data.count); })
-        .catch(() => {});
-    };
     fetchBadge();
     const interval = setInterval(fetchBadge, 30000);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, [userId]);
+    return () => clearInterval(interval);
+  }, [userId, fetchBadge]);
+  // Refetch badge immediately when this tab regains focus (e.g. after marking all read)
+  useEffect(() => {
+    if (!userId) return;
+    const unsubscribe = navigation.addListener('focus', fetchBadge);
+    return unsubscribe;
+  }, [navigation, userId, fetchBadge]);
 
   // Global feed
   const { data, loading, error, refetch } = useApi<TripsResponse>('/trips');
-  const allExpeditions = (data?.data ?? []).filter(e => e.status !== 'cancelled');
+  const allExpeditions = (data?.data ?? []).filter(e => e.status === 'active' || e.status === 'planned');
   const expeditions = allExpeditions.slice(0, 5);
 
   const { data: usersData } = useApi<{ data: ExplorerProfile[]; results: number }>('/users');
@@ -150,7 +162,7 @@ export default function HomeScreen() {
   const { data: followTrips, loading: followLoading, refetch: refetchFollowTrips } = useApi<TripsResponse>(
     user ? '/trips?context=following' : null,
   );
-  const followExpeditions = (followTrips?.data ?? []).filter(e => e.status !== 'cancelled').slice(0, 5);
+  const followExpeditions = (followTrips?.data ?? []).filter(e => e.status === 'active' || e.status === 'planned').slice(0, 5);
 
   const { data: followUsers, refetch: refetchFollowUsers } = useApi<{ data: ExplorerProfile[]; results: number }>(
     user ? '/users?context=following' : null,
@@ -220,19 +232,19 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <TopoBackground topOffset={insets.top + 52} />
+      <TopoBackground topOffset={insets.top + 58} />
       {/* Header bar */}
-      <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Image
           source={require('../../assets/logo-lg-light.png')}
-          style={{ height: 44, width: 130 }}
+          style={{ height: 50, width: 148 }}
           resizeMode="contain"
         />
         <View style={styles.headerRight}>
-          {user && <Avatar size={30} name={user.username} imageUrl={user.picture ?? user.avatar_url} pro={user.isPremium ?? user.is_pro} />}
+          {user && <Avatar size={36} name={user.username} imageUrl={user.picture ?? user.avatar_url} pro={user.is_pro} />}
           {user && (
             <Pressable onPress={() => router.push('/notifications')} hitSlop={8} style={styles.bellWrap} accessibilityRole="button" accessibilityLabel={`Notifications${badgeCount > 0 ? `, ${badgeCount} unread` : ''}`}>
-              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#e5e5e5" strokeWidth={1.8}>
+              <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#e5e5e5" strokeWidth={1.8}>
                 <Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <Path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </Svg>
@@ -244,7 +256,7 @@ export default function HomeScreen() {
             </Pressable>
           )}
           <Pressable onPress={() => router.push('/menu')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Menu">
-            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#e5e5e5" strokeWidth={2}>
+            <Svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="#e5e5e5" strokeWidth={2}>
               <Path d="M3 6h18M3 12h18M3 18h18" />
             </Svg>
           </Pressable>
@@ -253,6 +265,7 @@ export default function HomeScreen() {
 
       <View style={{ flex: 1 }} onLayout={(e: LayoutChangeEvent) => setContentAreaHeight(e.nativeEvent.layout.height)}>
       <ScrollView
+        ref={scrollRef}
         scrollEnabled={!atlasExpanded}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={async () => {
@@ -428,7 +441,13 @@ export default function HomeScreen() {
                   </Pressable>
                   <Pressable
                     style={styles.atlasExpandBtn}
-                    onPress={() => { setAtlasExpanded(v => !v); setSelectedAtlasEntry(null); }}
+                    onPress={() => {
+                      setAtlasExpanded(v => {
+                        if (!v) scrollRef.current?.scrollTo({ y: 0, animated: false });
+                        return !v;
+                      });
+                      setSelectedAtlasEntry(null);
+                    }}
                   >
                     <Svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth={2}>
                       <Path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
@@ -572,16 +591,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 16,
     backgroundColor: brandColors.black,
     borderBottomWidth: 3,
     borderBottomColor: brandColors.copper,
   },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   bellWrap: { position: 'relative' },
-  bellBadge: { position: 'absolute', top: -4, right: -6, backgroundColor: brandColors.copper, minWidth: 14, height: 14, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2, borderRadius: 0 },
-  bellBadgeText: { color: '#ffffff', fontFamily: mono, fontSize: 9, fontWeight: '700' },
+  bellBadge: { position: 'absolute', top: -5, right: -7, backgroundColor: brandColors.copper, minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2, borderRadius: 0 },
+  bellBadgeText: { color: '#ffffff', fontFamily: mono, fontSize: 10, fontWeight: '700' },
   // Feed toggle
   feedToggleWrap: { paddingHorizontal: 16, paddingTop: 12 },
   feedToggle: { flexDirection: 'row' },

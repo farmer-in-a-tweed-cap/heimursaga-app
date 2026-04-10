@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { usePaymentSheet } from '@stripe/stripe-react-native';
@@ -208,16 +208,18 @@ export default function SponsorScreen() {
             </HCard>
           )}
 
-          {/* Type */}
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>SPONSORSHIP TYPE</Text>
-            <View style={[styles.labelLine, { backgroundColor: colors.border }]} />
-            <SegmentedControl
-              options={['ONE-TIME', 'MONTHLY']}
-              active={paymentType}
-              onSelect={handleTypeChange}
-            />
-          </View>
+          {/* Type — monthly subscriptions via Stripe hidden on iOS per App Store Guideline 3.1.1 */}
+          {Platform.OS !== 'ios' && (
+            <View style={styles.fieldGroup}>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>SPONSORSHIP TYPE</Text>
+              <View style={[styles.labelLine, { backgroundColor: colors.border }]} />
+              <SegmentedControl
+                options={['ONE-TIME', 'MONTHLY']}
+                active={paymentType}
+                onSelect={handleTypeChange}
+              />
+            </View>
+          )}
 
           {/* Amount selection — one-time shows preset amounts, monthly shows tier prices */}
           {paymentType === 0 ? (

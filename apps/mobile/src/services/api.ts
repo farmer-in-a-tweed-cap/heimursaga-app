@@ -215,6 +215,7 @@ import type {
   Balance,
   Payout,
   ProfileSettings,
+  BlueprintReview,
 } from '@/types/api';
 
 export const authApi = {
@@ -237,7 +238,7 @@ export const notificationsApi = {
     return api.post<ApiResponse<void>>('/auth/mobile/notifications/mark-read');
   },
   getBadgeCount() {
-    return api.get<ApiResponse<{ count: number }>>('/auth/mobile/badge-count');
+    return api.get<ApiResponse<{ notifications: number }>>('/auth/mobile/badge-count');
   },
   registerPushToken(token: string, platform: string) {
     return api.post<{ success: boolean }>('/auth/mobile/push-token', { token, platform });
@@ -380,6 +381,32 @@ export const expeditionApi = {
   getUserExpeditions() {
     return api.get<ApiResponse<Expedition[]>>('/user/trips');
   },
+  // Blueprint methods
+  getBlueprints(params?: { page?: number; limit?: number; mode?: string; region?: string }) {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.set('page', String(params.page));
+    if (params?.limit) sp.set('limit', String(params.limit));
+    if (params?.mode) sp.set('mode', params.mode);
+    if (params?.region) sp.set('region', params.region);
+    const qs = sp.toString();
+    return api.get<{ data: Expedition[]; results: number; totalPages?: number }>(`/trips/blueprints${qs ? `?${qs}` : ''}`);
+  },
+  adopt(id: string) {
+    return api.post<{ expeditionId: string }>(`/trips/${id}/adopt`);
+  },
+  getReviews(id: string, params?: { page?: number; limit?: number }) {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.set('page', String(params.page));
+    if (params?.limit) sp.set('limit', String(params.limit));
+    const qs = sp.toString();
+    return api.get<{ results: number; data: BlueprintReview[] }>(`/trips/${id}/reviews${qs ? `?${qs}` : ''}`);
+  },
+  createReview(id: string, payload: { rating: number; text?: string }) {
+    return api.post<BlueprintReview>(`/trips/${id}/reviews`, payload);
+  },
+  deleteReview(id: string) {
+    return api.delete<void>(`/trips/${id}/reviews`);
+  },
 };
 
 export const sponsorshipApi = {
@@ -488,6 +515,9 @@ export const settingsApi = {
   },
   updateProfile(data: Partial<ProfileSettings>) {
     return api.put<ApiResponse<ProfileSettings>>('/user/settings/profile', data);
+  },
+  deleteAccount() {
+    return api.delete<{ success: boolean }>('/auth/mobile/account');
   },
 };
 
