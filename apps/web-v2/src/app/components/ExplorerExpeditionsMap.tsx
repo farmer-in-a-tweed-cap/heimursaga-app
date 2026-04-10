@@ -7,7 +7,7 @@ import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from '@/app/context/MapLayerContext';
-import { createPOIGeocoder } from '@/app/utils/poiGeocoder';
+import { createPOIGeocoder, retrievePOI } from '@/app/utils/poiGeocoder';
 import { X, ChevronLeft, Globe } from 'lucide-react';
 import {
   clusterEntriesByProximity,
@@ -143,6 +143,23 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
       externalGeocoder: createPOIGeocoder(map),
     } as any);
     map.addControl(geocoder as any, 'top-left');
+
+    // POI results from the external geocoder come back with placeholder
+    // center: [0, 0] — resolve the real coordinates via /retrieve before flying.
+    geocoder.on('result', async (e: any) => {
+      const mapboxId = e.result?.properties?.mapbox_id;
+      let lng: number, lat: number;
+      if (mapboxId) {
+        const poi = await retrievePOI(mapboxId);
+        if (!poi) return;
+        lng = poi.lng;
+        lat = poi.lat;
+      } else {
+        const { center } = e.result;
+        [lng, lat] = center;
+      }
+      map.flyTo({ center: [lng, lat], zoom: 10 });
+    });
 
     // Manually manage proximity bias at all zoom levels
     const updateGeocoderProximity = () => {

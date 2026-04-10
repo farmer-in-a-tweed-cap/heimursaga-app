@@ -10,7 +10,7 @@ import { MapPin, User, X, Maximize2, Minimize2, Bookmark, UserPlus, UserCheck, B
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from '@/app/context/MapLayerContext';
-import { createPOIGeocoder } from '@/app/utils/poiGeocoder';
+import { createPOIGeocoder, retrievePOI } from '@/app/utils/poiGeocoder';
 import { useAuth } from '@/app/context/AuthContext';
 import { entryApi, explorerApi, expeditionApi } from '@/app/services/api';
 import { getExplorerStatus } from '@/app/components/ExplorerStatusBadge';
@@ -351,6 +351,23 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
     } as any);
     map.addControl(geocoder as any, 'top-left');
     geocoderRef.current = geocoder;
+
+    // POI results from the external geocoder come back with placeholder
+    // center: [0, 0] — resolve the real coordinates via /retrieve before flying.
+    geocoder.on('result', async (e: any) => {
+      const mapboxId = e.result?.properties?.mapbox_id;
+      let lng: number, lat: number;
+      if (mapboxId) {
+        const poi = await retrievePOI(mapboxId);
+        if (!poi) return;
+        lng = poi.lng;
+        lat = poi.lat;
+      } else {
+        const { center } = e.result;
+        [lng, lat] = center;
+      }
+      map.flyTo({ center: [lng, lat], zoom: 10 });
+    });
 
     // Manually manage proximity bias at all zoom levels
     const updateGeocoderProximity = () => {
