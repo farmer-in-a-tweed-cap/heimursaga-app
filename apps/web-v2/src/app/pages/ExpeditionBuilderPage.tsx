@@ -4,10 +4,12 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
-import { MapPin, Trash2, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown, AlertTriangle, Search, Plus, RotateCw } from 'lucide-react';
+import { MapPin, Trash2, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown, AlertTriangle, Search, Plus, RotateCw, Download } from 'lucide-react';
 import { Slider } from '@/app/components/ui/slider';
 import { DatePicker } from '@/app/components/DatePicker';
 import { ConfirmationModal } from '@/app/components/ConfirmationModal';
+import { RouteImportModal } from '@/app/components/RouteImportModal';
+import type { ImportedRoute } from '@/app/utils/routeFileParser';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from '@/app/context/MapLayerContext';
@@ -31,10 +33,18 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 
-type RouteMode = 'straight' | 'passage' | 'walking' | 'cycling' | 'driving' | 'trail' | 'waterway';
+type RouteMode = 'straight' | 'passage' | 'walking' | 'cycling' | 'driving' | 'trail' | 'waterway' | 'imported';
 
 /** Returns true for route modes that don't need a directions API fetch (point-to-point straight lines). */
 const isStraightLike = (mode: string) => mode === 'straight' || mode === 'passage';
+
+/**
+ * `imported` is a pseudo-mode used when a guide uploads a GPX/KML/GeoJSON file.
+ * The leg's geometry is the raw trackline from the file — no routing API is
+ * ever called for it. Treated as non-straight in render logic (so the stored
+ * geometry is drawn verbatim) but excluded from any fetch path.
+ */
+const isImported = (mode: string) => mode === 'imported';
 type WaterwayProfile = 'paddle' | 'motor';
 
 /** Split a continuous route geometry at waypoint locations to get per-leg coordinate arrays. */
@@ -83,6 +93,7 @@ interface Waypoint {
   cumulativeDistance?: number;
   travelTimeFromPrevious?: number; // seconds
   cumulativeTravelTime?: number; // seconds
+  elevationM?: number; // metres above sea level, auto-fetched from Open Meteo on add
   entryIds: string[]; // entry public_ids linked to this waypoint
 }
 
@@ -183,6 +194,10 @@ export function ExpeditionBuilderPage() {
   nauticalOverlayRef.current = nauticalOverlay;
   const { formatDistance, unit } = useDistanceUnit();
   const { isPro, isGuide, canCreateBlueprints } = useProFeatures();
+  // Guides get a much higher waypoint description cap so they can document route details
+  // (trailheads, hazards, campsites, etc.) when publishing blueprints, including content
+  // imported from GPX/KML/GeoJSON files which often contain long trip reports.
+  const waypointDescriptionMax = isGuide ? 4000 : 500;
   const router = useRouter();
   const pathname = usePathname();
   const { expeditionId } = useParams<{ expeditionId: string }>();
@@ -268,6 +283,13 @@ export function ExpeditionBuilderPage() {
     setPerLegGeometries(geoms);
   }, []);
 
+  // Route file import (guide-only)
+  const [showRouteImportModal, setShowRouteImportModal] = useState(false);
+  const [routeImportPending, setRouteImportPending] = useState<{
+    file: File;
+    distanceKm: number;
+  } | null>(null);
+
   // Route search (Find Along Route) state
   const [showRouteSearch, setShowRouteSearch] = useState(false);
   const [routeSearchResults, setRouteSearchResults] = useState<POIResult[]>([]);
@@ -308,6 +330,9 @@ export function ExpeditionBuilderPage() {
   const [passageSpeedKn, setPassageSpeedKn] = useState('6');
   const [sponsorshipsEnabled, setSponsorshipsEnabled] = useState(false);
   const [sponsorshipGoal, setSponsorshipGoal] = useState<number | ''>('');
+  // Guide-only: whether viewers/adopters of a published blueprint can download
+  // the route as a GPX file. Owner can always export regardless.
+  const [routeExportAllowed, setRouteExportAllowed] = useState(true);
   const [notesAccessThreshold, setNotesAccessThreshold] = useState<number | ''>('');
   const [notesVisibility, setNotesVisibility] = useState<'public' | 'sponsor'>('public');
   const [earlyAccessEnabled, setEarlyAccessEnabled] = useState(false);
@@ -777,7 +802,11 @@ export function ExpeditionBuilderPage() {
       const payload = {
         title: expeditionData.title,
         description: expeditionData.description,
-        visibility: canCreateBlueprints ? 'public' : expeditionData.visibility,
+        // Blueprints support Public + Off-Grid (not Private — adopters need to
+        // discover them). Non-blueprint expeditions retain the full picker.
+        visibility: canCreateBlueprints
+          ? (expeditionData.visibility === 'off-grid' ? 'off-grid' : 'public')
+          : expeditionData.visibility,
         status,
         startDate: canCreateBlueprints ? undefined : (expeditionData.startDate || undefined),
         endDate: canCreateBlueprints ? undefined : (expeditionData.endDate || undefined),
@@ -798,6 +827,7 @@ export function ExpeditionBuilderPage() {
         routeLegModes: new Set(perLegModes).size > 1 ? perLegModes : undefined,
         routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
         routeObstacles: waterwayObstacles.length > 0 ? waterwayObstacles : null,
+        routeExportAllowed: canCreateBlueprints ? routeExportAllowed : undefined,
         tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
         isBlueprint: canCreateBlueprints ? true : undefined,
         mode: expeditionMode || undefined,
@@ -824,6 +854,7 @@ export function ExpeditionBuilderPage() {
             return {
               lat: item.waypoint.coordinates.lat,
               lon: item.waypoint.coordinates.lng,
+              elevationM: item.waypoint.elevationM,
               title: item.waypoint.name || undefined,
               date: item.waypoint.date || undefined,
               description: item.waypoint.description || undefined,
@@ -861,6 +892,15 @@ export function ExpeditionBuilderPage() {
 
         if (orderedWaypoints.length > 0) {
           await expeditionApi.syncWaypoints(expeditionPublicId, orderedWaypoints);
+        }
+
+        // Blueprints are always created as drafts server-side (they must pass
+        // publishDraftExpedition's validation gate). Clicking PUBLISH BLUEPRINT
+        // in this branch means the user hit publish before autosave had a
+        // chance to create a draftId, so explicitly transition to published
+        // here to match the `else if (draftId)` flow above.
+        if (canCreateBlueprints) {
+          await expeditionApi.publishDraft(expeditionPublicId);
         }
       }
 
@@ -900,7 +940,7 @@ export function ExpeditionBuilderPage() {
       const payload = {
         title: expeditionData.title || 'Untitled Blueprint',
         description: expeditionData.description,
-        visibility: 'public' as const,
+        visibility: (expeditionData.visibility === 'off-grid' ? 'off-grid' : 'public') as 'public' | 'off-grid',
         status: 'draft' as const,
         isRoundTrip,
         region: expeditionData.regions.length > 0 ? expeditionData.regions.join(', ') : undefined,
@@ -913,6 +953,7 @@ export function ExpeditionBuilderPage() {
         routeLegModes: new Set(perLegModes).size > 1 ? perLegModes : undefined,
         routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
         routeObstacles: waterwayObstacles.length > 0 ? waterwayObstacles : null,
+        routeExportAllowed,
         tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
         isBlueprint: true,
         mode: expeditionMode || undefined,
@@ -931,6 +972,7 @@ export function ExpeditionBuilderPage() {
             return {
               lat: item.waypoint.coordinates.lat,
               lon: item.waypoint.coordinates.lng,
+              elevationM: item.waypoint.elevationM,
               title: item.waypoint.name || undefined,
               date: item.waypoint.date || undefined,
               description: item.waypoint.description || undefined,
@@ -1068,6 +1110,191 @@ export function ExpeditionBuilderPage() {
     });
   }, []);
 
+  /**
+   * Guide-only: apply a parsed route file (GPX/KML/GeoJSON) to the builder.
+   * Replaces the current waypoints + direction geometry, then sends the raw
+   * file to the server for authoritative persistence if a draft/expedition
+   * already exists. If there's no saved draft yet, the guide is prompted to
+   * save the draft first — route_geometry needs a target expedition row.
+   */
+  const handleRouteImport = useCallback(
+    async (route: ImportedRoute, file: File) => {
+      // Convert parsed waypoints into the builder's Waypoint shape
+      const imported: Waypoint[] = route.waypoints.map((w, i) => ({
+        id: `waypoint-${crypto.randomUUID()}`,
+        sequence: i,
+        name: w.title || `Waypoint ${i + 1}`,
+        type: i === 0 ? 'start' : i === route.waypoints.length - 1 ? 'end' : 'standard',
+        coordinates: { lat: w.lat, lng: w.lon },
+        location: '',
+        date: '',
+        description: w.description || '',
+        entryIds: [],
+      }));
+
+      // Apply waypoints + order. Mark routeOrderInitializedRef so the downstream
+      // routeOrder-sync effect doesn't clobber the order we just set.
+      routeOrderInitializedRef.current = true;
+      setWaypoints(updateDistances(imported));
+      setRouteOrder(imported.map((w) => w.id));
+      setSelectedWaypoint(null);
+      setIsRoundTrip(false);
+
+      const hasTrackline = route.trackPoints.length >= 2 && imported.length >= 2;
+
+      if (hasTrackline) {
+        // Mark every leg as 'imported' — a pseudo-mode that signals "this
+        // geometry came from a file; don't touch it". The fetch effects and
+        // per-leg fetchers both early-return for 'imported', so the stored
+        // trackline is drawn verbatim and never clobbered by a routing API.
+        const importedMode: RouteMode = 'imported';
+        const legCount = imported.length - 1;
+        const legModes: RouteMode[] = Array(legCount).fill(importedMode);
+
+        // Use the imported trackline directly as directionsGeometry, then split
+        // it at the waypoint positions so each leg has its own geometry segment.
+        const trackCoords = route.trackPoints.map(
+          (p) => [p[0], p[1]] as [number, number],
+        );
+        const wpLngLats = imported.map(
+          (w) => [w.coordinates.lng, w.coordinates.lat] as [number, number],
+        );
+        const legGeoms = splitGeometryAtWaypoints(trackCoords, wpLngLats);
+
+        // Compute per-leg distances from the split segments so the sidebar
+        // shows the real trail distance, not straight-line between waypoints.
+        const legDists = legGeoms.map((coords) => {
+          let d = 0;
+          for (let j = 1; j < coords.length; j++) {
+            d += haversineFromLatLng(
+              { lat: coords[j - 1][1], lng: coords[j - 1][0] },
+              { lat: coords[j][1], lng: coords[j][0] },
+            );
+          }
+          return d;
+        });
+
+        setRouteMode(importedMode);
+        setPerLegModesAndRef(legModes);
+        setPerLegGeomsAndRef(legGeoms);
+        setDirectionsGeometry(trackCoords);
+        directionsGeometryRef.current = trackCoords;
+        setDirectionsLegDistances(legDists);
+        setDirectionsLegDurations(null);
+        setDirectionsError(null);
+        setDirectionsWarnings([]);
+
+        // Pre-populate the fingerprint so the debounced directions-fetch
+        // effect's early-return fires and we DON'T overwrite the imported
+        // trackline with a fresh Mapbox Directions API result.
+        // Must match the format the effect computes at line ~2605.
+        lastDirectionsCoordsRef.current =
+          imported.map((w) => `${w.coordinates.lat},${w.coordinates.lng}`).join('|') +
+          `::${legModes.join(',')}::false::${waterwayProfileRef.current}`;
+      } else {
+        // No trackline — fall back to straight-line segments between waypoints.
+        setRouteMode('straight');
+        setPerLegModesAndRef([]);
+        setPerLegGeomsAndRef([]);
+        setDirectionsGeometry(null);
+        directionsGeometryRef.current = null;
+      }
+
+      toast.success(
+        `Imported ${route.waypoints.length} waypoint${route.waypoints.length === 1 ? '' : 's'} from ${route.sourceFormat.toUpperCase()}${
+          hasTrackline ? ` (${route.distanceKm.toFixed(1)} km trackline)` : ''
+        }`,
+      );
+
+      // Persist authoritatively. If we already have a draft/expedition row, use
+      // it. Otherwise auto-create a minimal draft so the trackline persists
+      // without forcing the guide to manually save-then-reimport.
+      let savedId = expeditionId || draftId;
+      if (!savedId) {
+        try {
+          // Derive a title: prefer what the user has typed, fall back to the
+          // route file's filename, then a generic placeholder.
+          const fileBase = (file.name || '')
+            .replace(/\.(gpx|kml|geojson|json)$/i, '')
+            .trim();
+          const draftTitle =
+            expeditionData.title.trim() ||
+            fileBase ||
+            'Untitled Imported Blueprint';
+
+          const createResult = await expeditionApi.create({
+            title: draftTitle,
+            description: expeditionData.description || undefined,
+            visibility:
+              expeditionData.visibility === 'off-grid' ? 'off-grid' : 'public',
+            status: 'draft',
+            isRoundTrip: false,
+            region: expeditionData.regions.length
+              ? expeditionData.regions.join(', ')
+              : undefined,
+            isBlueprint: canCreateBlueprints ? true : undefined,
+            mode: expeditionMode || undefined,
+          } as any);
+          const newId = (createResult as any).expeditionId || (createResult as any).id;
+          if (newId) {
+            setDraftId(newId);
+            savedId = newId;
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Draft creation failed';
+          toast.error(`Could not save draft for import: ${msg}`);
+        }
+      }
+
+      if (savedId) {
+        try {
+          await expeditionApi.importRoute(savedId, file);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Import failed';
+          toast.error(`Server import failed: ${msg}`);
+        }
+      } else {
+        // Fallback — couldn't create a draft. Stash the file so a subsequent
+        // save can still pick it up.
+        setRouteImportPending({ file, distanceKm: route.distanceKm });
+      }
+    },
+    [
+      canCreateBlueprints,
+      draftId,
+      expeditionData.description,
+      expeditionData.regions,
+      expeditionData.title,
+      expeditionData.visibility,
+      expeditionId,
+      expeditionMode,
+      setPerLegModesAndRef,
+      setPerLegGeomsAndRef,
+      updateDistances,
+    ],
+  );
+
+  // Download the current expedition's route as a GPX file. Only works once the
+  // expedition has been saved on the server (either in edit mode or after the
+  // first autosave has created a draftId), since the export reads from the DB.
+  const [isExportingGpx, setIsExportingGpx] = useState(false);
+  const handleExportGpx = useCallback(async () => {
+    const savedId = expeditionId || draftId;
+    if (!savedId) {
+      toast.info('Save this expedition first, then export the route.');
+      return;
+    }
+    setIsExportingGpx(true);
+    try {
+      await expeditionApi.exportRouteGpx(savedId);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Export failed';
+      toast.error(msg);
+    } finally {
+      setIsExportingGpx(false);
+    }
+  }, [expeditionId, draftId]);
+
   // Validate and format a coordinate for the Mapbox API
   const formatCoord = (lng: number, lat: number): string => {
     const lngNum = Number(lng);
@@ -1134,6 +1361,15 @@ export function ExpeditionBuilderPage() {
       const dist = haversineFromLatLng(from, to);
       return { coords: [[from.lng, from.lat], [to.lng, to.lat]], distance: dist, duration: 0 };
     }
+    if (isImported(mode)) {
+      // `imported` legs must NEVER be refetched — the geometry came from a
+      // user-uploaded file and there is no API to reconstruct it. Callers
+      // should have short-circuited before reaching here; if one slips
+      // through (e.g. cache miss path), fall back to a straight line so the
+      // app keeps rendering rather than crashing.
+      const dist = haversineFromLatLng(from, to);
+      return { coords: [[from.lng, from.lat], [to.lng, to.lat]], distance: dist, duration: 0 };
+    }
     if (mode === 'trail') {
       const result = await routingApi.trail([{ lat: from.lat, lon: from.lng }, { lat: to.lat, lon: to.lng }], { signal });
       return { coords: result.coordinates, distance: result.totalDistance, duration: result.totalDuration };
@@ -1191,6 +1427,7 @@ export function ExpeditionBuilderPage() {
 
     try {
       const cache = legCacheRef.current;
+      const existingLegGeoms = perLegGeomsRef.current;
       const legResults: { coords: number[][]; distance: number; duration: number; obstacles?: RouteObstacle[] }[] = [];
       const warnings: string[] = [];
       let fetchedAny = false;
@@ -1205,6 +1442,29 @@ export function ExpeditionBuilderPage() {
         // Reuse cached result if endpoints + mode haven't changed
         if (cache[i] && cache[i].key === key) {
           legResults.push(cache[i]);
+        } else if (isImported(modes[i])) {
+          // Imported legs use whatever stored geometry came from the file —
+          // never fetched, never regenerated. Pull from the live per-leg
+          // geoms ref so we survive round-trips through this function.
+          const storedCoords = existingLegGeoms[i];
+          if (storedCoords && storedCoords.length >= 2) {
+            // Re-derive distance from the stored coords so it matches the
+            // actual trail shape (not straight-line between endpoints).
+            let dist = 0;
+            for (let j = 1; j < storedCoords.length; j++) {
+              dist += haversineFromLatLng(
+                { lat: storedCoords[j - 1][1], lng: storedCoords[j - 1][0] },
+                { lat: storedCoords[j][1], lng: storedCoords[j][0] },
+              );
+            }
+            legResults.push({ coords: storedCoords, distance: dist, duration: 0 });
+          } else {
+            // Defensive fallback — if someone marked a leg imported without
+            // ever populating its geometry, draw a straight line rather than
+            // crash. This should not happen in normal flow.
+            const dist = haversineFromLatLng(from, to);
+            legResults.push({ coords: [[from.lng, from.lat], [to.lng, to.lat]], distance: dist, duration: 0 });
+          }
         } else if (isStraightLike(modes[i])) {
           legResults.push(await fetchSingleLegRoute(from, to, 'straight'));
         } else {
@@ -1276,6 +1536,19 @@ export function ExpeditionBuilderPage() {
   // Handle changing a single leg's route mode via the map popup
   const handleLegModeChangeRef = useRef<(legIndex: number, newMode: RouteMode) => void>(() => {});
   handleLegModeChangeRef.current = async (legIndex: number, newMode: RouteMode) => {
+    // Switching away from an 'imported' leg is destructive — the trackpoints
+    // from the uploaded file get overwritten with a fresh directions fetch and
+    // cannot be recovered without re-importing. Confirm before proceeding.
+    const existingMode = perLegModesRef.current[legIndex];
+    if (existingMode === 'imported' && newMode !== 'imported') {
+      const ok = window.confirm(
+        `Replace imported trackpoints for leg ${legIndex + 1}?\n\n` +
+          `The GPS track you uploaded for this leg will be replaced with a ${newMode} route. ` +
+          `To get the imported trackpoints back, you'll need to re-import the route file.`,
+      );
+      if (!ok) return;
+    }
+
     // Abort any previous per-leg fetch
     if (legModeAbortRef.current) legModeAbortRef.current.abort();
     const abortController = new AbortController();
@@ -1645,6 +1918,15 @@ export function ExpeditionBuilderPage() {
           return;
         }
 
+        // Adopted (blueprint-derived) expeditions are route-locked — the
+        // server rejects waypoint and route edits, and the quick-entry flow
+        // is the supported editor for them. Redirect anyone who lands here
+        // via a stale link or direct URL.
+        if (expedition.isRouteLocked) {
+          router.push(`/expedition-quick-entry/${expeditionId}`);
+          return;
+        }
+
         setExpeditionData({
           title: expedition.title || '',
           regions: expedition.region ? expedition.region.split(', ').map((r: string) => r.trim()).filter(Boolean) : [],
@@ -1770,6 +2052,10 @@ export function ExpeditionBuilderPage() {
             location: '', // Not in API response
             date: toDateString(wp.date),
             description: wp.description || '',
+            elevationM:
+              typeof wp.elevationM === 'number' && Number.isFinite(wp.elevationM)
+                ? wp.elevationM
+                : undefined,
             entryIds: wp.entryIds || (wp.entryId ? [wp.entryId] : []),
           }));
           // Initialize routeOrder from saved sequence (API returns ORDER BY sequence ASC)
@@ -1821,6 +2107,11 @@ export function ExpeditionBuilderPage() {
         // Restore waterway obstacles
         if (expedition.routeObstacles?.length) {
           setWaterwayObstacles(expedition.routeObstacles);
+        }
+
+        // Restore per-expedition route export toggle (defaults true for legacy rows)
+        if ((expedition as any).routeExportAllowed !== undefined) {
+          setRouteExportAllowed((expedition as any).routeExportAllowed ?? true);
         }
 
         // Load entries (read-only context for builder)
@@ -1964,6 +2255,9 @@ export function ExpeditionBuilderPage() {
     if (draft.routeObstacles?.length) {
       setWaterwayObstacles(draft.routeObstacles);
     }
+    if ((draft as any).routeExportAllowed !== undefined) {
+      setRouteExportAllowed((draft as any).routeExportAllowed ?? true);
+    }
     if (draft.startDate && draft.endDate) {
       const start = new Date(draft.startDate);
       const end = new Date(draft.endDate);
@@ -2010,7 +2304,9 @@ export function ExpeditionBuilderPage() {
         const payload = {
           title: expeditionData.title,
           description: expeditionData.description,
-          visibility: canCreateBlueprints ? 'public' : expeditionData.visibility,
+          visibility: canCreateBlueprints
+            ? (expeditionData.visibility === 'off-grid' ? 'off-grid' : 'public')
+            : expeditionData.visibility,
           status: 'draft' as const,
           startDate: expeditionData.startDate || undefined,
           endDate: expeditionData.endDate || undefined,
@@ -2031,6 +2327,7 @@ export function ExpeditionBuilderPage() {
           routeLegModes: new Set(perLegModes).size > 1 ? perLegModes : undefined,
           routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
           routeObstacles: waterwayObstacles.length > 0 ? waterwayObstacles : null,
+          routeExportAllowed: canCreateBlueprints ? routeExportAllowed : undefined,
           tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
           isBlueprint: canCreateBlueprints ? true : undefined,
           mode: expeditionMode || undefined,
@@ -2084,6 +2381,7 @@ export function ExpeditionBuilderPage() {
                 return {
                   lat: item.waypoint.coordinates.lat,
                   lon: item.waypoint.coordinates.lng,
+                  elevationM: item.waypoint.elevationM,
                   title: item.waypoint.name || undefined,
                   date: item.waypoint.date || undefined,
                   description: item.waypoint.description || undefined,
@@ -2176,8 +2474,9 @@ export function ExpeditionBuilderPage() {
 
       // Shared helper: create and insert a waypoint
       const addWaypoint = (lat: number, lng: number, name: string, location: string) => {
+        const waypointId = `waypoint-${crypto.randomUUID()}`;
         const newWaypoint: Waypoint = {
-          id: `waypoint-${crypto.randomUUID()}`,
+          id: waypointId,
           sequence: 0,
           name,
           type: 'standard',
@@ -2192,6 +2491,28 @@ export function ExpeditionBuilderPage() {
           const all = [...prev, newWaypoint];
           return updateDistances(all.map((w, i) => ({ ...w, sequence: i })));
         });
+
+        // Fire-and-forget: auto-populate elevation from Open Meteo for the
+        // waypoint we just added. Non-fatal on failure — the backend has a
+        // batch fallback that fills in any missing elevation on sync, so
+        // the worst case here is that the UI doesn't show an elevation
+        // value until the next reload.
+        void (async () => {
+          try {
+            const res = await fetch(
+              `https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lng}`,
+            );
+            if (!res.ok) return;
+            const data = await res.json();
+            const ele = Array.isArray(data?.elevation) ? data.elevation[0] : undefined;
+            if (typeof ele !== 'number' || !Number.isFinite(ele)) return;
+            setWaypoints(prev =>
+              prev.map(w => (w.id === waypointId ? { ...w, elevationM: ele } : w)),
+            );
+          } catch {
+            // Swallow — backend will backfill on sync.
+          }
+        })();
       };
 
       addWaypointRef.current = addWaypoint;
@@ -2493,8 +2814,19 @@ export function ExpeditionBuilderPage() {
     // Wait for map — return without clearing so restored geometry/fingerprint survive
     if (!mapLoaded) return;
 
+    // 'imported' mode short-circuits the fetch pipeline entirely — the trackline
+    // and per-leg geometry were populated by handleRouteImport and must not be
+    // cleared or refetched. Any per-leg switch to a non-imported mode will resize
+    // perLegModes and drop us out of this guard on the next render.
+    const currentLegModes = perLegModesRef.current;
+    const allLegsImported =
+      currentLegModes.length > 0 && currentLegModes.every(m => m === 'imported');
+    if (routeMode === 'imported' && allLegsImported) {
+      return;
+    }
+
     // Reset directions state when all legs are straight or too few waypoints
-    const hasNonStraightLeg = perLegModesRef.current.some(m => !isStraightLike(m));
+    const hasNonStraightLeg = currentLegModes.some(m => !isStraightLike(m));
     if ((isStraightLike(routeMode) && !hasNonStraightLeg) || waypoints.length < 2) {
       lastDirectionsCoordsRef.current = '';
       setDirectionsGeometry(null);
@@ -2511,8 +2843,7 @@ export function ExpeditionBuilderPage() {
     }
 
     // Build fingerprint — include per-leg modes if set, else global mode
-    const currentModes = perLegModesRef.current;
-    const modeStr = currentModes.length > 0 ? currentModes.join(',') : routeMode;
+    const modeStr = currentLegModes.length > 0 ? currentLegModes.join(',') : routeMode;
     const fingerprint = waypoints.map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|')
       + `::${modeStr}::${isRoundTrip}::${waterwayProfile}`;
 
@@ -3896,54 +4227,6 @@ export function ExpeditionBuilderPage() {
             </p>
           </div>
 
-          {/* Location */}
-          <div>
-            <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
-              LOCATION
-              <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
-              {(locationManuallyEdited || locationAutoFilled) && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">{locationManuallyEdited ? '(manually set)' : '(auto-detected)'}</span>}
-            </label>
-            <input
-              type="text"
-              value={locationName}
-              onChange={(e) => { setLocationName(e.target.value); setLocationManuallyEdited(true); }}
-              disabled={waypoints.length === 0}
-              placeholder={waypoints.length > 0 ? 'Detecting from waypoints...' : 'Drop waypoints on the map to auto-detect'}
-              maxLength={200}
-              className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] placeholder:text-[#b5bcc4] dark:placeholder:text-[#616161]"
-            />
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-              Auto-detected from first waypoint coordinates • Edit to override
-            </p>
-          </div>
-
-          {/* Estimated Duration */}
-          <div>
-            <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
-              TRAVEL TIME (HOURS)
-              <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
-              {(durationManuallyEdited || durationAutoFilled) && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">{durationManuallyEdited ? '(manually set)' : '(auto-calculated)'}</span>}
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                value={estimatedDurationH}
-                onChange={(e) => { setEstimatedDurationH(e.target.value); setDurationManuallyEdited(true); }}
-                placeholder={waypoints.length >= 2 ? 'Calculated from route...' : 'Add waypoints to auto-calculate'}
-                min={0}
-                step={0.5}
-                className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] placeholder:text-[#b5bcc4] dark:placeholder:text-[#616161] font-mono"
-              />
-              {estimatedDurationH && Number(estimatedDurationH) > 0 && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#4676ac] font-bold pointer-events-none">
-                  ≈ {formatDuration(Number(estimatedDurationH))}
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-              Auto-calculated from route distance, elevation, and mode • Edit to override
-            </p>
-          </div>
 
           {/* Type selector - shown for all users */}
           <div>
@@ -3966,8 +4249,8 @@ export function ExpeditionBuilderPage() {
             </select>
           </div>
 
-          {/* Vessel & Passage — shown for sail/paddle expeditions, spans full width */}
-          {(expeditionMode === 'sail' || expeditionMode === 'paddle') && (
+          {/* Vessel & Passage — shown for sail expeditions only, spans full width */}
+          {expeditionMode === 'sail' && (
             <div className="md:col-span-2 border-2 border-[#4676ac] p-4 space-y-4">
               <div className="text-xs font-bold dark:text-[#e5e5e5]">VESSEL & PASSAGE</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -4452,7 +4735,7 @@ export function ExpeditionBuilderPage() {
                         {/* Description */}
                         <div>
                           <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">
-                            DESCRIPTION {selectedWaypointData.entryIds.length === 0 && <><span className="text-[#616161] dark:text-[#b5bcc4]">(Optional)</span> <span className="text-[#616161] dark:text-[#b5bcc4] font-mono">({(selectedWaypointData.description || '').length}/500)</span></>}
+                            DESCRIPTION {selectedWaypointData.entryIds.length === 0 && <><span className="text-[#616161] dark:text-[#b5bcc4]">(Optional)</span> <span className="text-[#616161] dark:text-[#b5bcc4] font-mono">({(selectedWaypointData.description || '').length}/{waypointDescriptionMax})</span></>}
                           </label>
                           {selectedWaypointData.entryIds.length > 0 ? (
                             <div className="bg-[#f5f5f5] dark:bg-[#1a1a1a] border border-[#b5bcc4] dark:border-[#616161] px-3 py-2 text-sm dark:text-[#e5e5e5] min-h-[120px]">
@@ -4462,7 +4745,7 @@ export function ExpeditionBuilderPage() {
                             <textarea
                               value={selectedWaypointData.description || ''}
                               onChange={(e) => handleUpdateWaypoint(selectedWaypoint!, { description: e.target.value })}
-                              maxLength={500}
+                              maxLength={waypointDescriptionMax}
                               className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
                               rows={8}
                               placeholder="Add notes about this waypoint..."
@@ -4471,7 +4754,7 @@ export function ExpeditionBuilderPage() {
                           <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
                             {selectedWaypointData.entryIds.length > 0
                               ? 'Locked — edit this entry to change description'
-                              : 'Max 500 characters • Add notes, observations, or details'}
+                              : `Max ${waypointDescriptionMax.toLocaleString()} characters • Add notes, observations, or details`}
                           </p>
                         </div>
 
@@ -4486,6 +4769,16 @@ export function ExpeditionBuilderPage() {
                             <span>Sequence:</span>
                             <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{selectedWaypointData.sequence + 1} of {waypoints.length}</span>
                           </div>
+                          {typeof selectedWaypointData.elevationM === 'number' && Number.isFinite(selectedWaypointData.elevationM) && (
+                            <div className="flex justify-between">
+                              <span>Elevation:</span>
+                              <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">
+                                {unit === 'mi'
+                                  ? `${Math.round(selectedWaypointData.elevationM * 3.28084).toLocaleString()} ft`
+                                  : `${Math.round(selectedWaypointData.elevationM).toLocaleString()} m`}
+                              </span>
+                            </div>
+                          )}
                           {(selectedWaypointData.distanceFromPrevious ?? 0) > 0 && (
                               <div className="flex justify-between">
                                 <span>Distance from Previous:</span>
@@ -4574,10 +4867,40 @@ export function ExpeditionBuilderPage() {
             )}
             {/* Waypoint List */}
             <div className="flex-1 overflow-y-auto min-h-0">
-                <div className="px-4 py-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161] sticky top-0 z-10 space-y-1.5">
+                <div className="px-4 py-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161] sticky top-0 z-10 space-y-2">
+                  {/* Row 1: title + CLEAR ALL */}
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold dark:text-[#e5e5e5] whitespace-nowrap">ROUTE ({routeItems.length})</h3>
-                    <div className="flex items-center gap-3">
+                    {waypoints.length > 0 && (
+                      <button
+                        onClick={() => setConfirmingClearAll(true)}
+                        className="text-[10px] text-[#ac6d46] hover:text-[#8a5738] font-bold transition-all whitespace-nowrap"
+                      >
+                        CLEAR ALL
+                      </button>
+                    )}
+                  </div>
+                  {/* Row 2: action buttons (wrap on narrow widths) */}
+                  <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => setShowRouteImportModal(true)}
+                        className="px-2.5 py-1 text-[10px] text-white bg-[#598636] hover:bg-[#4a702c] font-bold transition-all flex items-center gap-1.5 whitespace-nowrap"
+                        title="Import a GPX, KML, or GeoJSON route file"
+                      >
+                        <Upload size={11} />
+                        IMPORT ROUTE
+                      </button>
+                      {waypoints.length >= 2 && (expeditionId || draftId) && (
+                        <button
+                          onClick={handleExportGpx}
+                          disabled={isExportingGpx}
+                          className="px-2.5 py-1 text-[10px] text-white bg-[#ac6d46] hover:bg-[#8a5738] disabled:opacity-60 disabled:cursor-not-allowed font-bold transition-all flex items-center gap-1.5 whitespace-nowrap"
+                          title="Download the route as a GPX file for Gaia, Garmin, Komoot, etc."
+                        >
+                          {isExportingGpx ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} />}
+                          EXPORT GPX
+                        </button>
+                      )}
                       {waypoints.length >= 2 && (
                         <button
                           onClick={() => setShowRouteSearch(true)}
@@ -4588,16 +4911,7 @@ export function ExpeditionBuilderPage() {
                           FIND ALONG ROUTE
                         </button>
                       )}
-                      {waypoints.length > 0 && (
-                        <button
-                          onClick={() => setConfirmingClearAll(true)}
-                          className="text-[10px] text-[#ac6d46] hover:text-[#8a5738] font-bold transition-all whitespace-nowrap"
-                        >
-                          CLEAR ALL
-                        </button>
-                      )}
                     </div>
-                  </div>
                   {totalDistance > 0 && (
                     <div className="text-[10px] text-[#4676ac] font-mono">
                       {formatDistance(totalDistance, 1)} total
@@ -4851,7 +5165,14 @@ export function ExpeditionBuilderPage() {
                                     </div>
                                   )}
                                   <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono space-y-0.5">
-                                    <div className="truncate">{Math.abs(waypoint.coordinates.lat).toFixed(4)}°{waypoint.coordinates.lat >= 0 ? 'N' : 'S'}, {Math.abs(waypoint.coordinates.lng).toFixed(4)}°{waypoint.coordinates.lng >= 0 ? 'E' : 'W'}</div>
+                                    <div className="truncate">
+                                      {Math.abs(waypoint.coordinates.lat).toFixed(4)}°{waypoint.coordinates.lat >= 0 ? 'N' : 'S'}, {Math.abs(waypoint.coordinates.lng).toFixed(4)}°{waypoint.coordinates.lng >= 0 ? 'E' : 'W'}
+                                      {typeof waypoint.elevationM === 'number' && Number.isFinite(waypoint.elevationM) && (
+                                        <> · {unit === 'mi'
+                                          ? `${Math.round(waypoint.elevationM * 3.28084).toLocaleString()} ft`
+                                          : `${Math.round(waypoint.elevationM).toLocaleString()} m`}</>
+                                      )}
+                                    </div>
                                     {!canCreateBlueprints && waypoint.date && (
                                       <div className="text-[#ac6d46]">{waypoint.date}</div>
                                     )}
@@ -5121,6 +5442,61 @@ export function ExpeditionBuilderPage() {
         </div>
 
         <div className="p-4 md:p-6">
+          {/* Route-derived fields — location and travel time populate automatically
+              from the waypoints dropped on the map above. Placed here (not in the
+              identity section) so users don't try to fill them before touching the
+              map. Auto-fill effects respect locationManuallyEdited / durationManuallyEdited
+              flags, so once a guide types an override it stays sticky. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 pb-6 border-b-2 border-[#b5bcc4] dark:border-[#616161]">
+            <div>
+              <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
+                STARTING LOCATION
+                <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
+                {(locationManuallyEdited || locationAutoFilled) && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">{locationManuallyEdited ? '(manually set)' : '(auto-detected)'}</span>}
+              </label>
+              <input
+                type="text"
+                value={locationName}
+                onChange={(e) => { setLocationName(e.target.value); setLocationManuallyEdited(true); }}
+                disabled={waypoints.length === 0}
+                placeholder={waypoints.length > 0 ? 'Detecting from waypoints...' : 'Drop waypoints on the map above to auto-detect'}
+                maxLength={200}
+                className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] placeholder:text-[#b5bcc4] dark:placeholder:text-[#616161] disabled:opacity-60"
+              />
+              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
+                Auto-detected from first waypoint coordinates • Edit to override
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
+                TRAVEL TIME (HOURS)
+                <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
+                {(durationManuallyEdited || durationAutoFilled) && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">{durationManuallyEdited ? '(manually set)' : '(auto-calculated)'}</span>}
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={estimatedDurationH}
+                  onChange={(e) => { setEstimatedDurationH(e.target.value); setDurationManuallyEdited(true); }}
+                  disabled={waypoints.length < 2}
+                  placeholder={waypoints.length >= 2 ? 'Calculated from route...' : 'Add waypoints on the map above to auto-calculate'}
+                  min={0}
+                  step={0.5}
+                  className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] placeholder:text-[#b5bcc4] dark:placeholder:text-[#616161] font-mono disabled:opacity-60"
+                />
+                {estimatedDurationH && Number(estimatedDurationH) > 0 && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#4676ac] font-bold pointer-events-none">
+                    ≈ {formatDuration(Number(estimatedDurationH))}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
+                Auto-calculated from route distance, elevation, and mode • Edit to override
+              </p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Column */}
             <div className="space-y-4">
@@ -5460,7 +5836,9 @@ export function ExpeditionBuilderPage() {
             </div>
           )}
 
-          {/* Privacy Settings - Radio buttons matching quick entry, hidden for guides (blueprints always public) */}
+          {/* Privacy Settings - Radio buttons matching quick entry */}
+          {/* Non-blueprints: full Public / Off-Grid / Private picker. */}
+          {/* Blueprints: Public + Off-Grid only — Private would defeat the adoption/discovery loop. */}
           {!canCreateBlueprints && (
           <div className="mt-6 border-2 border-[#4676ac] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
             <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">
@@ -5557,6 +5935,67 @@ export function ExpeditionBuilderPage() {
                 </div>
               </div>
             )}
+          </div>
+          )}
+
+          {/* Blueprint visibility — mirrors the standard visibility box (Public + Off-Grid only) */}
+          {canCreateBlueprints && (
+          <div className="mt-6 border-2 border-[#4676ac] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+            <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">VISIBILITY:</div>
+
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <input
+                  type="radio"
+                  id="bp-visibility-public"
+                  name="bp-visibility"
+                  className="mt-1"
+                  checked={expeditionData.visibility !== 'off-grid'}
+                  onChange={() => setExpeditionData({ ...expeditionData, visibility: 'public' })}
+                />
+                <label htmlFor="bp-visibility-public" className="text-xs">
+                  <div className="font-bold text-[#202020] dark:text-[#e5e5e5]">PUBLIC BLUEPRINT</div>
+                  <div className="text-[#616161] dark:text-[#b5bcc4] mt-1">
+                    Listed in blueprint discovery, search, and your guide profile. Any explorer can find, rate, and adopt this blueprint.
+                  </div>
+                </label>
+              </div>
+              <div className="flex items-start gap-2">
+                <input
+                  type="radio"
+                  id="bp-visibility-offgrid"
+                  name="bp-visibility"
+                  className="mt-1"
+                  checked={expeditionData.visibility === 'off-grid'}
+                  onChange={() => setExpeditionData({ ...expeditionData, visibility: 'off-grid' })}
+                />
+                <label htmlFor="bp-visibility-offgrid" className="text-xs">
+                  <div className="font-bold text-[#202020] dark:text-[#e5e5e5]">OFF-GRID BLUEPRINT</div>
+                  <div className="text-[#616161] dark:text-[#b5bcc4] mt-1">
+                    Hidden from discovery and search. Only accessible via direct link — useful for private clients, beta testers, or unlisted routes.
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+          )}
+
+          {/* Route export toggle — separate box, mirrors the EARLY ENTRY ACCESS pattern */}
+          {canCreateBlueprints && (
+          <div className="mt-6 border-2 border-[#ac6d46] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+            <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">ROUTE EXPORT</div>
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="route-export-allowed"
+                className="mt-1"
+                checked={routeExportAllowed}
+                onChange={(e) => setRouteExportAllowed(e.target.checked)}
+              />
+              <label htmlFor="route-export-allowed" className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                When enabled, viewers and adopters can download the full GPX track for navigation on their own device. Disable to keep the exact route private — viewers still see it on the map but cannot download it. You can always export your own route.
+              </label>
+            </div>
           </div>
           )}
         </div>
@@ -5688,6 +6127,17 @@ export function ExpeditionBuilderPage() {
           </ConfirmationModal>
         );
       })()}
+
+      {/* Route File Import Modal */}
+      <RouteImportModal
+        isOpen={showRouteImportModal}
+        onClose={() => setShowRouteImportModal(false)}
+        onImport={(route, file) => {
+          void handleRouteImport(route, file);
+        }}
+        existingWaypointCount={waypoints.length}
+        descriptionMaxChars={waypointDescriptionMax}
+      />
 
       {/* Clear All Waypoints Confirmation Modal */}
       <ConfirmationModal

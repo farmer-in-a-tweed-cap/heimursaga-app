@@ -1,5 +1,6 @@
 import { MapPin } from "lucide-react";
 import { formatDate } from "@/app/utils/dateFormat";
+import { useDistanceUnit } from "@/app/context/DistanceUnitContext";
 
 interface WaypointCardLandscapeProps {
   id: string;
@@ -34,6 +35,7 @@ export function WaypointCardLandscape({
   isCurrent = false,
   onClick,
 }: WaypointCardLandscapeProps) {
+  const { unit } = useDistanceUnit();
   // Determine marker color based on position
   const getMarkerColor = () => {
     if (isStart) return 'bg-[#ac6d46]'; // copper for start
@@ -104,11 +106,13 @@ export function WaypointCardLandscape({
                   {latitude.toFixed(6)}°, {longitude.toFixed(6)}°
                 </div>
               </div>
-              {elevation !== undefined && (
+              {elevation !== undefined && Number.isFinite(elevation) && (
                 <div>
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Elevation:</span>
                   <div className="text-xs dark:text-[#e5e5e5] mt-0.5">
-                    {elevation.toLocaleString()}m
+                    {unit === 'mi'
+                      ? `${Math.round(elevation * 3.28084).toLocaleString()} ft`
+                      : `${Math.round(elevation).toLocaleString()} m`}
                   </div>
                 </div>
               )}

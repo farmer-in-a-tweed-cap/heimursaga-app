@@ -543,14 +543,14 @@ export class ExplorerService {
         // Contact info is only exposed on guide profiles — guides opt in
         // to being contacted about in-person guided expeditions.
         phoneNumber: explorer.is_guide
-          ? (explorer.profile?.phone_number ?? undefined)
+          ? explorer.profile?.phone_number ?? undefined
           : undefined,
         preferredContactMethod: explorer.is_guide
-          ? ((explorer.profile?.preferred_contact_method as
+          ? (explorer.profile?.preferred_contact_method as
               | 'email'
               | 'phone'
               | 'message'
-              | null) ?? undefined)
+              | null) ?? undefined
           : undefined,
         contactEmail:
           explorer.is_guide &&
@@ -1702,7 +1702,11 @@ export class SessionExplorerService {
               raised: true,
               sponsors_count: true,
               bookmarks_count: true,
-              _count: { select: { entries: { where: { deleted_at: null, is_draft: false } } } },
+              _count: {
+                select: {
+                  entries: { where: { deleted_at: null, is_draft: false } },
+                },
+              },
               author: {
                 select: {
                   username: true,
@@ -1886,13 +1890,7 @@ export class SessionExplorerService {
               },
             })
             .then(
-              ({
-                email,
-                username,
-                is_email_verified,
-                is_guide,
-                profile,
-              }) => {
+              ({ email, username, is_email_verified, is_guide, profile }) => {
                 return {
                   email,
                   username,

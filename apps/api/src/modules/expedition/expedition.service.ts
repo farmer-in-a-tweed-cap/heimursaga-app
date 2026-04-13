@@ -46,7 +46,17 @@ import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { IUserNotificationCreatePayload } from '@/modules/notification';
 import { PrismaService } from '@/modules/prisma';
+import { IUploadedFile } from '@/modules/upload/upload.interface';
 import { UploadService } from '@/modules/upload/upload.service';
+
+import {
+  ImportedRoute,
+  ROUTE_IMPORT_LIMITS,
+  RouteImportSourceFormat,
+  buildGpx,
+  haversineDistanceKm,
+  parseRouteFile,
+} from './route-import.util';
 
 @Injectable()
 export class ExpeditionService {
@@ -347,7 +357,11 @@ export class ExpeditionService {
           elevation_max_m: true,
           elevation_gain_m: true,
           estimated_duration_h: true,
-          _count: { select: { entries: { where: { deleted_at: null, is_draft: false } } } },
+          _count: {
+            select: {
+              entries: { where: { deleted_at: null, is_draft: false } },
+            },
+          },
           author_id: true,
           author: {
             select: {
@@ -610,7 +624,11 @@ export class ExpeditionService {
           adoptions_count: true,
           average_rating: true,
           ratings_count: true,
-          _count: { select: { entries: { where: { deleted_at: null, is_draft: false } } } },
+          _count: {
+            select: {
+              entries: { where: { deleted_at: null, is_draft: false } },
+            },
+          },
           author_id: true,
           start_date: true,
           end_date: true,
@@ -905,6 +923,7 @@ export class ExpeditionService {
             elevation_gain_m: true,
             estimated_duration_h: true,
             route_obstacles: true,
+            route_export_allowed: true,
             current_location_type: true,
             current_location_id: true,
             current_location_visibility: true,
@@ -1023,6 +1042,7 @@ export class ExpeditionService {
                     title: true,
                     lat: true,
                     lon: true,
+                    elevation_m: true,
                     date: true,
                     description: true,
                     entries: {
@@ -1061,6 +1081,7 @@ export class ExpeditionService {
         route_geometry,
         route_leg_modes,
         route_obstacles,
+        route_export_allowed,
         current_location_type,
         current_location_id,
         current_location_visibility,
@@ -1327,6 +1348,7 @@ export class ExpeditionService {
         routeObstacles: route_obstacles
           ? JSON.parse(route_obstacles)
           : undefined,
+        routeExportAllowed: route_export_allowed ?? true,
         currentLocationVisibility:
           (current_location_visibility as 'public' | 'sponsors' | 'private') ||
           'public',
@@ -1548,11 +1570,21 @@ export class ExpeditionService {
         waypoints: waypoints.map(
           ({
             sequence,
-            waypoint: { id, lat, lon, title, date, description, entries },
+            waypoint: {
+              id,
+              lat,
+              lon,
+              elevation_m,
+              title,
+              date,
+              description,
+              entries,
+            },
           }) => ({
             id,
             lat,
             lon,
+            elevationM: elevation_m ?? undefined,
             title,
             date,
             description,
@@ -1726,7 +1758,9 @@ export class ExpeditionService {
           status: (() => {
             if (isBlueprint || payload.status === 'draft') return 'draft';
             const now = new Date();
-            const start = payload.startDate ? new Date(payload.startDate) : null;
+            const start = payload.startDate
+              ? new Date(payload.startDate)
+              : null;
             const end = payload.endDate ? new Date(payload.endDate) : null;
             if (start && end && end <= now) return 'completed';
             if (start && start <= now) return 'active';
@@ -1762,6 +1796,7 @@ export class ExpeditionService {
           route_obstacles: payload.routeObstacles
             ? JSON.stringify(payload.routeObstacles)
             : null,
+          route_export_allowed: (payload as any).routeExportAllowed ?? true,
           goal: isBlueprint
             ? 0
             : payload.goal
@@ -2087,11 +2122,15 @@ export class ExpeditionService {
           ? JSON.stringify(payload.routeObstacles)
           : null;
       }
+      if ((payload as any).routeExportAllowed !== undefined) {
+        updateData.route_export_allowed = !!(payload as any).routeExportAllowed;
+      }
       if ((payload as any).mode !== undefined) {
         updateData.mode = (payload as any).mode || null;
       }
       if ((payload as any).estimatedDurationH !== undefined) {
-        updateData.estimated_duration_h = (payload as any).estimatedDurationH ?? null;
+        updateData.estimated_duration_h =
+          (payload as any).estimatedDurationH ?? null;
       }
       if ((payload as any).vesselName !== undefined) {
         updateData.vessel_name = (payload as any).vesselName || null;
@@ -2899,6 +2938,7 @@ export class ExpeditionService {
           elevation_gain_m: true,
           estimated_duration_h: true,
           route_obstacles: true,
+          route_export_allowed: true,
           goal: true,
           notes_access_threshold: true,
           notes_visibility: true,
@@ -2963,6 +3003,7 @@ export class ExpeditionService {
           routeObstacles: d.route_obstacles
             ? JSON.parse(d.route_obstacles)
             : undefined,
+          routeExportAllowed: d.route_export_allowed ?? true,
           goal: integerToDecimal(d.goal ?? 0),
           notesAccessThreshold: integerToDecimal(d.notes_access_threshold ?? 0),
           notesVisibility: d.notes_visibility || 'public',
@@ -3158,6 +3199,7 @@ export class ExpeditionService {
       waypoints: Array<{
         lat: number;
         lon: number;
+        elevationM?: number;
         title?: string;
         date?: string;
         description?: string;
@@ -3203,6 +3245,51 @@ export class ExpeditionService {
         );
       }
 
+      // Resolve a per-waypoint elevation for every row BEFORE we open the
+      // write transaction, so we can persist it inline on create. The client
+      // (or the route-import parser) may have already supplied elevationM —
+      // prefer that. For any waypoint missing a value, batch-fetch from Open
+      // Meteo in a single request. Failures are non-fatal: we simply leave
+      // elevation_m null on those rows (legacy behaviour).
+      const resolvedElevations: Array<number | null> = payload.waypoints.map(
+        (wp) =>
+          typeof wp.elevationM === 'number' && Number.isFinite(wp.elevationM)
+            ? wp.elevationM
+            : null,
+      );
+      const missingIndexes = resolvedElevations
+        .map((v, i) => (v === null ? i : -1))
+        .filter((i) => i >= 0);
+      if (missingIndexes.length > 0) {
+        try {
+          const lats = missingIndexes
+            .map((i) => payload.waypoints[i].lat)
+            .join(',');
+          const lons = missingIndexes
+            .map((i) => payload.waypoints[i].lon)
+            .join(',');
+          const elevRes = await fetch(
+            `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`,
+          );
+          if (elevRes.ok) {
+            const elevData = await elevRes.json();
+            const fetched: unknown[] = Array.isArray(elevData?.elevation)
+              ? elevData.elevation
+              : [];
+            missingIndexes.forEach((wpIdx, arrIdx) => {
+              const v = fetched[arrIdx];
+              if (typeof v === 'number' && Number.isFinite(v)) {
+                resolvedElevations[wpIdx] = v;
+              }
+            });
+          }
+        } catch (elevErr) {
+          this.logger.warn(
+            `Per-waypoint elevation fetch failed: ${elevErr instanceof Error ? elevErr.message : elevErr}`,
+          );
+        }
+      }
+
       await this.prisma.$transaction(
         async (tx) => {
           // Delete existing waypoint joins and orphaned waypoints
@@ -3237,8 +3324,9 @@ export class ExpeditionService {
 
           // Create new waypoints and link entries in parallel
           await Promise.all(
-            payload.waypoints.map(async (wp) => {
+            payload.waypoints.map(async (wp, idx) => {
               const dateTime = wp.date ? new Date(wp.date) : null;
+              const elevationM = resolvedElevations[idx];
               const result = await tx.expeditionWaypoint.create({
                 data: {
                   sequence: wp.sequence,
@@ -3247,6 +3335,7 @@ export class ExpeditionService {
                       title: wp.title,
                       lat: wp.lat,
                       lon: wp.lon,
+                      elevation_m: elevationM,
                       date: dateTime,
                       description: wp.description,
                     },
@@ -3278,41 +3367,289 @@ export class ExpeditionService {
         { timeout: 15000 },
       );
 
-      // Fetch elevation data for all waypoints and compute stats
-      if (payload.waypoints.length >= 1) {
-        try {
-          const lats = payload.waypoints.map((w) => w.lat).join(',');
-          const lons = payload.waypoints.map((w) => w.lon).join(',');
-          const elevRes = await fetch(
-            `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`,
-          );
-          if (elevRes.ok) {
-            const elevData = await elevRes.json();
-            const elevations: number[] = elevData.elevation || [];
-            if (elevations.length > 0) {
-              // Cumulative ascent
-              let gain = 0;
-              for (let i = 1; i < elevations.length; i++) {
-                const diff = elevations[i] - elevations[i - 1];
-                if (diff > 0) gain += diff;
-              }
-
-              const updateData: Record<string, unknown> = {
-                elevation_min_m: Math.min(...elevations),
-                elevation_max_m: Math.max(...elevations),
-                elevation_gain_m: gain,
-              };
-
-              await this.prisma.expedition.update({
-                where: { id: expedition.id },
-                data: updateData,
-              });
-            }
+      // Recompute expedition-level elevation stats (min/max/gain) from the
+      // same resolved-per-waypoint values we just persisted. Keeps the
+      // aggregate fields in sync with the individual waypoint rows.
+      const knownElevations = resolvedElevations.filter(
+        (v): v is number => typeof v === 'number' && Number.isFinite(v),
+      );
+      if (knownElevations.length > 0) {
+        let gain = 0;
+        for (let i = 1; i < resolvedElevations.length; i++) {
+          const a = resolvedElevations[i - 1];
+          const b = resolvedElevations[i];
+          if (
+            typeof a === 'number' &&
+            typeof b === 'number' &&
+            Number.isFinite(a) &&
+            Number.isFinite(b)
+          ) {
+            const diff = b - a;
+            if (diff > 0) gain += diff;
           }
-        } catch (elevErr) {
-          this.logger.warn(`Elevation fetch failed: ${elevErr.message}`);
+        }
+        try {
+          await this.prisma.expedition.update({
+            where: { id: expedition.id },
+            data: {
+              elevation_min_m: Math.min(...knownElevations),
+              elevation_max_m: Math.max(...knownElevations),
+              elevation_gain_m: gain,
+            },
+          });
+        } catch (statsErr) {
+          this.logger.warn(
+            `Elevation stats update failed: ${statsErr instanceof Error ? statsErr.message : statsErr}`,
+          );
         }
       }
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  /**
+   * Guide-only: accept a GPX / KML / GeoJSON file, parse it, and replace the
+   * blueprint's waypoints + route geometry in a single atomic flow. Delegates
+   * the waypoint write to `syncExpeditionWaypoints` so elevation backfill,
+   * entry unlinking, and transaction semantics stay consistent with manual
+   * editing.
+   */
+  async importRouteFile({
+    session,
+    query,
+    payload,
+  }: ISessionQueryWithPayload<
+    { id: string },
+    { file: IUploadedFile }
+  >): Promise<{
+    waypointCount: number;
+    trackPointCount: number;
+    distanceKm: number;
+    sourceFormat: RouteImportSourceFormat;
+  }> {
+    try {
+      const { id } = query;
+      const { explorerId } = session;
+      const file = payload?.file;
+
+      if (!explorerId) throw new ServiceForbiddenException();
+      if (!id) throw new ServiceNotFoundException('expedition not found');
+      if (!file || !file.buffer || file.buffer.length === 0) {
+        throw new ServiceBadRequestException('No file provided');
+      }
+      if (file.size > ROUTE_IMPORT_LIMITS.MAX_FILE_BYTES) {
+        throw new ServiceBadRequestException(
+          `File exceeds ${ROUTE_IMPORT_LIMITS.MAX_FILE_BYTES / (1024 * 1024)} MB limit`,
+        );
+      }
+
+      const expedition = await this.prisma.expedition
+        .findFirstOrThrow({
+          where: { public_id: id, author_id: explorerId, deleted_at: null },
+          select: {
+            id: true,
+            is_blueprint: true,
+            is_route_locked: true,
+            status: true,
+          },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('expedition not found');
+        });
+
+      if (expedition.is_route_locked) {
+        throw new ServiceForbiddenException(
+          'Waypoints cannot be modified on locked routes',
+        );
+      }
+      if (expedition.status === 'cancelled') {
+        throw new ServiceForbiddenException(
+          'Waypoints cannot be modified on cancelled expeditions',
+        );
+      }
+
+      let parsed: ImportedRoute;
+      try {
+        parsed = parseRouteFile(file.buffer, file.originalname);
+      } catch (parseErr) {
+        const msg =
+          parseErr instanceof Error ? parseErr.message : 'parse error';
+        throw new ServiceBadRequestException(msg);
+      }
+
+      // Reuse the existing waypoint sync path so elevation/backfill/unlink
+      // behavior stays identical to manual editing. Pass elevationM through
+      // when the GPX/GeoJSON `<ele>` tag was present — the sync path will
+      // fall back to Open Meteo only for waypoints that arrive without one.
+      await this.syncExpeditionWaypoints({
+        session,
+        query: { id },
+        payload: {
+          waypoints: parsed.waypoints.map((w, i) => ({
+            lat: w.lat,
+            lon: w.lon,
+            elevationM: w.elevationM,
+            title: w.title,
+            description: w.description,
+            sequence: i,
+          })),
+        },
+      });
+
+      // Persist the raw trackline + distance + source mode on the expedition row.
+      const trackPointCoords = parsed.trackPoints.map((c) => [c[0], c[1]]);
+      const distanceKm =
+        parsed.trackPoints.length >= 2
+          ? haversineDistanceKm(parsed.trackPoints)
+          : parsed.distanceKm;
+      await this.prisma.expedition.update({
+        where: { id: expedition.id },
+        data: {
+          route_geometry:
+            trackPointCoords.length >= 2
+              ? JSON.stringify(trackPointCoords)
+              : null,
+          route_mode: 'imported',
+          route_distance_km: Math.round(distanceKm * 1000) / 1000,
+        },
+      });
+
+      return {
+        waypointCount: parsed.waypoints.length,
+        trackPointCount: parsed.trackPoints.length,
+        distanceKm,
+        sourceFormat: parsed.sourceFormat,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  /**
+   * Serialize an expedition's waypoints + trackline to a GPX 1.1 XML document.
+   * Access rules mirror getExpeditionById: the author can always export; other
+   * users can export published blueprints. Drafts and private expeditions are
+   * owner-only.
+   */
+  async exportRouteGpx({
+    session,
+    query,
+  }: IQueryWithSession<{ id: string }>): Promise<{
+    filename: string;
+    gpx: string;
+  }> {
+    try {
+      const { id } = query;
+      const { explorerId } = session;
+
+      if (!id) throw new ServiceNotFoundException('expedition not found');
+
+      const expedition = await this.prisma.expedition
+        .findFirstOrThrow({
+          where: { public_id: id, deleted_at: null },
+          select: {
+            id: true,
+            public_id: true,
+            author_id: true,
+            blueprint_id: true,
+            title: true,
+            description: true,
+            status: true,
+            is_blueprint: true,
+            route_geometry: true,
+            route_export_allowed: true,
+            waypoints: {
+              where: { waypoint: { deleted_at: null } },
+              orderBy: { sequence: 'asc' },
+              select: {
+                waypoint: {
+                  select: {
+                    lat: true,
+                    lon: true,
+                    elevation_m: true,
+                    title: true,
+                    description: true,
+                  },
+                },
+              },
+            },
+          },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('expedition not found');
+        });
+
+      // Owner-only: random viewers of a blueprint detail page can never
+      // download the GPX — they must adopt the blueprint first, which creates
+      // their own derived expedition that they'll own.
+      const isOwner = !!explorerId && expedition.author_id === explorerId;
+      if (!isOwner) {
+        throw new ServiceForbiddenException(
+          'You do not have permission to export this route',
+        );
+      }
+      // Guide's "allow route export" flag propagates from the source blueprint
+      // to the adopted derived row (see adoptBlueprint). If the guide disabled
+      // downloads, the adopter cannot GPX-export even though they own the row.
+      // Guides exporting their own blueprint bypass this check — they need to
+      // validate their own routes.
+      if (
+        !expedition.is_blueprint &&
+        expedition.blueprint_id &&
+        expedition.route_export_allowed === false
+      ) {
+        throw new ServiceForbiddenException(
+          'The guide disabled route downloads for this blueprint',
+        );
+      }
+
+      // Parse stored trackline. route_geometry is a JSON-encoded [[lng,lat], ...].
+      let trackPoints: number[][] = [];
+      if (expedition.route_geometry) {
+        try {
+          const parsed = JSON.parse(expedition.route_geometry);
+          if (Array.isArray(parsed)) {
+            trackPoints = parsed.filter(
+              (c): c is number[] =>
+                Array.isArray(c) &&
+                c.length >= 2 &&
+                Number.isFinite(c[0]) &&
+                Number.isFinite(c[1]),
+            );
+          }
+        } catch {
+          // Corrupt geometry — fall through with empty trackline.
+          trackPoints = [];
+        }
+      }
+
+      const gpx = buildGpx({
+        name: expedition.title || 'Heimursaga Route',
+        description: expedition.description,
+        waypoints: expedition.waypoints.map(({ waypoint: w }) => ({
+          lat: w.lat,
+          lon: w.lon,
+          elevationM: w.elevation_m ?? undefined,
+          name: w.title,
+          description: w.description,
+        })),
+        trackPoints,
+      });
+
+      const safeSlug =
+        (expedition.title || 'route')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+          .slice(0, 60) || 'route';
+      const filename = `${safeSlug}-${expedition.public_id}.gpx`;
+
+      return { filename, gpx };
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;
@@ -3557,6 +3894,7 @@ export class ExpeditionService {
             route_geometry: true,
             route_leg_modes: true,
             route_distance_km: true,
+            route_export_allowed: true,
             elevation_min_m: true,
             elevation_max_m: true,
             elevation_gain_m: true,
@@ -3577,6 +3915,7 @@ export class ExpeditionService {
                     title: true,
                     lat: true,
                     lon: true,
+                    elevation_m: true,
                     description: true,
                   },
                 },
@@ -3589,10 +3928,7 @@ export class ExpeditionService {
         });
 
       // Return existing adoption if this user already adopted this blueprint
-      if (
-        existingAdoption &&
-        existingAdoption.blueprint_id === blueprint.id
-      ) {
+      if (existingAdoption && existingAdoption.blueprint_id === blueprint.id) {
         return { expeditionId: existingAdoption.public_id };
       }
 
@@ -3617,6 +3953,10 @@ export class ExpeditionService {
               route_geometry: blueprint.route_geometry,
               route_leg_modes: blueprint.route_leg_modes,
               route_distance_km: blueprint.route_distance_km,
+              // Inherit the guide's export preference — adopters cannot flip
+              // this on if the guide disabled it. Propagated at adoption time
+              // so the flag is self-contained on the derived row.
+              route_export_allowed: blueprint.route_export_allowed ?? true,
               elevation_min_m: blueprint.elevation_min_m,
               elevation_max_m: blueprint.elevation_max_m,
               elevation_gain_m: blueprint.elevation_gain_m,
@@ -3637,7 +3977,8 @@ export class ExpeditionService {
             },
           });
 
-          // Copy waypoints
+          // Copy waypoints (including per-waypoint elevation — saves the
+          // adopter from a re-fetch against Open Meteo on first save).
           for (const wp of blueprint.waypoints) {
             await tx.expeditionWaypoint.create({
               data: {
@@ -3647,6 +3988,7 @@ export class ExpeditionService {
                     title: wp.waypoint.title,
                     lat: wp.waypoint.lat,
                     lon: wp.waypoint.lon,
+                    elevation_m: wp.waypoint.elevation_m,
                     description: wp.waypoint.description,
                   },
                 },

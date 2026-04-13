@@ -229,7 +229,7 @@ export function GuideMarketingPage() {
                 { mode: 'Trail', color: '#598636', desc: 'Backcountry and hiking trails via Valhalla engine. Optimized for track and trail networks with hiking difficulty awareness.' },
                 { mode: 'Cycling', color: '#9b59b6', desc: 'Bike-specific routing with road and cycle path preference. Mapbox Directions API.' },
                 { mode: 'Driving', color: '#d35400', desc: 'Motor vehicle routing on the road network. Mapbox Directions API.' },
-                { mode: 'Waterway', color: '#ac6d46', desc: 'Paddle and motorboat routing on rivers, canals, and navigable waterways. Custom A* pathfinding on OpenStreetMap water network.' },
+                { mode: 'Waterway', color: '#f59e0b', desc: 'Paddle and motorboat routing on rivers, canals, and navigable waterways. Custom A* pathfinding on OpenStreetMap water network.' },
                 { mode: 'Straight Line', color: '#999999', desc: 'Direct point-to-point. Great-circle distance. Used for off-network segments or as a manual override.' },
               ].map((item) => (
                 <div key={item.mode} className="border-l-3 pl-3" style={{ borderLeftWidth: 3, borderLeftColor: item.color }}>

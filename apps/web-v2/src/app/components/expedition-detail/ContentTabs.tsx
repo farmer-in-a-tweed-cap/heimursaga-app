@@ -419,7 +419,7 @@ export function ContentTabs({
                           date={item.wp.date}
                           latitude={item.wp.coords.lat}
                           longitude={item.wp.coords.lng}
-                          elevation={undefined}
+                          elevation={item.wp.elevationM}
                           views={0}
                           markerNumber={item.markerNum}
                           isStart={item.wp.id === waypoints[0]?.id}

@@ -10,11 +10,18 @@ import {
   Post,
   Put,
   Query,
+  Res,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { FastifyReply } from 'fastify';
 
 import { Public, Session } from '@/common/decorators';
+import { FileInterceptor } from '@/common/interceptors';
 import { ISession } from '@/common/interfaces';
+import { IUploadedFile } from '@/modules/upload/upload.interface';
 
 import {
   BlueprintReviewCreateDto,
@@ -83,6 +90,54 @@ export class ExpeditionController {
       payload: body,
       session,
     });
+  }
+
+  @Post(':trip_id/import-route')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short: { limit: 5, ttl: 60_000 },
+    medium: { limit: 10, ttl: 300_000 },
+    long: { limit: 30, ttl: 3_600_000 },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        files: 1,
+        fileSize: 5 * 1024 * 1024, // 5 MB — matches ROUTE_IMPORT_LIMITS.MAX_FILE_BYTES
+      },
+    }),
+  )
+  async importExpeditionRoute(
+    @Session() session: ISession,
+    @Param() param: ExpeditionParamDto,
+    @UploadedFile() file: IUploadedFile,
+  ) {
+    return await this.expeditionService.importRouteFile({
+      query: { id: param.trip_id },
+      payload: { file },
+      session,
+    });
+  }
+
+  @Public()
+  @Get(':trip_id/export-route.gpx')
+  @Throttle({
+    short: { limit: 10, ttl: 60_000 },
+    medium: { limit: 30, ttl: 300_000 },
+  })
+  async exportExpeditionRoute(
+    @Session() session: ISession,
+    @Param() param: ExpeditionParamDto,
+    @Res() reply: FastifyReply,
+  ) {
+    const { filename, gpx } = await this.expeditionService.exportRouteGpx({
+      query: { id: param.trip_id },
+      session,
+    });
+    reply
+      .header('Content-Type', 'application/gpx+xml; charset=utf-8')
+      .header('Content-Disposition', `attachment; filename="${filename}"`)
+      .send(gpx);
   }
 
   @Public()

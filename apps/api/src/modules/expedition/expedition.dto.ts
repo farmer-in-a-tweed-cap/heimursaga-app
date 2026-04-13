@@ -168,6 +168,11 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
+  routeExportAllowed?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
   earlyAccessEnabled?: boolean;
 
   @ApiProperty({ required: false })
@@ -362,6 +367,11 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
+  routeExportAllowed?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
   earlyAccessEnabled?: boolean;
 
   @ApiProperty({ required: false })
@@ -486,8 +496,13 @@ export class WaypointCreateDto implements IWaypointCreatePayload {
   @SanitizeText()
   @IsString()
   @IsOptional()
-  @MaxLength(1000)
+  @MaxLength(4000)
   description?: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  elevationM?: number;
 
   @ApiProperty({ required: false })
   @IsNumber()
@@ -524,8 +539,13 @@ export class WaypointUpdateDto implements IWaypointUpdatePayload {
   @SanitizeText()
   @IsString()
   @IsOptional()
-  @MaxLength(1000)
+  @MaxLength(4000)
   description?: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  elevationM?: number;
 
   @ApiProperty({ required: false })
   @IsNumber()
@@ -562,8 +582,13 @@ class WaypointSyncItemDto {
   @SanitizeText()
   @IsString()
   @IsOptional()
-  @MaxLength(1000)
+  @MaxLength(4000)
   description?: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  elevationM?: number;
 
   @ApiProperty({ required: true })
   @IsNumber()

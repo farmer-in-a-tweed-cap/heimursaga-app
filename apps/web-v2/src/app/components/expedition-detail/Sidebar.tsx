@@ -1,15 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { Star } from 'lucide-react';
+import { Download, Star } from 'lucide-react';
 import { formatCurrency } from '@/app/utils/formatCurrency';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { useState, useEffect } from 'react';
 import { Anchor } from 'lucide-react';
+import { ElevationChart } from '@/app/components/expedition-detail/ElevationChart';
 import type { TransformedExpedition, WaypointType, FundingStats, SponsorWithTotal } from '@/app/components/expedition-detail/types';
 import type { ExpeditionCondition, BlueprintReview, MarineConditions } from '@/app/services/api';
-import { weatherApi } from '@/app/services/api';
+import { expeditionApi, weatherApi } from '@/app/services/api';
 import { getPerksForSlot, getTierLabel } from '@repo/types/sponsorship-tiers';
 import type { SponsorshipTierFull } from '@/app/services/api';
 
@@ -34,6 +35,8 @@ interface SidebarProps {
   monthlyTiers: SponsorshipTierFull[];
   isRouteLocked?: boolean;
   isBlueprint?: boolean;
+  blueprintId?: string;
+  routeExportAllowed?: boolean;
   reviews?: BlueprintReview[];
   averageRating?: number;
   ratingsCount?: number;
@@ -198,6 +201,8 @@ export function Sidebar({
   monthlyTiers,
   isRouteLocked,
   isBlueprint,
+  blueprintId,
+  routeExportAllowed,
   reviews = [],
   averageRating,
   ratingsCount,
@@ -205,6 +210,31 @@ export function Sidebar({
   const oneTimeSponsorsCount = new Set(
     sponsors.filter(s => s.type?.toLowerCase() !== 'subscription').map(s => s.user?.username)
   ).size;
+
+  // Route GPX download is allowed only for owners of blueprint-derived
+  // expeditions, and only when the source guide hasn't disabled exports.
+  // Plain (non-derived) expeditions and standalone blueprints cannot be
+  // downloaded from this viewer surface — guides export from the builder.
+  const canDownloadRoute =
+    isOwner &&
+    !isBlueprint &&
+    !!blueprintId &&
+    routeExportAllowed !== false;
+  const [isDownloading, setIsDownloading] = useState(false);
+  const handleDownloadRoute = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+    try {
+      await expeditionApi.exportRouteGpx(expedition.id);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : 'Failed to download route';
+      // eslint-disable-next-line no-alert
+      alert(msg);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -263,29 +293,20 @@ export function Sidebar({
             >
               MANAGE EXPEDITION
             </button>
+            {canDownloadRoute && (
+              <button
+                onClick={handleDownloadRoute}
+                disabled={isDownloading}
+                className="w-full py-2 border-2 border-[#ac6d46] text-[#ac6d46] hover:bg-[#ac6d46] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                title="Download the blueprint route as a GPX file"
+              >
+                <Download size={14} />
+                {isDownloading ? 'DOWNLOADING...' : 'DOWNLOAD ROUTE'}
+              </button>
+            )}
           </div>
         </div>
       )}
-
-      {/* Expedition Details */}
-      <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-        <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-          EXPEDITION DETAILS
-        </h3>
-        <div className="text-xs font-mono space-y-2 text-[#616161] dark:text-[#b5bcc4]">
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">ID:</span> {expedition.id}</div>
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Status:</span> {expedition.status}</div>
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Category:</span> {expedition.category || 'Not set'}</div>
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Region:</span> {expedition.region || 'Not set'}</div>
-          {expedition.locationName && (
-            <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Location:</span> {expedition.locationName}</div>
-          )}
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Started:</span> {formatDate(expedition.startDate)}</div>
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Est. End:</span> {formatDate(expedition.estimatedEndDate)}</div>
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Duration:</span> {expedition.daysActive} / {totalDuration || '?'} days</div>
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Privacy:</span> {expedition.privacy === 'off-grid' ? 'Off-Grid' : expedition.privacy === 'private' ? 'Private' : 'Public'}</div>
-        </div>
-      </div>
 
       {/* Vessel Details */}
       {expedition.vesselName && (
@@ -305,6 +326,9 @@ export function Sidebar({
       {(expedition.mode === 'sail' || expedition.mode === 'paddle') && weatherCondition && (
         <MarineWeatherCard lat={weatherCondition.lat} lon={weatherCondition.lon} />
       )}
+
+      {/* Elevation Profile — standard expeditions only (blueprints show it full-width above tabs) */}
+      {!isBlueprint && <ElevationChart waypoints={waypoints} />}
 
       {/* Funding Breakdown - only show if sponsorships enabled */}
       {showSponsorshipSection && (
@@ -427,6 +451,26 @@ export function Sidebar({
           )}
         </div>
       )}
+
+      {/* Expedition Details */}
+      <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
+        <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
+          EXPEDITION DETAILS
+        </h3>
+        <div className="text-xs font-mono space-y-2 text-[#616161] dark:text-[#b5bcc4]">
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">ID:</span> {expedition.id}</div>
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Status:</span> {expedition.status}</div>
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Category:</span> {expedition.category || 'Not set'}</div>
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Region:</span> {expedition.region || 'Not set'}</div>
+          {expedition.locationName && (
+            <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Location:</span> {expedition.locationName}</div>
+          )}
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Started:</span> {formatDate(expedition.startDate)}</div>
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Est. End:</span> {formatDate(expedition.estimatedEndDate)}</div>
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Duration:</span> {expedition.daysActive} / {totalDuration || '?'} days</div>
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Privacy:</span> {expedition.privacy === 'off-grid' ? 'Off-Grid' : expedition.privacy === 'private' ? 'Private' : 'Public'}</div>
+        </div>
+      </div>
 
       {/* Tags */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">

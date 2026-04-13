@@ -11,7 +11,11 @@ export const ROUTE_MODE_STYLES: Record<string, { color: string; label: string; d
   cycling:  { color: '#9b59b6', label: 'Cycling', dash: null, width: 4 },
   driving:  { color: '#d35400', label: 'Driving', dash: null, width: 4 },
   trail:    { color: '#598636', label: 'Trail', dash: [4, 2], width: 4 },
-  waterway: { color: '#ac6d46', label: 'Waterway', dash: [6, 3], width: 4 },
+  waterway: { color: '#f59e0b', label: 'Waterway', dash: [6, 3], width: 4 },
+  // Imported routes from GPX/KML/GeoJSON files — rendered verbatim from the
+  // uploaded trackline. Not user-selectable in the mode picker; set only by
+  // the route-import flow.
+  imported: { color: '#ac6d46', label: 'Imported', dash: null, width: 4 },
 };
 
 // ---------------------------------------------------------------------------

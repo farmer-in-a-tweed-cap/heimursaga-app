@@ -564,6 +564,7 @@ export interface IWaypoint {
   id: number;
   lat: number;
   lon: number;
+  elevationM?: number;
   title?: string;
   description?: string;
   date?: Date;
@@ -591,6 +592,7 @@ export interface IWaypointDetail extends IWaypoint {
 export interface IWaypointCreatePayload {
   lat: number;
   lon: number;
+  elevationM?: number;
   title?: string;
   description?: string;
   date?: Date;
@@ -613,10 +615,38 @@ export interface IWaypointGetByIdResponse extends IWaypointDetail {}
 export interface IWaypointUpdatePayload {
   lat?: number;
   lon?: number;
+  elevationM?: number;
   date?: Date;
   title?: string;
   description?: string;
   sequence?: number;
+}
+
+// Route file import (guide-only): GPX / KML / GeoJSON uploaded into the blueprint builder
+export type RouteImportSourceFormat = 'gpx' | 'kml' | 'geojson';
+
+export interface IImportedRouteWaypoint {
+  lat: number;
+  lon: number;
+  title?: string;
+  description?: string;
+  sequence: number;
+  elevationM?: number;
+}
+
+export interface IImportedRoute {
+  name?: string;
+  sourceFormat: RouteImportSourceFormat;
+  waypoints: IImportedRouteWaypoint[];
+  trackPoints: Array<[number, number] | [number, number, number]>; // [lng, lat] or [lng, lat, ele]
+  distanceKm: number;
+}
+
+export interface IRouteImportResponse {
+  waypointCount: number;
+  trackPointCount: number;
+  distanceKm: number;
+  sourceFormat: RouteImportSourceFormat;
 }
 
 // upload
@@ -953,6 +983,7 @@ export interface ITripDetail {
   routeDistanceKm?: number;
   routeLegModes?: string[];
   routeObstacles?: { lat: number; lon: number; type: string; name: string | null }[];
+  routeExportAllowed?: boolean;
   elevationMinM?: number;
   elevationMaxM?: number;
   elevationGainM?: number;
@@ -1081,6 +1112,7 @@ export interface ITripCreatePayload {
   routeDistanceKm?: number;
   routeLegModes?: string[];
   routeObstacles?: { lat: number; lon: number; type: string; name: string | null }[];
+  routeExportAllowed?: boolean;
   estimatedDurationH?: number;
   isBlueprint?: boolean;
   mode?: string;
@@ -1138,6 +1170,7 @@ export interface ITripUpdatePayload {
   routeDistanceKm?: number;
   routeLegModes?: string[];
   routeObstacles?: { lat: number; lon: number; type: string; name: string | null }[];
+  routeExportAllowed?: boolean;
   estimatedDurationH?: number;
   mode?: string;
   vesselName?: string;

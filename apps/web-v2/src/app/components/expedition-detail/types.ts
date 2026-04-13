@@ -4,6 +4,7 @@ export type WaypointType = {
   location: string;
   description?: string;
   coords: { lat: number; lng: number };
+  elevationM?: number;
   date: string;
   status: 'completed' | 'current' | 'planned';
   notes?: string;

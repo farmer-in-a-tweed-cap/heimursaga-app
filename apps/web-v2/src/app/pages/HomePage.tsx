@@ -13,6 +13,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { Globe, Users, Loader2 } from "lucide-react";
 import { expeditionApi, explorerApi, entryApi, type Expedition, type ExplorerListItem, type Entry } from "@/app/services/api";
+import { useProFeatures } from "@/app/hooks/useProFeatures";
+import { ConfirmationModal } from "@/app/components/ConfirmationModal";
+import { toast } from "sonner";
 import { truncateExcerpt } from "@/app/utils/truncateExcerpt";
 import { calculateDaysElapsed } from "@/app/utils/dateFormat";
 import { getExplorerStatus, getCurrentExpeditionInfo } from "@/app/components/ExplorerStatusBadge";
@@ -34,7 +37,6 @@ function transformExpedition(exp: Expedition) {
     daysElapsed: calculateDaysElapsed(exp.startDate, exp.endDate, exp.status),
     daysRemaining: exp.endDate ? Math.max(0, Math.floor((new Date(exp.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null,
     journalEntries: exp.entriesCount || 0,
-    lastUpdate: '',
     fundingGoal: exp.goal || 0,
     fundingCurrent: totalRaised,
     fundingPercentage: exp.goal ? Math.min((totalRaised / exp.goal) * 100, 100) : 0,
@@ -50,6 +52,17 @@ function transformExpedition(exp: Expedition) {
     sponsorshipsEnabled: (exp.goal || 0) > 0,
     explorerIsPro: (exp.goal || 0) > 0,
     stripeConnected: exp.author?.stripeAccountConnected === true,
+    isBlueprint: exp.isBlueprint === true,
+    mode: exp.mode,
+    adoptionsCount: exp.adoptionsCount ?? 0,
+    averageRating: exp.averageRating,
+    ratingsCount: exp.ratingsCount ?? 0,
+    elevationMinM: exp.elevationMinM,
+    elevationMaxM: exp.elevationMaxM,
+    estimatedDurationH: exp.estimatedDurationH,
+    waypointCoords: (exp.waypoints || [])
+      .filter(w => w.lat != null && w.lon != null)
+      .map(w => ({ lat: w.lat!, lng: w.lon! })),
   };
 }
 
@@ -98,7 +111,8 @@ function transformEntry(entry: Entry) {
 
 export function HomePage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { canAdoptBlueprints } = useProFeatures();
   const [viewMode, setViewMode] = useState<'global' | 'following'>('global');
   const [viewModeRestored, setViewModeRestored] = useState(false);
 
@@ -135,10 +149,41 @@ export function HomePage() {
   const [bookmarkedExplorers, setBookmarkedExplorers] = useState<Set<string>>(new Set());
   const [bookmarkedExpeditions, setBookmarkedExpeditions] = useState<Set<string>>(new Set());
 
+  // Blueprint adoption state
+  const [showActiveExpeditionModal, setShowActiveExpeditionModal] = useState(false);
+
   // Loading states
   const [explorerBookmarkingInProgress, setExplorerBookmarkingInProgress] = useState<Set<string>>(new Set());
   const [explorerFollowingInProgress, setExplorerFollowingInProgress] = useState<Set<string>>(new Set());
   const [expeditionBookmarkingInProgress, setExpeditionBookmarkingInProgress] = useState<Set<string>>(new Set());
+
+  // Handle adopt blueprint
+  const handleAdoptBlueprint = async (expeditionId: string) => {
+    if (!isAuthenticated) {
+      router.push('/auth');
+      return;
+    }
+    if (!canAdoptBlueprints) {
+      toast.error('Guide accounts cannot launch blueprints');
+      return;
+    }
+    try {
+      const userExps = await explorerApi.getExpeditions(user!.username);
+      const hasActiveOrPlanned = userExps.data.some(
+        (e: any) => (e.status === 'active' || e.status === 'planned'),
+      );
+      if (hasActiveOrPlanned) {
+        setShowActiveExpeditionModal(true);
+        return;
+      }
+      const res = await expeditionApi.adopt(expeditionId);
+      router.push(`/expedition-quick-entry/${res.expeditionId}`);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : 'Failed to launch blueprint';
+      toast.error(msg);
+    }
+  };
 
   // Handle bookmark explorer
   const handleBookmarkExplorer = async (username: string) => {
@@ -509,6 +554,7 @@ export function HomePage() {
                             isBookmarked={bookmarkedExpeditions.has(expedition.id)}
                             isBookmarkLoading={expeditionBookmarkingInProgress.has(expedition.id)}
                             onBookmark={() => handleBookmarkExpedition(expedition.id)}
+                            onAdopt={() => handleAdoptBlueprint(expedition.id)}
                           />
                         ))}
                       </div>
@@ -562,6 +608,7 @@ export function HomePage() {
                         isBookmarked={bookmarkedExpeditions.has(expedition.id)}
                         isBookmarkLoading={expeditionBookmarkingInProgress.has(expedition.id)}
                         onBookmark={() => handleBookmarkExpedition(expedition.id)}
+                        onAdopt={() => handleAdoptBlueprint(expedition.id)}
                       />
                     ))}
                   </div>
@@ -632,6 +679,17 @@ export function HomePage() {
           </>
         )}
       </div>
+      <ConfirmationModal
+        isOpen={showActiveExpeditionModal}
+        onClose={() => setShowActiveExpeditionModal(false)}
+        onConfirm={() => setShowActiveExpeditionModal(false)}
+        title="Cannot Launch Blueprint"
+        confirmLabel="OK"
+      >
+        <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
+          You already have an active or planned expedition. Complete or cancel your current expedition before launching a new one from a blueprint.
+        </p>
+      </ConfirmationModal>
     </>
   );
 }

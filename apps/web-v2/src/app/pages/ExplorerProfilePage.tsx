@@ -16,9 +16,12 @@ import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { CoverPhotoFallback } from '@/app/components/CoverPhotoFallback';
 import { getExplorerStatus, getCurrentExpeditionInfo } from '@/app/components/ExplorerStatusBadge';
 import { useAuth } from '@/app/context/AuthContext';
+import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { calculateDaysElapsed } from '@/app/utils/dateFormat';
 import { truncateExcerpt } from '@/app/utils/truncateExcerpt';
 import { explorerApi, entryApi, expeditionApi, type ExplorerProfile, type ExplorerEntry, type ExplorerExpedition, type ExplorerFollower } from '@/app/services/api';
+import { ConfirmationModal } from '@/app/components/ConfirmationModal';
+import { toast } from 'sonner';
 import { CountryFlag } from '@/app/components/CountryFlag';
 import { ContinentIcon } from '@/app/components/ContinentIcon';
 import { calculatePassport } from '@/app/utils/passportCalculator';
@@ -69,6 +72,7 @@ export function ExplorerProfilePage() {
   const { username } = useParams<{ username: string }>();
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
+  const { canAdoptBlueprints } = useProFeatures();
 
   // API data state
   const [profile, setProfile] = useState<ExplorerProfile | null>(null);
@@ -88,6 +92,35 @@ export function ExplorerProfilePage() {
   const [entriesLimit, setEntriesLimit] = useState(5);
   const [reportOpen, setReportOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [showActiveExpeditionModal, setShowActiveExpeditionModal] = useState(false);
+
+  // Handle adopt blueprint
+  const handleAdoptBlueprint = async (expeditionId: string) => {
+    if (!isAuthenticated) {
+      router.push('/auth');
+      return;
+    }
+    if (!canAdoptBlueprints) {
+      toast.error('Guide accounts cannot launch blueprints');
+      return;
+    }
+    try {
+      const userExps = await explorerApi.getExpeditions(user!.username);
+      const hasActiveOrPlanned = userExps.data.some(
+        (e: any) => (e.status === 'active' || e.status === 'planned'),
+      );
+      if (hasActiveOrPlanned) {
+        setShowActiveExpeditionModal(true);
+        return;
+      }
+      const res = await expeditionApi.adopt(expeditionId);
+      router.push(`/expedition-quick-entry/${res.expeditionId}`);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : 'Failed to launch blueprint';
+      toast.error(msg);
+    }
+  };
 
   // Handle bookmark explorer profile
   const handleBookmarkExplorer = async () => {
@@ -1013,7 +1046,6 @@ export function ExplorerProfilePage() {
                     startDate={expedition.startDate}
                     endDate={expedition.endDate || null}
                     journalEntries={expedition.entriesCount}
-                    lastUpdate=""
                     fundingGoal={expedition.goal}
                     fundingCurrent={expedition.raised}
                     fundingPercentage={expedition.goal > 0 ? (expedition.raised / expedition.goal) * 100 : 0}
@@ -1042,6 +1074,7 @@ export function ExplorerProfilePage() {
                     waypointCoords={(expedition.waypoints || [])
                       .filter((w: any) => w.lat != null && w.lon != null)
                       .map((w: any) => ({ lat: w.lat, lng: w.lon }))}
+                    onAdopt={() => handleAdoptBlueprint(expedition.id)}
                   />
                 ))
               ) : (
@@ -1456,6 +1489,17 @@ export function ExplorerProfilePage() {
           onClose={() => setContactOpen(false)}
         />
       )}
+      <ConfirmationModal
+        isOpen={showActiveExpeditionModal}
+        onClose={() => setShowActiveExpeditionModal(false)}
+        onConfirm={() => setShowActiveExpeditionModal(false)}
+        title="Cannot Launch Blueprint"
+        confirmLabel="OK"
+      >
+        <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
+          You already have an active or planned expedition. Complete or cancel your current expedition before launching a new one from a blueprint.
+        </p>
+      </ConfirmationModal>
     </div>
   );
 }

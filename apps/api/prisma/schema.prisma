@@ -369,11 +369,12 @@ model Waypoint {
   id          Int                   @id @default(autoincrement())
   lat         Float
   lon         Float
+  elevation_m Float?                // metres above sea level, auto-populated from Open Meteo on create/sync
   public      Boolean?              @default(true)
   created_at  DateTime?             @default(now())
   updated_at  DateTime?             @updatedAt
   deleted_at  DateTime?
-  description String?               @db.VarChar(500)
+  description String?               @db.Text
   title       String?               @db.VarChar(200)
   date        DateTime?
   author_id   Int?
@@ -419,6 +420,7 @@ model Expedition {
   elevation_gain_m      Float?               // Total cumulative ascent in meters
   estimated_duration_h  Float?               // Estimated route duration in hours
   route_obstacles       String?              @db.Text        // JSON-encoded waterway obstacles [{lat,lon,type,name}]
+  route_export_allowed  Boolean?             @default(true)  // Whether non-owners (viewers, adopters) can download the route as GPX
   current_location_type       String?              @db.VarChar(10) // 'waypoint' or 'entry'
   current_location_id         String?              @db.VarChar(20) // waypoint ID or entry public_id
   current_location_visibility String?              @default("public") @db.VarChar(10) // 'public', 'sponsors', or 'private'

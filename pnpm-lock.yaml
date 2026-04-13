@@ -97,6 +97,9 @@ importers:
       '@sentry/node':
         specifier: ^10.32.1
         version: 10.32.1
+      '@tmcw/togeojson':
+        specifier: ^7.1.2
+        version: 7.1.2
       '@types/dompurify':
         specifier: ^3.2.0
         version: 3.2.0
@@ -502,6 +505,9 @@ importers:
       '@stripe/stripe-js':
         specifier: ^8.6.3
         version: 8.6.3
+      '@tmcw/togeojson':
+        specifier: ^7.1.2
+        version: 7.1.2
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -10351,6 +10357,10 @@ packages:
   /@tanstack/table-core@8.21.3:
     resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
     engines: {node: '>=12'}
+    dev: false
+
+  /@tmcw/togeojson@7.1.2:
+    resolution: {integrity: sha512-QKnFs9DAuqqBVj4d6c69tV1Dj2TspSBTqffivoN0YoBCVdP/JY1+WaYCJbzU49RkoU5NOSOJ3jtFHCdEUVh21A==}
     dev: false
 
   /@tootallnate/once@2.0.0:

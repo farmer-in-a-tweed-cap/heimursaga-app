@@ -209,6 +209,10 @@ export function useExpeditionData(
         location: wp.entry?.title || wp.title || '',
         description: wp.description || '',
         coords: { lat: wp.lat || 0, lng: wp.lon || 0 },
+        elevationM:
+          typeof wp.elevationM === 'number' && Number.isFinite(wp.elevationM)
+            ? wp.elevationM
+            : undefined,
         date: wp.date || '',
         status: 'planned' as const,
         notes: wp.entry?.content?.substring(0, 100) || '',
@@ -258,6 +262,10 @@ export function useExpeditionData(
         location: wp.entry?.title || wp.title || '',
         description: wp.description || '',
         coords: { lat: wp.lat || 0, lng: wp.lon || 0 },
+        elevationM:
+          typeof wp.elevationM === 'number' && Number.isFinite(wp.elevationM)
+            ? wp.elevationM
+            : undefined,
         date: wp.date || '',
         status,
         notes: wp.entry?.content?.substring(0, 100) || '',

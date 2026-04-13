@@ -228,7 +228,10 @@ async function findNaturalFeatures(
  * a curated list of major water bodies. Checked from most specific (bays/gulfs) to
  * most general (oceans) so smaller bodies take precedence.
  */
-const WATER_BODIES: { name: string; bounds: [number, number, number, number] }[] = [
+const WATER_BODIES: {
+  name: string;
+  bounds: [number, number, number, number];
+}[] = [
   // [minLon, minLat, maxLon, maxLat]
   // North America
   { name: 'Gulf of Maine', bounds: [-71, 42, -65, 45.5] },
@@ -384,7 +387,8 @@ export async function reverseGeocodeLocation(
 
     // If standard geocoding found admin context, use the normal land-based flow
     if (mapboxResult) {
-      const { placeName, countryCode, countryName, stateProvince } = mapboxResult;
+      const { placeName, countryCode, countryName, stateProvince } =
+        mapboxResult;
       const { point: searchPoint, area } = features;
 
       // Tilequery result (feature the waypoint is literally on) takes precedence

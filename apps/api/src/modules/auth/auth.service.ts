@@ -1335,7 +1335,9 @@ export class AuthService {
         throw new ServiceNotFoundException('User not found');
       }
 
-      this.logger.log(`[DELETE_ACCOUNT] Starting account deletion for user ${userId} (${user.username})`);
+      this.logger.log(
+        `[DELETE_ACCOUNT] Starting account deletion for user ${userId} (${user.username})`,
+      );
 
       // Cancel active Stripe subscriptions (Explorer Pro)
       if (user.stripe_customer_id) {
@@ -1346,48 +1348,68 @@ export class AuthService {
           });
           for (const sub of subscriptions.data) {
             await this.stripeService.subscriptions.cancel(sub.id);
-            this.logger.log(`[DELETE_ACCOUNT] Cancelled Stripe subscription ${sub.id}`);
+            this.logger.log(
+              `[DELETE_ACCOUNT] Cancelled Stripe subscription ${sub.id}`,
+            );
           }
         } catch (e) {
-          this.logger.error(`[DELETE_ACCOUNT] Error cancelling subscriptions: ${e.message}`);
+          this.logger.error(
+            `[DELETE_ACCOUNT] Error cancelling subscriptions: ${e.message}`,
+          );
         }
       }
 
       // Cancel active sponsorships the user has given
       const givenSponsorships = await this.prisma.sponsorship.findMany({
-        where: { sponsor_id: userId, status: 'active', stripe_subscription_id: { not: null } },
+        where: {
+          sponsor_id: userId,
+          status: 'active',
+          stripe_subscription_id: { not: null },
+        },
         select: { id: true, stripe_subscription_id: true },
       });
       for (const sp of givenSponsorships) {
         try {
           if (sp.stripe_subscription_id) {
-            await this.stripeService.subscriptions.cancel(sp.stripe_subscription_id);
+            await this.stripeService.subscriptions.cancel(
+              sp.stripe_subscription_id,
+            );
           }
           await this.prisma.sponsorship.update({
             where: { id: sp.id },
             data: { status: 'cancelled' },
           });
         } catch (e) {
-          this.logger.error(`[DELETE_ACCOUNT] Error cancelling given sponsorship ${sp.id}: ${e.message}`);
+          this.logger.error(
+            `[DELETE_ACCOUNT] Error cancelling given sponsorship ${sp.id}: ${e.message}`,
+          );
         }
       }
 
       // Cancel active sponsorships the user is receiving (so sponsors stop being charged)
       const receivedSponsorships = await this.prisma.sponsorship.findMany({
-        where: { sponsored_explorer_id: userId, status: 'active', stripe_subscription_id: { not: null } },
+        where: {
+          sponsored_explorer_id: userId,
+          status: 'active',
+          stripe_subscription_id: { not: null },
+        },
         select: { id: true, stripe_subscription_id: true },
       });
       for (const sp of receivedSponsorships) {
         try {
           if (sp.stripe_subscription_id) {
-            await this.stripeService.subscriptions.cancel(sp.stripe_subscription_id);
+            await this.stripeService.subscriptions.cancel(
+              sp.stripe_subscription_id,
+            );
           }
           await this.prisma.sponsorship.update({
             where: { id: sp.id },
             data: { status: 'cancelled' },
           });
         } catch (e) {
-          this.logger.error(`[DELETE_ACCOUNT] Error cancelling received sponsorship ${sp.id}: ${e.message}`);
+          this.logger.error(
+            `[DELETE_ACCOUNT] Error cancelling received sponsorship ${sp.id}: ${e.message}`,
+          );
         }
       }
 
@@ -1396,9 +1418,13 @@ export class AuthService {
         try {
           // Reject the account to prevent further payouts and deactivate it
           await this.stripeService.accounts.del(user.stripe_account_id);
-          this.logger.log(`[DELETE_ACCOUNT] Deleted Stripe Connect account ${user.stripe_account_id}`);
+          this.logger.log(
+            `[DELETE_ACCOUNT] Deleted Stripe Connect account ${user.stripe_account_id}`,
+          );
         } catch (e) {
-          this.logger.error(`[DELETE_ACCOUNT] Error deleting Stripe Connect account: ${e.message}`);
+          this.logger.error(
+            `[DELETE_ACCOUNT] Error deleting Stripe Connect account: ${e.message}`,
+          );
         }
       }
 
@@ -1455,22 +1481,46 @@ export class AuthService {
         await tx.upload.deleteMany({ where: { explorer_id: userId } });
 
         // Delete social data
-        await tx.explorerFollow.deleteMany({ where: { OR: [{ follower_id: userId }, { followee_id: userId }] } });
-        await tx.explorerBookmark.deleteMany({ where: { OR: [{ explorer_id: userId }, { bookmarked_explorer_id: userId }] } });
-        await tx.explorerNotification.deleteMany({ where: { OR: [{ explorer_id: userId }, { mention_explorer_id: userId }] } });
+        await tx.explorerFollow.deleteMany({
+          where: { OR: [{ follower_id: userId }, { followee_id: userId }] },
+        });
+        await tx.explorerBookmark.deleteMany({
+          where: {
+            OR: [{ explorer_id: userId }, { bookmarked_explorer_id: userId }],
+          },
+        });
+        await tx.explorerNotification.deleteMany({
+          where: {
+            OR: [{ explorer_id: userId }, { mention_explorer_id: userId }],
+          },
+        });
         await tx.comment.deleteMany({ where: { author_id: userId } });
         await tx.expeditionNote.deleteMany({ where: { author_id: userId } });
-        await tx.expeditionNoteReply.deleteMany({ where: { author_id: userId } });
-        await tx.expeditionVoiceNote.deleteMany({ where: { author_id: userId } });
+        await tx.expeditionNoteReply.deleteMany({
+          where: { author_id: userId },
+        });
+        await tx.expeditionVoiceNote.deleteMany({
+          where: { author_id: userId },
+        });
         await tx.blueprintReview.deleteMany({ where: { explorer_id: userId } });
         await tx.entryLike.deleteMany({ where: { explorer_id: userId } });
         await tx.entryBookmark.deleteMany({ where: { explorer_id: userId } });
-        await tx.expeditionBookmark.deleteMany({ where: { explorer_id: userId } });
+        await tx.expeditionBookmark.deleteMany({
+          where: { explorer_id: userId },
+        });
         await tx.entryView.deleteMany({ where: { viewer_id: userId } });
-        await tx.message.deleteMany({ where: { OR: [{ sender_id: userId }, { recipient_id: userId }] } });
-        await tx.flag.deleteMany({ where: { OR: [{ reporter_id: userId }, { flagged_explorer_id: userId }] } });
+        await tx.message.deleteMany({
+          where: { OR: [{ sender_id: userId }, { recipient_id: userId }] },
+        });
+        await tx.flag.deleteMany({
+          where: {
+            OR: [{ reporter_id: userId }, { flagged_explorer_id: userId }],
+          },
+        });
         await tx.explorerPlan.deleteMany({ where: { explorer_id: userId } });
-        await tx.explorerSubscription.deleteMany({ where: { explorer_id: userId } });
+        await tx.explorerSubscription.deleteMany({
+          where: { explorer_id: userId },
+        });
 
         // Disable sponsorship tiers
         await tx.sponsorshipTier.updateMany({
@@ -1490,7 +1540,9 @@ export class AuthService {
         });
       });
 
-      this.logger.log(`[DELETE_ACCOUNT] Account deletion complete for user ${userId}`);
+      this.logger.log(
+        `[DELETE_ACCOUNT] Account deletion complete for user ${userId}`,
+      );
     } catch (e) {
       this.logger.error(`[DELETE_ACCOUNT] Error: ${e.message}`);
       if (e.status) throw e;

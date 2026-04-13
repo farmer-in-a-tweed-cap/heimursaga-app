@@ -48,7 +48,6 @@ export function CardShowcase() {
               endDate={null}
 
               journalEntries={89}
-              lastUpdate="4 hours ago"
               fundingGoal={45000}
               fundingCurrent={38750}
               fundingPercentage={86.1}
@@ -73,7 +72,6 @@ export function CardShowcase() {
               endDate="Feb 28, 2025"
 
               journalEntries={42}
-              lastUpdate="8 hours ago"
               fundingGoal={85000}
               fundingCurrent={71200}
               fundingPercentage={83.8}
@@ -98,7 +96,6 @@ export function CardShowcase() {
               endDate="Dec 24, 2024"
 
               journalEntries={28}
-              lastUpdate="12 hours ago"
               fundingGoal={38000}
               fundingCurrent={38000}
               fundingPercentage={100.0}

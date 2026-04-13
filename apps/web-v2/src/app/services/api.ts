@@ -726,6 +726,7 @@ export interface ExpeditionWaypoint {
   description?: string;
   lat?: number;
   lon?: number;
+  elevationM?: number;
   date?: string;
   sequence?: number;
   entryId?: string | null;
@@ -817,6 +818,7 @@ export interface Expedition {
   routeLegModes?: string[];
   routeObstacles?: RouteObstacle[];
   routeDistanceKm?: number;
+  routeExportAllowed?: boolean;
   elevationMinM?: number;
   elevationMaxM?: number;
   elevationGainM?: number;
@@ -1091,8 +1093,89 @@ export const expeditionApi = {
   /**
    * Sync all waypoints for an expedition (atomic replace)
    */
-  syncWaypoints: (id: string, waypoints: Array<{ lat: number; lon: number; title?: string; date?: string; description?: string; sequence: number; entryId?: string; entryIds?: string[] }>) =>
+  syncWaypoints: (id: string, waypoints: Array<{ lat: number; lon: number; elevationM?: number; title?: string; date?: string; description?: string; sequence: number; entryId?: string; entryIds?: string[] }>) =>
     api.put<void>(`/trips/${id}/waypoints/sync`, { waypoints }),
+
+  /**
+   * Guide-only: upload a GPX / KML / GeoJSON route file to replace the
+   * blueprint's waypoints + track geometry in a single server-side operation.
+   */
+  importRoute: async (
+    id: string,
+    file: File,
+  ): Promise<{
+    waypointCount: number;
+    trackPointCount: number;
+    distanceKm: number;
+    sourceFormat: 'gpx' | 'kml' | 'geojson';
+  }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = await getCsrfToken();
+    const response = await fetch(`${API_BASE_URL}/trips/${id}/import-route`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'x-csrf-token': token },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let message = 'Failed to import route file';
+      try {
+        const parsed = JSON.parse(errorText);
+        if (parsed?.message) message = String(parsed.message);
+      } catch {
+        if (errorText) message = errorText;
+      }
+      throw new ApiError(response.status, message);
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Download the expedition's route as a GPX 1.1 file (waypoints + trackline).
+   * Triggers a browser download via an anchor click. Mirrors access rules on
+   * the server: owner-only. For blueprint-derived expeditions, the guide who
+   * authored the source blueprint may additionally disable downloads by
+   * clearing `routeExportAllowed` on the blueprint.
+   */
+  exportRouteGpx: async (id: string): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/trips/${id}/export-route.gpx`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let message = 'Failed to export route';
+      try {
+        const parsed = JSON.parse(errorText);
+        if (parsed?.message) message = String(parsed.message);
+      } catch {
+        if (errorText) message = errorText;
+      }
+      throw new ApiError(response.status, message);
+    }
+
+    // Extract filename from Content-Disposition header if present, else fall
+    // back to a sensible default.
+    const disposition = response.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="?([^"]+)"?/i);
+    const filename = match?.[1] || `route-${id}.gpx`;
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  },
 
   getBlueprints: (params?: { page?: number; limit?: number; mode?: string; region?: string }) => {
     const searchParams = new URLSearchParams();

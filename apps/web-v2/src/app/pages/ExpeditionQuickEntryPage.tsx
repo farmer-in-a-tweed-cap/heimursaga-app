@@ -915,7 +915,11 @@ export function ExpeditionQuickEntryPage() {
                       className="flex-1 py-4 bg-[#4676ac] text-white font-bold hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
                     >
                       {(isSubmitting || uploadingCover) && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {isSubmitting ? 'SAVING...' : uploadingCover ? 'UPLOADING COVER...' : 'SAVE CHANGES'}
+                      {isSubmitting
+                        ? (isFromBlueprint ? 'LAUNCHING...' : 'SAVING...')
+                        : uploadingCover
+                          ? 'UPLOADING COVER...'
+                          : (isFromBlueprint ? 'SAVE AND LAUNCH' : 'SAVE CHANGES')}
                     </button>
                   ) : (
                     <>

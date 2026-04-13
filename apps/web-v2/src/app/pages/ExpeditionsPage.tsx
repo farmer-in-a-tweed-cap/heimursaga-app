@@ -12,6 +12,7 @@ import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { ExpeditionCardSkeleton, SKELETON_COUNT } from '@/app/components/skeletons/CardSkeletons';
 import { ErrorState } from '@/app/components/ErrorState';
 import { ConfirmationModal } from '@/app/components/ConfirmationModal';
+import { toast } from 'sonner';
 
 export function ExpeditionsPage() {
   const router = useRouter();
@@ -45,7 +46,11 @@ export function ExpeditionsPage() {
       router.push('/auth');
       return;
     }
-    if (!canAdoptBlueprints) return;
+    if (!canAdoptBlueprints) {
+      // Guides cannot adopt their own (or any) blueprints — they create them.
+      toast.error('Guide accounts cannot launch blueprints');
+      return;
+    }
     try {
       // Check if user has any active or planned expeditions
       const userExps = await explorerApi.getExpeditions(user!.username);
@@ -59,7 +64,9 @@ export function ExpeditionsPage() {
       const res = await expeditionApi.adopt(expeditionId);
       router.push(`/expedition-quick-entry/${res.expeditionId}`);
     } catch (err) {
-      console.error('Error launching blueprint:', err);
+      const msg =
+        err instanceof Error ? err.message : 'Failed to launch blueprint';
+      toast.error(msg);
     }
   };
 
@@ -207,7 +214,6 @@ export function ExpeditionsPage() {
     currentLocation: '',
     coordinates: '',
     imageUrl: exp.coverImage || 'https://images.unsplash.com/photo-1503806837798-ea0ce2e6402e?w=800',
-    lastUpdate: 'Recently',
     terrain: '',
     averageSpeed: 0,
     daysRemaining: exp.endDate ? Math.max(0, Math.floor((new Date(exp.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null,
@@ -420,7 +426,6 @@ export function ExpeditionsPage() {
                 startDate={expedition.startDate}
                 endDate={expedition.endDate}
                 journalEntries={expedition.entries}
-                lastUpdate={expedition.lastUpdate}
                 fundingGoal={expedition.goal}
                 fundingCurrent={expedition.raised}
                 fundingPercentage={percentage}
@@ -445,6 +450,7 @@ export function ExpeditionsPage() {
                 estimatedDurationH={expedition.estimatedDurationH}
                 waypointCoords={expedition.waypointCoords}
                 onViewJournal={() => router.push(`/expedition/${expedition.id}`)}
+                onViewExplorer={() => router.push(`/journal/${expedition.explorer}`)}
                 onSupport={() => router.push(`/sponsor/${expedition.id}`)}
                 onAdopt={() => handleAdoptBlueprint(expedition.id)}
                 isBookmarked={bookmarkedExpeditions.has(expedition.id)}

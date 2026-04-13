@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Loader2, Compass } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -22,6 +23,7 @@ import { renderClusteredMarkers, computePopupPosition, type EntryCluster } from 
 import { buildMergedRouteCoords } from '@/app/utils/routeSnapping';
 import { HeroBanner } from '@/app/components/expedition-detail/HeroBanner';
 import { StatsBar } from '@/app/components/expedition-detail/StatsBar';
+import { ElevationChart } from '@/app/components/expedition-detail/ElevationChart';
 import { ContentTabs } from '@/app/components/expedition-detail/ContentTabs';
 import { Sidebar } from '@/app/components/expedition-detail/Sidebar';
 import { MapModal } from '@/app/components/expedition-detail/MapModal';
@@ -96,9 +98,14 @@ export function ExpeditionDetailPage() {
     }
     try {
       const result = await expeditionApi.adopt(expeditionId);
-      router.push(`/expedition-builder/${result.expeditionId}`);
-    } catch {
-      // Error handled by API layer
+      // Adopted expeditions are route-locked — the builder cannot edit waypoints
+      // or route geometry, so send adopters to the quick-entry flow instead
+      // (matches ExpeditionsPage.handleAdoptBlueprint).
+      router.push(`/expedition-quick-entry/${result.expeditionId}`);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : 'Failed to launch blueprint';
+      toast.error(msg);
     }
   };
 
@@ -1256,6 +1263,7 @@ export function ExpeditionDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Content Tabs - Left Column */}
         <div className="lg:col-span-2 space-y-6">
+          {apiExpedition?.isBlueprint && <ElevationChart waypoints={waypoints} />}
           <ContentTabs
             selectedView={selectedView}
             onSelectView={setSelectedView}
@@ -1309,6 +1317,8 @@ export function ExpeditionDetailPage() {
           monthlyTiers={monthlyTiers}
           isRouteLocked={apiExpedition?.isRouteLocked}
           isBlueprint={apiExpedition?.isBlueprint}
+          blueprintId={apiExpedition?.blueprintId}
+          routeExportAllowed={apiExpedition?.routeExportAllowed}
           reviews={blueprintReviews}
           averageRating={apiExpedition?.averageRating}
           ratingsCount={apiExpedition?.ratingsCount}

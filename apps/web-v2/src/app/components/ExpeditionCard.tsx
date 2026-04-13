@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect } from "react";
-import { MapPin, DollarSign, Bookmark, Clock, Loader2, EyeOff, Lock, Star } from "lucide-react";
+import { MapPin, DollarSign, Bookmark, Loader2, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -9,6 +9,7 @@ import { RadialProgress } from "@/app/components/ui/radial-progress";
 import { Progress } from "@/app/components/ui/progress";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import { useAuth } from "@/app/context/AuthContext";
+import { useProFeatures } from "@/app/hooks/useProFeatures";
 import { useDistanceUnit } from "@/app/context/DistanceUnitContext";
 import { useTheme } from "@/app/context/ThemeContext";
 import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from "@/app/context/MapLayerContext";
@@ -49,7 +50,6 @@ interface ExpeditionCardProps {
   startDate: string;
   endDate: string | null;
   journalEntries: number;
-  lastUpdate: string;
   fundingGoal: number;
   fundingCurrent: number;
   fundingPercentage: number;
@@ -100,7 +100,6 @@ export function ExpeditionCard({
   startDate,
   endDate,
   journalEntries,
-  lastUpdate,
   fundingGoal,
   fundingCurrent,
   fundingPercentage,
@@ -110,7 +109,6 @@ export function ExpeditionCard({
   status,
   region,
   locationName,
-  visibility,
   sponsorshipsEnabled = true,
   explorerIsPro = false,
   stripeConnected = false,
@@ -132,6 +130,7 @@ export function ExpeditionCard({
   onAdopt,
 }: ExpeditionCardProps) {
   const { isAuthenticated, user } = useAuth();
+  const { canAdoptBlueprints } = useProFeatures();
   const { unit: distanceUnit, distanceLabel } = useDistanceUnit();
   const { theme } = useTheme();
   const { mapLayer, nauticalOverlay } = useMapLayer();
@@ -297,6 +296,13 @@ export function ExpeditionCard({
     cancelled: "bg-[#994040]",
   };
 
+  const statusHex: Record<string, string> = {
+    active: "#ac6d46",
+    completed: "#616161",
+    planned: "#4676ac",
+    cancelled: "#994040",
+  };
+
   const statusLabels: Record<string, string> = {
     active: "ACTIVE EXPEDITION",
     completed: "COMPLETED EXPEDITION",
@@ -355,24 +361,14 @@ export function ExpeditionCard({
           <span className="text-xs font-mono font-semibold tracking-wide text-[#202020] dark:text-[#e5e5e5]">
             {isBlueprint ? 'EXPEDITION BLUEPRINT' : statusLabels[status]}
           </span>
-          {!isBlueprint && visibility && visibility !== 'public' && (
-            <div className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold ${
-              visibility === 'off-grid' ? 'bg-[#6b5c4e] text-white' : 'bg-[#202020] text-white'
-            }`}>
-              {visibility === 'off-grid' ? <EyeOff className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-              {visibility === 'off-grid' ? 'OFF-GRID' : 'PRIVATE'}
-            </div>
-          )}
         </div>
-        {isBlueprint && mode ? (
-          <span className="text-[10px] font-mono font-bold text-[#598636]">
+        {mode && (
+          <span
+            className="text-[10px] font-mono font-bold"
+            style={{ color: isBlueprint ? '#598636' : (statusHex[status] || '#616161') }}
+          >
             {MODE_LABELS[mode] || mode.toUpperCase()}
           </span>
-        ) : (
-          <div className="flex items-center gap-1.5 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
-            <Clock className="h-3.5 w-3.5" />
-            <span>{lastUpdate}</span>
-          </div>
         )}
       </div>
 
@@ -614,7 +610,7 @@ export function ExpeditionCard({
         <div className="flex items-center justify-center gap-2">
           {isBlueprint ? (
             <>
-              {user?.username !== explorer && (
+              {user?.username !== explorer && (!isAuthenticated || canAdoptBlueprints) && (
                 <button
                   onClick={() => {
                     if (!isAuthenticated) {
