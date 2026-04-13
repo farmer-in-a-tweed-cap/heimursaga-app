@@ -844,6 +844,8 @@ export interface Expedition {
   entries?: ExpeditionEntry[];
   cancelledAt?: string;
   cancellationReason?: string;
+  delayedAt?: string;
+  originalStartDate?: string;
   isOwner?: boolean;
   isBlueprint?: boolean;
   blueprintId?: string;

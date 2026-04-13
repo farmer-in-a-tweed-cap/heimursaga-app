@@ -399,6 +399,8 @@ model Expedition {
   deleted_at     DateTime?
   cancelled_at        DateTime?
   cancellation_reason String?              @db.VarChar(500)
+  delayed_at          DateTime?
+  original_start_date DateTime?
   status         String?              @default("planned") @db.VarChar(20) // draft, planned, active, completed, cancelled
   start_date     DateTime?
   end_date       DateTime?

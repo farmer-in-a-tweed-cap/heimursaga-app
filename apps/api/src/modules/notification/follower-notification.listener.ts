@@ -134,6 +134,55 @@ export class FollowerNotificationListener {
     }
   }
 
+  @OnEvent(EVENTS.EXPEDITION_DELAYED)
+  async onExpeditionDelayed(data: {
+    expeditionPublicId: string;
+    creatorId: number;
+    expeditionTitle: string;
+    newStartDate: string;
+    oldStartDate: string;
+  }) {
+    try {
+      const followers = await this.prisma.explorerFollow.findMany({
+        where: { followee_id: data.creatorId },
+        select: {
+          follower_id: true,
+          follower: {
+            select: {
+              profile: {
+                select: { notification_preferences: true },
+              },
+            },
+          },
+        },
+      });
+
+      const body = `"${data.expeditionTitle}" has been delayed to ${data.newStartDate}.`;
+
+      for (const follow of followers) {
+        const prefs =
+          (follow.follower?.profile?.notification_preferences as Record<
+            string,
+            boolean
+          >) || {};
+        if (prefs.entries_following === false) continue;
+
+        this.eventService.trigger<IUserNotificationCreatePayload>({
+          event: EVENTS.NOTIFICATION_CREATE,
+          data: {
+            context: UserNotificationContext.EXPEDITION_DELAYED,
+            userId: follow.follower_id,
+            mentionUserId: data.creatorId,
+            expeditionPublicId: data.expeditionPublicId,
+            body,
+          },
+        });
+      }
+    } catch (e) {
+      this.logger.error('Failed to send follower delay notifications', e);
+    }
+  }
+
   @OnEvent(EVENTS.EXPEDITION_PUBLISHED)
   async onExpeditionPublished(data: {
     expeditionPublicId: string;

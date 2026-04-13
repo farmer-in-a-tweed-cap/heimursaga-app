@@ -109,6 +109,11 @@ function buildPushContent(
         title: 'Achievement',
         body: `You earned the "${payload.passportStampName || 'Achievement'}" stamp!`,
       };
+    case UserNotificationContext.EXPEDITION_DELAYED:
+      return {
+        title: 'Expedition Delayed',
+        body: payload.body || 'An expedition you follow has been delayed.',
+      };
     case UserNotificationContext.NEW_BLUEPRINT:
       return {
         title: 'New Blueprint',
@@ -153,6 +158,7 @@ function buildDeepLink(
     case UserNotificationContext.EXPEDITION_NOTE_REPLY:
     case UserNotificationContext.EXPEDITION_CANCELLED:
     case UserNotificationContext.EXPEDITION_DATE_CHANGED:
+    case UserNotificationContext.EXPEDITION_DELAYED:
       return payload.expeditionPublicId
         ? `expedition/${payload.expeditionPublicId}`
         : undefined;

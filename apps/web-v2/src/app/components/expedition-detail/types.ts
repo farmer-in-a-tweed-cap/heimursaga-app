@@ -79,6 +79,8 @@ export type TransformedExpedition = {
   commentsEnabled: boolean;
   imageUrl: string;
   earlyAccessEnabled?: boolean;
+  delayedAt?: string;
+  originalStartDate?: string;
   mode?: string;
   vesselName?: string;
   vesselType?: string;

@@ -947,6 +947,8 @@ export class ExpeditionService {
             ratings_count: true,
             cancelled_at: true,
             cancellation_reason: true,
+            delayed_at: true,
+            original_start_date: true,
             author_id: true,
             source_blueprint: {
               select: {
@@ -1093,6 +1095,8 @@ export class ExpeditionService {
         entries_count,
         cancelled_at,
         cancellation_reason,
+        delayed_at,
+        original_start_date,
         is_blueprint,
         blueprint_id,
         is_route_locked,
@@ -1378,6 +1382,10 @@ export class ExpeditionService {
         endDate,
         cancelledAt: cancelled_at || undefined,
         cancellationReason: cancellation_reason || undefined,
+        delayedAt: delayed_at || undefined,
+        originalStartDate: original_start_date
+          ? original_start_date.toISOString()
+          : undefined,
         isBlueprint: is_blueprint || false,
         blueprintId: source_blueprint?.public_id || undefined,
         isRouteLocked: is_route_locked || false,
@@ -1886,6 +1894,7 @@ export class ExpeditionService {
           visibility: true,
           status: true,
           start_date: true,
+          original_start_date: true,
           public_id: true,
           title: true,
           author_id: true,
@@ -2022,16 +2031,35 @@ export class ExpeditionService {
                 'Start date can only be changed for planned expeditions',
               );
             }
-            // If expedition already has a start_date, enforce ±30 day limit
             if (expedition.start_date && expedition.status !== 'draft') {
-              const diffMs = Math.abs(
-                newStartDate.getTime() - expedition.start_date.getTime(),
+              const isDelay = newStartDate > expedition.start_date;
+              // Use original_start_date as the anchor to prevent creeping delays
+              const anchorDate =
+                expedition.original_start_date || expedition.start_date;
+              const diffMs = newStartDate.getTime() - anchorDate.getTime();
+              const diffDays = Math.ceil(
+                Math.abs(diffMs) / (1000 * 60 * 60 * 24),
               );
-              const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-              if (diffDays > 30) {
-                throw new ServiceBadRequestException(
-                  'Start date can only be changed within 30 days of the original date',
-                );
+
+              if (isDelay) {
+                // Delays allowed up to 90 days (3 months) from the anchor date
+                if (diffDays > 90) {
+                  throw new ServiceBadRequestException(
+                    'Start date can only be delayed up to 3 months from the original date',
+                  );
+                }
+                // Record delay metadata
+                updateData.delayed_at = new Date();
+                if (!expedition.original_start_date) {
+                  updateData.original_start_date = expedition.start_date;
+                }
+              } else {
+                // Moving earlier: allow back to the original date but not before
+                if (newStartDate < anchorDate) {
+                  throw new ServiceBadRequestException(
+                    'Start date cannot be moved earlier than the original date',
+                  );
+                }
               }
             }
             updateData.start_date = newStartDate;
@@ -2203,36 +2231,82 @@ export class ExpeditionService {
           }
         }
 
-        // Notify sponsors when start date changes
+        // Notify sponsors and followers when start date changes
         if (
           updateData.start_date &&
           expedition.start_date &&
           updateData.start_date.getTime() !== expedition.start_date.getTime()
         ) {
+          const isDelay = updateData.start_date > expedition.start_date;
+          const formattedDate = dateformat(updateData.start_date).format(
+            'MMMM D, YYYY',
+          );
+
           try {
+            // Notify all active sponsors
             const sponsors = await this.prisma.sponsorship.findMany({
               where: {
                 sponsored_explorer_id: explorerId,
                 status: { in: ['active', 'ACTIVE', 'confirmed', 'CONFIRMED'] },
                 deleted_at: null,
               },
-              select: { sponsor_id: true },
+              select: { sponsor_id: true, type: true },
             });
 
-            const formattedDate = dateformat(updateData.start_date).format(
-              'MMMM D, YYYY',
-            );
-            for (const sponsor of sponsors) {
-              this.eventService.trigger<IUserNotificationCreatePayload>({
-                event: EVENTS.NOTIFICATION_CREATE,
+            if (isDelay) {
+              const hasRecurringSponsor = sponsors.some(
+                (s) => s.type === 'subscription',
+              );
+              const delayBody = `"${expedition.title}" has been delayed to ${formattedDate}.${
+                hasRecurringSponsor
+                  ? ' Recurring sponsorships remain active — you may cancel or adjust your sponsorship at any time.'
+                  : ''
+              }`;
+
+              for (const sponsor of sponsors) {
+                const body =
+                  sponsor.type === 'subscription'
+                    ? `"${expedition.title}" has been delayed to ${formattedDate}. Your recurring sponsorship remains active — you may cancel or adjust your sponsorship at any time.`
+                    : delayBody;
+                this.eventService.trigger<IUserNotificationCreatePayload>({
+                  event: EVENTS.NOTIFICATION_CREATE,
+                  data: {
+                    context: UserNotificationContext.EXPEDITION_DELAYED,
+                    userId: sponsor.sponsor_id,
+                    mentionUserId: explorerId,
+                    expeditionPublicId: expedition.public_id,
+                    body,
+                  },
+                });
+              }
+
+              // Notify followers via event (handled by FollowerNotificationListener)
+              this.eventService.trigger({
+                event: EVENTS.EXPEDITION_DELAYED,
                 data: {
-                  context: UserNotificationContext.EXPEDITION_DATE_CHANGED,
-                  userId: sponsor.sponsor_id,
-                  mentionUserId: explorerId,
                   expeditionPublicId: expedition.public_id,
-                  body: `"${expedition.title}" start date has been changed to ${formattedDate}.`,
+                  creatorId: explorerId,
+                  expeditionTitle: expedition.title,
+                  newStartDate: formattedDate,
+                  oldStartDate: dateformat(expedition.start_date).format(
+                    'MMMM D, YYYY',
+                  ),
                 },
               });
+            } else {
+              // Non-delay date change — notify sponsors only
+              for (const sponsor of sponsors) {
+                this.eventService.trigger<IUserNotificationCreatePayload>({
+                  event: EVENTS.NOTIFICATION_CREATE,
+                  data: {
+                    context: UserNotificationContext.EXPEDITION_DATE_CHANGED,
+                    userId: sponsor.sponsor_id,
+                    mentionUserId: explorerId,
+                    expeditionPublicId: expedition.public_id,
+                    body: `"${expedition.title}" start date has been changed to ${formattedDate}.`,
+                  },
+                });
+              }
             }
           } catch (notifErr) {
             this.logger.error(

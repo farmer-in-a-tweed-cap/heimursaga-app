@@ -1033,6 +1033,8 @@ export interface ITripDetail {
   };
   cancelledAt?: Date;
   cancellationReason?: string;
+  delayedAt?: Date;
+  originalStartDate?: string;
   isOwner?: boolean;
   isBlueprint?: boolean;
   blueprintId?: string;

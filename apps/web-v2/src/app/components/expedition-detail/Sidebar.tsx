@@ -460,6 +460,14 @@ export function Sidebar({
         <div className="text-xs font-mono space-y-2 text-[#616161] dark:text-[#b5bcc4]">
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">ID:</span> {expedition.id}</div>
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Status:</span> {expedition.status}</div>
+          {expedition.delayedAt && (
+            <div className="bg-[#ac6d46]/10 border border-[#ac6d46] p-2 -mx-1">
+              <span className="text-[#ac6d46] font-bold">DELAYED</span>
+              {expedition.originalStartDate && (
+                <span className="block mt-0.5">Originally: {formatDate(expedition.originalStartDate)}</span>
+              )}
+            </div>
+          )}
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Category:</span> {expedition.category || 'Not set'}</div>
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Region:</span> {expedition.region || 'Not set'}</div>
           {expedition.locationName && (

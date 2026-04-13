@@ -173,6 +173,8 @@ export function useExpeditionData(
       commentsEnabled: true,
       imageUrl: api.coverImage || '',
       earlyAccessEnabled: (api as any).earlyAccessEnabled ?? false,
+      delayedAt: api.delayedAt || undefined,
+      originalStartDate: api.originalStartDate || undefined,
       mode: api.mode || undefined,
       vesselName: api.vesselName || undefined,
       vesselType: api.vesselType || undefined,
