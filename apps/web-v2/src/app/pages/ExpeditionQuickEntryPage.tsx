@@ -55,22 +55,19 @@ export function ExpeditionQuickEntryPage() {
   const [confirmingDeleteExpedition, setConfirmingDeleteExpedition] = useState(false);
   const [isDeletingExpedition, setIsDeletingExpedition] = useState(false);
 
-  // Auto-compute status based on dates
+  // Server-authoritative status for completed/cancelled (explicit actions only)
+  const [serverStatus, setServerStatus] = useState<string | null>(null);
+  const [originalStartDate, setOriginalStartDate] = useState<string | null>(null);
+
+  // Auto-compute status based on dates — never infer completed/cancelled
   const computeStatus = () => {
+    if (serverStatus === 'completed') return 'completed';
+    if (serverStatus === 'cancelled') return 'cancelled';
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    
     if (!startDate) return 'planned';
-    
-    if (endDate && endDate <= today) {
-      return 'completed';
-    }
-    
-    if (startDate > today) {
-      return 'planned';
-    }
-    
-    return 'active';
+    if (startDate <= today) return 'active';
+    return 'planned';
   };
 
   const status = computeStatus();
@@ -122,6 +119,12 @@ export function ExpeditionQuickEntryPage() {
         }
         setExpeditionMode(exp.mode || '');
         setEntriesCount(exp.entriesCount || 0);
+        if (exp.status) {
+          setServerStatus(exp.status);
+        }
+        if ((exp as any).originalStartDate) {
+          setOriginalStartDate((exp as any).originalStartDate.slice(0, 10));
+        }
         if (exp.blueprintId) {
           setIsFromBlueprint(true);
         }
@@ -546,14 +549,33 @@ export function ExpeditionQuickEntryPage() {
                 <div>
                   <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                     START DATE
-                    <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
+                    {status === 'planned' && (
+                      <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
+                    )}
+                    {(status === 'active' || status === 'completed' || status === 'cancelled') && (
+                      <span className="text-[#616161] ml-1">(LOCKED)</span>
+                    )}
                   </label>
                   <DatePicker
                     className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
                     value={startDate}
                     onChange={handleStartDateChange}
                     max={endDate || undefined}
+                    disabled={status === 'active' || status === 'completed' || status === 'cancelled'}
                   />
+                  {originalStartDate && startDate && startDate > originalStartDate && (
+                    <div className="mt-1.5 px-2.5 py-1.5 bg-[#ac6d46]/10 border border-[#ac6d46] text-xs font-mono text-[#ac6d46]">
+                      <span className="font-bold">DELAYED</span> — originally {new Date(originalStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      <span className="block mt-0.5 text-[#616161] dark:text-[#b5bcc4]">
+                        Delays up to 3 months are allowed. Sponsors and followers will be notified.
+                      </span>
+                    </div>
+                  )}
+                  {isEditMode && status === 'active' && serverStatus === 'planned' && (
+                    <div className="mt-1.5 px-2.5 py-1.5 bg-[#598636]/10 border border-[#598636] text-xs font-mono text-[#598636]">
+                      Start date is today or earlier — expedition will be activated on save.
+                    </div>
+                  )}
                 </div>
 
                 <div>

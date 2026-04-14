@@ -321,6 +321,8 @@ export function ExpeditionBuilderPage() {
   const [durationAutoFilled, setDurationAutoFilled] = useState(false);
   const [durationManuallyEdited, setDurationManuallyEdited] = useState(false);
 
+  const [serverStatus, setServerStatus] = useState<string | null>(null);
+  const [originalStartDate, setOriginalStartDate] = useState<string | null>(null);
   const [expeditionMode, setExpeditionMode] = useState<string>('');
   const [vesselName, setVesselName] = useState('');
   const [vesselType, setVesselType] = useState('');
@@ -1024,22 +1026,22 @@ export function ExpeditionBuilderPage() {
     }
   };
 
-  // Auto-compute status based on dates
+  // Auto-compute status based on dates.
+  // Completed/cancelled are explicit actions — never inferred from dates.
   const computeStatus = () => {
+    if (serverStatus === 'completed') return 'completed';
+    if (serverStatus === 'cancelled') return 'cancelled';
+
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     if (!expeditionData.startDate) return 'planned';
-    
-    if (expeditionData.endDate && expeditionData.endDate <= today) {
-      return 'completed';
+
+    if (expeditionData.startDate <= today) {
+      return 'active';
     }
-    
-    if (expeditionData.startDate > today) {
-      return 'planned';
-    }
-    
-    return 'active';
+
+    return 'planned';
   };
 
   const status = computeStatus();
@@ -1927,6 +1929,10 @@ export function ExpeditionBuilderPage() {
           return;
         }
 
+        setServerStatus(expedition.status || null);
+        if (expedition.originalStartDate) {
+          setOriginalStartDate(toDateString(expedition.originalStartDate));
+        }
         setExpeditionData({
           title: expedition.title || '',
           regions: expedition.region ? expedition.region.split(', ').map((r: string) => r.trim()).filter(Boolean) : [],
@@ -4345,15 +4351,30 @@ export function ExpeditionBuilderPage() {
           <div>
             <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
               START DATE <span className="text-[#ac6d46]">*</span>
-              {isEditMode && <span className="ml-2 text-xs text-[#616161] dark:text-[#b5bcc4]">(LOCKED)</span>}
+              {(status === 'active' || isCompletedExpedition || status === 'cancelled') && <span className="ml-2 text-xs text-[#616161] dark:text-[#b5bcc4]">(LOCKED)</span>}
             </label>
             <DatePicker
               value={expeditionData.startDate}
               onChange={handleStartDateChange}
               max={expeditionData.endDate || undefined}
               className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
-              disabled={isEditMode}
+              disabled={status === 'active' || isCompletedExpedition || status === 'cancelled'}
             />
+            {/* Delay indicator */}
+            {originalStartDate && expeditionData.startDate > originalStartDate && (
+              <div className="mt-1.5 px-2.5 py-1.5 bg-[#ac6d46]/10 border border-[#ac6d46] text-xs font-mono text-[#ac6d46]">
+                <span className="font-bold">DELAYED</span> — originally {new Date(originalStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                <span className="block mt-0.5 text-[#616161] dark:text-[#b5bcc4]">
+                  Delays up to 3 months are allowed. Sponsors and followers will be notified.
+                </span>
+              </div>
+            )}
+            {/* Auto-activation hint */}
+            {isEditMode && status === 'active' && serverStatus === 'planned' && (
+              <div className="mt-1.5 px-2.5 py-1.5 bg-[#598636]/10 border border-[#598636] text-xs font-mono text-[#598636]">
+                Start date is today or earlier — expedition will be activated on save.
+              </div>
+            )}
           </div>
           )}
 
@@ -4385,6 +4406,18 @@ export function ExpeditionBuilderPage() {
                 placeholder="Days"
                 disabled={isCompletedExpedition}
               />
+            </div>
+          </div>
+          )}
+
+          {/* Status - auto-computed from dates */}
+          {!canCreateBlueprints && (
+          <div>
+            <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
+              STATUS (AUTO-COMPUTED)
+            </label>
+            <div className="px-3 py-2.5 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] bg-[#f5f5f5] dark:bg-[#2a2a2a] text-sm font-bold dark:text-[#e5e5e5] uppercase">
+              {status}
             </div>
           </div>
           )}
@@ -5532,18 +5565,6 @@ export function ExpeditionBuilderPage() {
 
             {/* Right Column */}
             <div className="space-y-4">
-              {/* Status - not applicable to blueprints */}
-              {!canCreateBlueprints && (
-              <div>
-                <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
-                  STATUS (AUTO-COMPUTED)
-                </label>
-                <div className="px-3 py-2.5 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] bg-[#f5f5f5] dark:bg-[#2a2a2a] text-sm font-bold dark:text-[#e5e5e5] uppercase">
-                  {status}
-                </div>
-              </div>
-              )}
-
               {/* Current Location - Only for ACTIVE expeditions and Edit Mode */}
               {status === 'active' && isEditMode && (
                 <div>
