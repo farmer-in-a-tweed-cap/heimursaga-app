@@ -109,6 +109,9 @@ export function AuthPage() {
       }
       const inviteCode = (formData.get('inviteCode') as string)?.trim() || undefined;
       await signup(email, username, password, recaptchaToken, inviteCode);
+      if (typeof window.fbq === 'function') {
+        window.fbq('track', 'CompleteRegistration');
+      }
       router.push(getSafeRedirect());
     } catch (err) {
       if (err instanceof ApiError) {
