@@ -541,7 +541,8 @@ export function ExplorerProfilePage() {
         status: 'planned' as const,
       })),
       entries: entriesForMap.filter(entry => entry.expeditionName === e.title),
-      routeGeometry: (e as any).routeGeometry || undefined,
+      routeGeometry: e.routeGeometry || undefined,
+      routeMode: e.routeMode || undefined,
       currentLocation: e.currentLocation
         ? { lat: e.currentLocation.lat, lng: e.currentLocation.lon }
         : undefined,

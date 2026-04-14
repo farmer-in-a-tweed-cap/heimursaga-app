@@ -618,6 +618,7 @@ export class ExpeditionService {
           raised: true,
           route_distance_km: true,
           route_geometry: true,
+          route_mode: true,
           elevation_min_m: true,
           elevation_max_m: true,
           is_blueprint: true,
@@ -832,6 +833,10 @@ export class ExpeditionService {
             currentLocationVisibility: (current_location_visibility ||
               'public') as 'public' | 'sponsors' | 'private',
             isBlueprint: (row as any).is_blueprint || false,
+            routeMode:
+              status === 'active' && (row as any).route_mode
+                ? (row as any).route_mode
+                : undefined,
             mode: (row as any).mode || undefined,
             vesselName: (row as any).vessel_name || undefined,
             vesselType: (row as any).vessel_type || undefined,

@@ -8,6 +8,7 @@ import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from '@/app/context/MapLayerContext';
+import { ROUTE_MODE_STYLES, findCompletedRouteCoords } from '@/app/utils/mapRouteDrawing';
 import { createPOIGeocoder, retrievePOI } from '@/app/utils/poiGeocoder';
 import { X, ChevronLeft, Globe } from 'lucide-react';
 import {
@@ -63,6 +64,7 @@ interface Expedition {
   entries: JournalEntry[];
   routeGeometry?: number[][];
   currentLocation?: { lat: number; lng: number };
+  routeMode?: string;
 }
 
 interface ExplorerExpeditionsMapProps {
@@ -194,35 +196,34 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
         expeditions.forEach((expedition) => {
           const expeditionId = expedition.id;
           
-          // Add route line — use saved route geometry if available, fall back to straight lines
-          const routeCoords = expedition.routeGeometry && expedition.routeGeometry.length >= 2
-            ? expedition.routeGeometry
+          // Route geometry — use saved route if available, fall back to waypoint-to-waypoint
+          const hasDirectionsRoute = expedition.routeGeometry && expedition.routeGeometry.length >= 2;
+          const routeCoords = hasDirectionsRoute
+            ? expedition.routeGeometry!
             : expedition.waypoints.length > 1
               ? expedition.waypoints.map(wp => [wp.coords.lng, wp.coords.lat])
               : null;
 
+          const routeStyle = ROUTE_MODE_STYLES[expedition.routeMode || ''] || ROUTE_MODE_STYLES.straight;
+          const casingColor = getLineCasingColor(mapLayer, theme);
+
           if (routeCoords && routeCoords.length >= 2) {
+            // Full route line (planned — using route mode style)
             map.addSource(`route-${expeditionId}`, {
               type: 'geojson',
               data: {
                 type: 'Feature',
                 properties: {},
-                geometry: {
-                  type: 'LineString',
-                  coordinates: routeCoords,
-                },
+                geometry: { type: 'LineString', coordinates: routeCoords },
               },
             });
-
-            const casingColor = getLineCasingColor(mapLayer, theme);
-
             map.addLayer({
               id: `route-${expeditionId}-casing`,
               type: 'line',
               source: `route-${expeditionId}`,
               paint: {
                 'line-color': casingColor,
-                'line-width': 7,
+                'line-width': hasDirectionsRoute ? 8 : 7,
                 'line-opacity': 0.3,
               },
             });
@@ -231,48 +232,47 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
               type: 'line',
               source: `route-${expeditionId}`,
               paint: {
-                'line-color': expedition.color,
-                'line-width': 3,
-                'line-dasharray': [5, 5],
-                'line-opacity': 0.5,
+                'line-color': routeStyle.color,
+                'line-width': hasDirectionsRoute ? routeStyle.width : 3,
+                'line-opacity': 0.8,
+                ...(hasDirectionsRoute && routeStyle.dash
+                  ? { 'line-dasharray': routeStyle.dash }
+                  : !hasDirectionsRoute
+                    ? { 'line-dasharray': [2, 2] }
+                    : {}),
               },
             });
 
-            // Completed route (only completed waypoints)
-            const completedWaypoints = expedition.waypoints.filter(wp => wp.status === 'completed');
-            if (completedWaypoints.length > 0) {
-              map.addSource(`completed-route-${expeditionId}`, {
-                type: 'geojson',
-                data: {
-                  type: 'Feature',
-                  properties: {},
-                  geometry: {
-                    type: 'LineString',
-                    coordinates: completedWaypoints.map(wp => [wp.coords.lng, wp.coords.lat]),
+            // Completed route overlay (start → current location, solid copper)
+            if (expedition.currentLocation) {
+              const completedCoords = findCompletedRouteCoords({
+                routeCoordinates: routeCoords,
+                hasDirectionsRoute: !!hasDirectionsRoute,
+                currentLocCoords: expedition.currentLocation,
+                waypoints: expedition.waypoints,
+              });
+              if (completedCoords.length >= 2) {
+                map.addSource(`completed-route-${expeditionId}`, {
+                  type: 'geojson',
+                  data: {
+                    type: 'Feature',
+                    properties: {},
+                    geometry: { type: 'LineString', coordinates: completedCoords },
                   },
-                },
-              });
-
-              map.addLayer({
-                id: `completed-route-${expeditionId}-casing`,
-                type: 'line',
-                source: `completed-route-${expeditionId}`,
-                paint: {
-                  'line-color': casingColor,
-                  'line-width': 8,
-                  'line-opacity': 0.3,
-                },
-              });
-              map.addLayer({
-                id: `completed-route-${expeditionId}`,
-                type: 'line',
-                source: `completed-route-${expeditionId}`,
-                paint: {
-                  'line-color': expedition.color,
-                  'line-width': 4,
-                  'line-opacity': 0.9,
-                },
-              });
+                });
+                map.addLayer({
+                  id: `completed-route-${expeditionId}-casing`,
+                  type: 'line',
+                  source: `completed-route-${expeditionId}`,
+                  paint: { 'line-color': casingColor, 'line-width': 8, 'line-opacity': 0.3 },
+                });
+                map.addLayer({
+                  id: `completed-route-${expeditionId}`,
+                  type: 'line',
+                  source: `completed-route-${expeditionId}`,
+                  paint: { 'line-color': '#ac6d46', 'line-width': 4, 'line-opacity': 0.9 },
+                });
+              }
             }
           }
 
@@ -705,16 +705,16 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
                 </div>
               ))}
             </div>
-            <div className="flex flex-wrap gap-x-6 gap-y-2.5 text-xs mt-4 pt-3 border-t border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#b5bcc4]">
+            <div className="flex flex-wrap gap-x-6 gap-y-2.5 text-xs mt-4 pt-3 border-t border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#e5e5e5]">
               <div className="flex items-center gap-2">
                 <div className="w-6 flex items-center justify-center shrink-0">
-                  <div className="w-[18px] h-[18px] rounded-full bg-[#ac6d46] border-2 border-white" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} />
+                  <div className="w-[18px] h-[18px] bg-[#ac6d46] border-2 border-white rounded-full" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} />
                 </div>
                 <span>Journal Entry</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 flex items-center justify-center shrink-0">
-                  <div className="w-[22px] h-[22px] rounded-full bg-[#ac6d46] border-2 border-white" style={{ boxShadow: '0 0 0 3px #ac6d46, 0 2px 6px rgba(0,0,0,0.4)' }} />
+                  <div className="w-[22px] h-[22px] bg-[#ac6d46] border-2 border-white rounded-full" style={{ boxShadow: '0 0 0 3px #ac6d46, 0 2px 6px rgba(0,0,0,0.4)' }} />
                 </div>
                 <span>Milestone Entry</span>
               </div>
@@ -750,7 +750,7 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 flex items-center justify-center shrink-0">
-                  <div className="w-[18px] h-[18px] rounded-full bg-[#616161] border-2 border-white animate-[legend-pulse_2s_ease-out_infinite]" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
+                  <div className="w-[18px] h-[18px] rounded-full bg-[#ac6d46] border-2 border-white" style={{ boxShadow: '0 0 0 3px rgba(172,109,70,0.3)', animation: 'wp-pulse 2s ease-out infinite' }} />
                 </div>
                 <span>Current Location</span>
               </div>
@@ -760,12 +760,34 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
                 </div>
                 <span>Completed Route</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 flex items-center justify-center shrink-0">
-                  <div className="w-6 h-0.5 bg-[#202020] dark:bg-[#4676ac]" />
-                </div>
-                <span>Planned Route</span>
-              </div>
+              {(() => {
+                // Show route mode indicator(s) matching the detail page
+                const modes = [...new Set(expeditions.map(e => e.routeMode).filter(Boolean))] as string[];
+                if (modes.length > 0 && modes.some(m => m !== 'straight')) {
+                  return modes.map(mode => {
+                    const style = ROUTE_MODE_STYLES[mode] || ROUTE_MODE_STYLES.straight;
+                    return (
+                      <div key={mode} className="flex items-center gap-2">
+                        <div className="w-6 flex items-center justify-center shrink-0">
+                          <svg width="24" height="4">
+                            <line x1="0" y1="2" x2="24" y2="2" stroke={style.color} strokeWidth={2}
+                              strokeDasharray={style.dash ? style.dash.join(' ') : undefined} />
+                          </svg>
+                        </div>
+                        <span style={{ color: style.color }}>{style.label}</span>
+                      </div>
+                    );
+                  });
+                }
+                return (
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 flex items-center justify-center shrink-0">
+                      <div className="w-6 h-0.5 bg-[#202020] dark:bg-[#4676ac]" />
+                    </div>
+                    <span>Planned Route</span>
+                  </div>
+                );
+              })()}
             </div>
           </>
         ) : (
