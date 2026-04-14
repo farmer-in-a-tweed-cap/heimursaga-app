@@ -260,37 +260,47 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
             }
           }
 
-          // Add waypoint markers (diamond shape)
+          // Add waypoint markers — match expedition detail page style
+          const wpCount = expedition.waypoints.length;
           expedition.waypoints.forEach((wp, idx) => {
-            const isCompleted = wp.status === 'completed';
             const isCurrent = wp.status === 'current';
+            const isStart = idx === 0;
+            const isEnd = idx === wpCount - 1 && wpCount > 1;
 
             const wrapper = document.createElement('div');
             wrapper.className = 'waypoint-marker';
             wrapper.style.cursor = 'pointer';
 
-            const diamond = document.createElement('div');
-            diamond.style.width = isCurrent ? '28px' : '22px';
-            diamond.style.height = isCurrent ? '28px' : '22px';
-            diamond.style.backgroundColor = isCompleted || isCurrent ? expedition.color : '#b5bcc4';
-            diamond.style.border = '2px solid #202020';
-            diamond.style.display = 'flex';
-            diamond.style.alignItems = 'center';
-            diamond.style.justifyContent = 'center';
-            diamond.style.transform = 'rotate(45deg)';
-
-            const label = document.createElement('span');
-            label.style.transform = 'rotate(-45deg)';
-            label.style.color = 'white';
-            label.style.fontWeight = 'bold';
-            label.style.fontSize = isCurrent ? '12px' : '11px';
-            label.style.lineHeight = '1';
-            label.textContent = String(idx + 1);
-            diamond.appendChild(label);
-            wrapper.appendChild(diamond);
-
-            if (isCurrent) {
-              diamond.style.boxShadow = `0 0 0 4px ${expedition.color}40`;
+            if (isStart || isEnd) {
+              // Start/End — diamond with S/E label
+              const diamond = document.createElement('div');
+              Object.assign(diamond.style, {
+                width: '30px', height: '30px',
+                backgroundColor: isStart ? '#ac6d46' : '#4676ac',
+                border: '3px solid white',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transform: 'rotate(45deg)',
+              });
+              const label = document.createElement('span');
+              Object.assign(label.style, { transform: 'rotate(-45deg)', color: 'white', fontWeight: 'bold', fontSize: '13px', lineHeight: '1' });
+              label.textContent = isStart ? 'S' : 'E';
+              diamond.appendChild(label);
+              wrapper.appendChild(diamond);
+              if (isCurrent) diamond.style.animation = 'wp-pulse 2s ease-out infinite';
+            } else {
+              // Intermediate — gray circle with number
+              Object.assign(wrapper.style, {
+                width: '22px', height: '22px', borderRadius: '50%',
+                backgroundColor: '#616161', border: '2px solid white',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              });
+              const circleLabel = document.createElement('span');
+              Object.assign(circleLabel.style, { color: 'white', fontWeight: 'bold', fontSize: '10px', lineHeight: '1' });
+              circleLabel.textContent = String(idx + 1);
+              wrapper.appendChild(circleLabel);
+              if (isCurrent) wrapper.style.animation = 'wp-pulse 2s ease-out infinite';
             }
 
             // Build popup with DOM API to prevent XSS
@@ -301,13 +311,9 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
             titleEl.textContent = expedition.title;
             const wpLabel = document.createElement('div');
             wpLabel.className = 'text-gray-600';
-            wpLabel.textContent = `Waypoint ${idx + 1}`;
-            const statusEl = document.createElement('div');
-            statusEl.className = 'text-xs mt-1';
-            statusEl.textContent = `Status: ${wp.status}`;
+            wpLabel.textContent = isStart ? 'Start' : isEnd ? 'End' : `Waypoint ${idx + 1}`;
             popupEl.appendChild(titleEl);
             popupEl.appendChild(wpLabel);
-            popupEl.appendChild(statusEl);
 
             new mapboxgl.Marker(wrapper)
               .setLngLat([wp.coords.lng, wp.coords.lat])
@@ -674,57 +680,63 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
               ))}
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-2.5 text-xs mt-4 pt-3 border-t border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#b5bcc4]">
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 flex items-center justify-center shrink-0">
-                  <div className="w-[18px] h-[18px] rounded-full bg-[#ac6d46] border-2 border-white" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+              <div className="flex items-center gap-2">
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-[18px] h-[18px] rounded-full bg-[#ac6d46] border-2 border-white" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} />
                 </div>
                 <span>Journal Entry</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 flex items-center justify-center shrink-0">
-                  <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
-                    <span className="text-white text-[7px] font-bold -rotate-45">S</span>
+              <div className="flex items-center gap-2">
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-[22px] h-[22px] rounded-full bg-[#ac6d46] border-2 border-white" style={{ boxShadow: '0 0 0 3px #ac6d46, 0 2px 6px rgba(0,0,0,0.4)' }} />
+                </div>
+                <span>Milestone Entry</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-4 h-4 bg-[#ac6d46] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
+                    <span className="text-white text-[8px] font-bold -rotate-45">S</span>
                   </div>
                 </div>
                 <span>Start</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 flex items-center justify-center shrink-0">
-                  <div className="w-3.5 h-3.5 bg-[#4676ac] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
-                    <span className="text-white text-[7px] font-bold -rotate-45">E</span>
+              <div className="flex items-center gap-2">
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-4 h-4 bg-[#4676ac] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
+                    <span className="text-white text-[8px] font-bold -rotate-45">E</span>
                   </div>
                 </div>
                 <span>End</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 flex items-center justify-center shrink-0">
-                  <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-[#4676ac] rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
-                    <span className="text-white text-[7px] font-bold -rotate-45">S</span>
+              <div className="flex items-center gap-2">
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-4 h-4 bg-[#ac6d46] border-2 border-[#4676ac] rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
+                    <span className="text-white text-[8px] font-bold -rotate-45">S</span>
                   </div>
                 </div>
                 <span>Round Trip Start</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 flex items-center justify-center shrink-0">
-                  <div className="w-3 h-3 bg-[#616161] border-2 border-white rotate-45" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+              <div className="flex items-center gap-2">
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-[18px] h-[18px] rounded-full bg-[#616161] border-2 border-white" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
                 </div>
                 <span>Waypoint</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 flex items-center justify-center shrink-0">
-                  <div className="w-3 h-3 bg-[#616161] border-2 border-white rotate-45 animate-[legend-pulse_2s_ease-out_infinite]" />
+              <div className="flex items-center gap-2">
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-[18px] h-[18px] rounded-full bg-[#616161] border-2 border-white animate-[legend-pulse_2s_ease-out_infinite]" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
                 </div>
                 <span>Current Location</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 flex items-center justify-center shrink-0">
-                  <div className="w-5 h-0.5 bg-[#ac6d46]" />
+              <div className="flex items-center gap-2">
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-6 h-0.5 bg-[#ac6d46]" />
                 </div>
                 <span>Completed Route</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 flex items-center justify-center shrink-0">
-                  <div className="w-5 h-0.5 bg-[#202020] dark:bg-[#4676ac]" />
+              <div className="flex items-center gap-2">
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-6 h-0.5 bg-[#202020] dark:bg-[#4676ac]" />
                 </div>
                 <span>Planned Route</span>
               </div>

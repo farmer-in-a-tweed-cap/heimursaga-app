@@ -335,21 +335,57 @@ export function useDebriefMode({
       return;
     }
 
-    const cumDist = buildCumulativeDistances(segment);
-    const totalSegLen = cumDist[cumDist.length - 1];
-    const map = mapRef.current;
-    const startZoom = map.getZoom();
-    const endZoom = 13;
-
     const cumHav = debriefCumulativeDistRef.current;
     const isBackward = fromIdx > toIdx;
     const distStart = cumHav[isBackward ? hi : lo] ?? 0;
     const distEnd = cumHav[isBackward ? lo : hi] ?? 0;
 
-    const zoomOutAmount = Math.min(2.5, Math.max(0, totalSegLen * 1.2));
+    // Compute real-world distance (km) for this segment
+    const segDistKm = Math.abs(distEnd - distStart);
+    const map = mapRef.current;
+    const endZoom = 13;
 
-    const numSteps = Math.min(20, Math.max(6, Math.round(totalSegLen * 8)));
-    const totalDuration = Math.min(18000, Math.max(8000, totalSegLen * 6000));
+    // For long distances (>200km), use Mapbox's built-in flyTo arc.
+    // The `curve` parameter controls how much it zooms out mid-flight —
+    // higher values = more zoom-out = better country context.
+    if (segDistKm > 200) {
+      setDebriefDistance(distEnd);
+
+      const toCoords = stop.coords;
+      const curve = segDistKm > 2000 ? 2.0 : segDistKm > 1000 ? 1.8 : 1.5;
+      const duration = segDistKm > 2000 ? 12000 : segDistKm > 1000 ? 9000 : 7000;
+      const minZoom = segDistKm > 2000 ? 3 : segDistKm > 1000 ? 4 : 5;
+
+      map.flyTo({
+        center: [toCoords.lng, toCoords.lat],
+        zoom: endZoom,
+        curve,
+        minZoom,
+        duration,
+        essential: true,
+      });
+
+      (mapRef.current as any)._debriefCleanup = () => {
+        map.stop();
+      };
+
+      prevDebriefIndexRef.current = index;
+      return;
+    }
+
+    // Short-to-medium distances (<200km): step-based animation along route
+    const cumDist = buildCumulativeDistances(segment);
+    const totalSegLen = cumDist[cumDist.length - 1];
+    const startZoom = map.getZoom();
+
+    // Scale zoom-out by distance: gentle dip for short hops, more for medium
+    const zoomOutAmount = segDistKm < 20 ? 0.5
+      : segDistKm < 50 ? 1.0
+      : segDistKm < 100 ? 1.5
+      : 2.0;
+
+    const numSteps = Math.min(12, Math.max(4, Math.round(segDistKm / 15)));
+    const totalDuration = Math.min(8000, Math.max(3000, segDistKm * 40));
     const stepDuration = totalDuration / numSteps;
 
     const routeWaypoints: { center: [number, number]; zoom: number; t: number }[] = [];

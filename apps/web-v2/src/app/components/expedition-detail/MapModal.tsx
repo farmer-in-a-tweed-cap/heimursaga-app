@@ -192,13 +192,13 @@ export function MapModal({
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 flex items-center justify-center shrink-0">
-                  <div className="w-3.5 h-3.5 bg-[#616161] border-2 border-white rotate-45" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}></div>
+                  <div className="w-[18px] h-[18px] rounded-full bg-[#616161] border-2 border-white" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}></div>
                 </div>
                 <span>Waypoint</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 flex items-center justify-center shrink-0">
-                  <div className="w-3.5 h-3.5 bg-[#616161] border-2 border-white rotate-45 animate-[legend-pulse_2s_ease-out_infinite]"></div>
+                  <div className="w-[18px] h-[18px] rounded-full bg-[#616161] border-2 border-white animate-[legend-pulse_2s_ease-out_infinite]" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}></div>
                 </div>
                 <span>Current Location</span>
               </div>
