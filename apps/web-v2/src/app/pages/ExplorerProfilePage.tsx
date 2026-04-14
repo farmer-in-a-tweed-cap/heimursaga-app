@@ -527,16 +527,21 @@ export function ExplorerProfilePage() {
   const sponsorableExpedition = expeditions.find(e => e.status === 'active' && (e.goal || 0) > 0)
     || expeditions.find(e => e.status === 'planned' && (e.goal || 0) > 0);
 
-  // For now, expeditions for map is empty until we have waypoint data from API
-  // The map will default to all-entries view
-  const expeditionsForMap: Array<{
-    id: string;
-    title: string;
-    color: string;
-    status: 'active' | 'completed';
-    waypoints: Array<{ id: string; coords: { lat: number; lng: number }; status: 'completed' | 'current' | 'planned' }>;
-    entries: typeof entriesForMap;
-  }> = [];
+  // Build map data from active expeditions that have waypoints
+  const expeditionsForMap = expeditions
+    .filter(e => e.status === 'active' && e.waypoints && e.waypoints.length > 0)
+    .map(e => ({
+      id: (e as any).id || e.publicId || '',
+      title: e.title,
+      color: '#ac6d46',
+      status: 'active' as const,
+      waypoints: (e.waypoints || []).map(wp => ({
+        id: String(wp.id || ''),
+        coords: { lat: wp.lat, lng: wp.lon },
+        status: 'planned' as const,
+      })),
+      entries: entriesForMap.filter(entry => entry.expeditionName === e.title),
+    }));
 
   return (
     <div className="max-w-[1600px] mx-auto px-3 py-4 md:px-6 md:py-12">

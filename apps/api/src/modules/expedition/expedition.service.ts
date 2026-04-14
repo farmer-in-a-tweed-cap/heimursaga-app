@@ -802,17 +802,18 @@ export class ExpeditionService {
               : row.waypoints.filter(
                   (w) => (w.waypoint as any)._count?.entries === 0,
                 ).length,
-            // Blueprints need waypoint coords for the route-map preview in the
-            // cover area. Regular expedition listings use a cover image instead.
-            waypoints: (row as any).is_blueprint
-              ? row.waypoints.map((ew) => ({
-                  id: (ew.waypoint as any).id,
-                  title: (ew.waypoint as any).title || '',
-                  lat: (ew.waypoint as any).lat,
-                  lon: (ew.waypoint as any).lon,
-                  sequence: ew.sequence,
-                }))
-              : [],
+            // Include waypoints for blueprints (route-map preview) and active
+            // expeditions (profile map).
+            waypoints:
+              (row as any).is_blueprint || status === 'active'
+                ? row.waypoints.map((ew) => ({
+                    id: (ew.waypoint as any).id,
+                    title: (ew.waypoint as any).title || '',
+                    lat: (ew.waypoint as any).lat,
+                    lon: (ew.waypoint as any).lon,
+                    sequence: ew.sequence,
+                  }))
+                : [],
             currentLocation:
               resolvedLoc && isPublicLoc
                 ? {
