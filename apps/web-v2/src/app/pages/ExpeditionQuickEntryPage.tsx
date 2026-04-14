@@ -37,7 +37,6 @@ export function ExpeditionQuickEntryPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [expectedDuration, setExpectedDuration] = useState('');
-  const [currentLocation, setCurrentLocation] = useState('');
   const [expeditionMode, setExpeditionMode] = useState('');
   const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(null);
   const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(null);
@@ -623,27 +622,6 @@ export function ExpeditionQuickEntryPage() {
                   Provide either an exact end date or expected duration • End date will be calculated if duration is provided
                 </div>
               </div>
-
-              {/* Current Location - Only for ACTIVE expeditions */}
-              {status === 'active' && (
-                <div>
-                  <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                    CURRENT LOCATION
-                    <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>
-                    <span className="ml-2 px-2 py-0.5 bg-[#4676ac] text-white text-xs font-bold">ACTIVE EXPEDITION</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-                    placeholder="e.g., Samarkand, Uzbekistan or coordinates: 39.6270°N, 66.9750°E"
-                    value={currentLocation}
-                    onChange={(e) => setCurrentLocation(e.target.value)}
-                  />
-                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                    Track your current position during an active expedition • Accepts city names, regions, or GPS coordinates
-                  </div>
-                </div>
-              )}
 
               {/* Description */}
               <div>

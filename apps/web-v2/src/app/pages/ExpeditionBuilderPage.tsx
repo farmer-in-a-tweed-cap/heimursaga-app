@@ -15,7 +15,6 @@ import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from '@/app/context/MapLayerContext';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
-import { CurrentLocationSelector } from '@/app/components/CurrentLocationSelector';
 import { toast } from 'sonner';
 import { expeditionApi, entryApi, uploadApi, routingApi, type RouteObstacle } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
@@ -903,15 +902,6 @@ export function ExpeditionBuilderPage() {
         // here to match the `else if (draftId)` flow above.
         if (canCreateBlueprints) {
           await expeditionApi.publishDraft(expeditionPublicId);
-        }
-      }
-
-      // Save current location selection if set
-      if (currentLocationId && currentLocationSource) {
-        try {
-          await expeditionApi.updateLocation(expeditionPublicId, currentLocationSource, currentLocationId);
-        } catch {
-          // Non-critical — expedition is saved, location update can fail silently
         }
       }
 
@@ -5563,48 +5553,6 @@ export function ExpeditionBuilderPage() {
 
             </div>
 
-            {/* Right Column */}
-            <div className="space-y-4">
-              {/* Current Location - Only for ACTIVE expeditions and Edit Mode */}
-              {status === 'active' && isEditMode && (
-                <div>
-                  <label className="block text-xs font-medium mb-3 text-[#202020] dark:text-[#e5e5e5]">
-                    CURRENT LOCATION
-                    <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>
-                    <span className="ml-2 px-2 py-0.5 bg-[#4676ac] text-white text-xs font-bold">ACTIVE EXPEDITION</span>
-                  </label>
-                  
-                  <CurrentLocationSelector
-                    waypoints={waypoints.map(wp => ({
-                      id: wp.id,
-                      title: wp.name,
-                      location: wp.location || '',
-                      coords: { lat: wp.coordinates.lat, lng: wp.coordinates.lng },
-                      date: wp.date || '',
-                      status: 'planned' as const,
-                      notes: wp.description
-                    }))}
-                    journalEntries={expeditionEntries.map(e => ({
-                      id: e.id,
-                      title: e.title,
-                      location: e.place,
-                      coords: e.coords,
-                      date: e.date,
-                      excerpt: '',
-                      type: 'standard' as const,
-                      mediaCount: 0,
-                      views: 0,
-                      visibility: 'public' as const,
-                    }))}
-                    selectedSource={currentLocationSource}
-                    selectedId={currentLocationId}
-                    onSourceChange={setCurrentLocationSource}
-                    onLocationChange={setCurrentLocationId}
-                    disabled={false}
-                  />
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Description - Full Width */}
