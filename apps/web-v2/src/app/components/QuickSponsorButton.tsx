@@ -53,7 +53,7 @@ export function QuickSponsorButton({
 
   const handleClick = () => {
     if (!isAuthenticated) {
-      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      router.push(`/auth?redirect=${encodeURIComponent(pathname)}`);
       return;
     }
     setShowConfirmModal(true);

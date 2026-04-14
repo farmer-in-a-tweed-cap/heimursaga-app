@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { authApi, SessionUser, ApiError, clearCsrfToken, onSessionExpired } from '@/app/services/api';
 import { posthog } from '@/lib/posthog';
+import { hasAnalyticsConsent } from '@/lib/analytics-consent';
 
 // Re-export SessionUser as User for backwards compatibility
 export type User = SessionUser;
@@ -66,10 +67,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = await authApi.getUser();
         if (!cancelled) {
           setUser(userData);
-          if (posthog.__loaded) {
+          if (posthog.__loaded && hasAnalyticsConsent()) {
             posthog.identify(String(userData.id), {
               username: userData.username,
-              email: userData.email,
               role: userData.role,
               is_premium: userData.isPremium,
             });

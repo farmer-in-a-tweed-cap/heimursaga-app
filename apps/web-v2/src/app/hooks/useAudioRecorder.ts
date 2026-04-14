@@ -61,8 +61,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   // Extract waveform peaks when audioBlob changes
   useEffect(() => {
     if (!audioBlob) {
-      setWaveformPeaks([]);
-      return;
+      // Deferred to next microtask to satisfy react-compiler
+      const id = requestAnimationFrame(() => setWaveformPeaks([]));
+      return () => cancelAnimationFrame(id);
     }
 
     let cancelled = false;

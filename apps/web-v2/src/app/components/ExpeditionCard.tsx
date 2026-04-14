@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { MapPin, DollarSign, Bookmark, Loader2, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import mapboxgl from 'mapbox-gl';
@@ -311,7 +311,7 @@ export function ExpeditionCard({
   };
 
   // Status-aware date stats
-  const now = Date.now();
+  const [now] = useState(() => Date.now());
   const startMs = startDate ? new Date(startDate).getTime() : null;
   const endMs = endDate ? new Date(endDate).getTime() : null;
   const totalPlannedDays = startMs && endMs ? Math.max(1, Math.ceil((endMs - startMs) / 86400000)) : null;

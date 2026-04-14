@@ -5,6 +5,7 @@ import {
   HttpException,
   Inject,
   Injectable,
+  Logger,
   NestInterceptor,
   Optional,
   PayloadTooLargeException,
@@ -29,8 +30,11 @@ export class ServiceExceptionInterceptor implements NestInterceptor {
         } else {
           // Log non-service errors without exposing internal details
           const safeMessage =
-            error instanceof Error ? error.message : 'Unknown error';
-          console.error(`Unhandled service error: ${safeMessage}`);
+            error instanceof Error
+              ? error.message.slice(0, 200)
+              : 'Unknown error';
+          const logger = new Logger('ServiceExceptionInterceptor');
+          logger.error(`Unhandled service error: ${safeMessage}`);
 
           throw error;
         }

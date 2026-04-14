@@ -242,6 +242,11 @@ export function SponsorshipPaymentPage() {
       return;
     }
 
+    if (finalAmount > 10000) {
+      toast.error('Maximum sponsorship amount is $10,000.00');
+      return;
+    }
+
     if (finalAmount < 5) {
       toast.error('Minimum sponsorship amount is $5.00');
       return;

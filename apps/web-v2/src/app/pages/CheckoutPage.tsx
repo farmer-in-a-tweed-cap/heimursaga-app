@@ -21,12 +21,8 @@ import { loadStripe } from '@stripe/stripe-js';
 import { useTheme } from '@/app/context/ThemeContext';
 import { formatCurrency } from '@/app/utils/formatCurrency';
 
-// Stripe publishable key loaded from environment variable
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
-if (!stripeKey) {
-  console.warn('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY environment variable is not set');
-}
-const stripePromise = loadStripe(stripeKey);
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 interface SavedPaymentMethod {
   id: string;       // This is the public_id from the backend

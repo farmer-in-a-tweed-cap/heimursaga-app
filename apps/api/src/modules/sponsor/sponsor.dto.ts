@@ -54,11 +54,15 @@ export class SponsorCheckoutDto implements ISponsorCheckoutPayload {
   @ApiProperty({ required: false })
   @IsNumber()
   @IsOptional()
+  @Min(1)
+  @Max(10000)
   oneTimePaymentAmount?: number;
 
   @ApiProperty({ required: false })
   @IsNumber()
   @IsOptional()
+  @Min(1)
+  @Max(999999)
   customAmount?: number;
 
   @ApiProperty({ required: false })
@@ -113,11 +117,15 @@ export class SponsorPrepareCheckoutDto {
   @ApiProperty({ required: false })
   @IsNumber()
   @IsOptional()
+  @Min(1)
+  @Max(10000)
   oneTimePaymentAmount?: number;
 
   @ApiProperty({ required: false })
   @IsNumber()
   @IsOptional()
+  @Min(1)
+  @Max(999999)
   customAmount?: number;
 
   @ApiProperty({ required: false })
@@ -205,6 +213,8 @@ export class SponsorshipTierUpdateDto implements ISponsorshipTierUpdatePayload {
   @ApiProperty({ required: false })
   @IsNumber()
   @IsOptional()
+  @Min(0)
+  @Max(100)
   priority: number;
 }
 
@@ -235,5 +245,7 @@ export class SponsorshipTierCreateDto implements ISponsorshipTierCreatePayload {
   @ApiProperty({ required: false })
   @IsNumber()
   @IsOptional()
+  @Min(0)
+  @Max(100)
   priority: number;
 }

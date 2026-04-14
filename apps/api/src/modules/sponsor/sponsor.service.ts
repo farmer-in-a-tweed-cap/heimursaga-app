@@ -146,19 +146,6 @@ export class SponsorService {
         }
       }
 
-      // get a sponsorship tier (not required for tips)
-      let sponsorshipTier: { id: number } | null = null;
-      if (sponsorshipType !== SponsorshipType.TIP) {
-        sponsorshipTier = await this.prisma.sponsorshipTier.findFirstOrThrow({
-          where: {
-            public_id: sponsorshipTierId,
-          },
-          select: {
-            id: true,
-          },
-        });
-      }
-
       // get a user
       const user = await this.prisma.explorer.findFirstOrThrow({
         where: { id: userId },
@@ -199,6 +186,20 @@ export class SponsorService {
       // Block self-sponsorship
       if (user.id === creator.id) {
         throw new ServiceBadRequestException('You cannot sponsor yourself');
+      }
+
+      // Get sponsorship tier (not required for tips) — verify it belongs to the target creator
+      let sponsorshipTier: { id: number } | null = null;
+      if (sponsorshipType !== SponsorshipType.TIP) {
+        sponsorshipTier = await this.prisma.sponsorshipTier.findFirstOrThrow({
+          where: {
+            public_id: sponsorshipTierId,
+            explorer_id: creator.id,
+          },
+          select: {
+            id: true,
+          },
+        });
       }
 
       // check if the user already sponsors the creator
@@ -2442,6 +2443,9 @@ export class SponsorService {
       if (!payoutMethod?.stripe_account_id) {
         throw new ServiceBadRequestException('No payout method configured');
       }
+
+      // Verify the charge belongs to this creator's connected Stripe account
+      // (Stripe's stripeAccount scoping provides the primary isolation)
 
       // For destination charges, the charge ID from the connected account
       // maps to a payment intent on the platform. We need to find it.

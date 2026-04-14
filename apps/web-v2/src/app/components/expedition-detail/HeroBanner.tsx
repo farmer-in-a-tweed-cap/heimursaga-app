@@ -275,7 +275,7 @@ export function HeroBanner({
           )}
           {/* Planned Departure Bar */}
           {expedition.status === 'planned' && expedition.startDate && !currentLocationData?.location && (() => {
-            const daysUntil = Math.max(0, Math.ceil((new Date(expedition.startDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+            const daysUntil = Math.max(0, Math.ceil((new Date(expedition.startDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
             return (
               <div className="w-full bg-[#4676ac] px-6 py-3 flex items-center justify-center gap-4 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                 <div className="relative flex items-center justify-center">

@@ -53,8 +53,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({
     short: { limit: 5, ttl: 60000 },
-    medium: { limit: 5, ttl: 60000 },
-    long: { limit: 5, ttl: 60000 },
+    medium: { limit: 20, ttl: 600000 },
+    long: { limit: 50, ttl: 3600000 },
   })
   async login(
     @Req() req: IRequest,
@@ -138,8 +138,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({
     short: { limit: 5, ttl: 60000 },
-    medium: { limit: 5, ttl: 60000 },
-    long: { limit: 5, ttl: 60000 },
+    medium: { limit: 15, ttl: 600000 },
+    long: { limit: 30, ttl: 3600000 },
   })
   async mobileLogin(
     @Req() req: IRequest,

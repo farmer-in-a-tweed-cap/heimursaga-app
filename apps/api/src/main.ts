@@ -16,6 +16,7 @@ const REQUIRED_ENV_VARS = [
   'JWT_SECRET',
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
+  ...(process.env.NODE_ENV === 'production' ? ['CORS_ORIGIN'] : []),
 ];
 
 for (const varName of REQUIRED_ENV_VARS) {

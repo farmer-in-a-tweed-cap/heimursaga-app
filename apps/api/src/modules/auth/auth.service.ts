@@ -958,21 +958,23 @@ export class AuthService {
       if (!token)
         throw new ServiceBadRequestException('token is expired or invalid');
 
-      // Fetch all active (non-expired) verifications and compare using
-      // constant-time comparison to avoid leaking token validity via timing.
-      const activeVerifications = await this.prisma.emailVerification.findMany({
-        where: { expired: false },
+      // Query the token directly — avoids loading all active tokens into memory
+      const verification = await this.prisma.emailVerification.findFirst({
+        where: { token, expired: false },
         select: { token: true },
       });
 
-      const tokenBuffer = Buffer.from(token);
-      const match = activeVerifications.some((v) => {
-        const storedBuffer = Buffer.from(v.token);
-        if (tokenBuffer.length !== storedBuffer.length) return false;
-        return crypto.timingSafeEqual(tokenBuffer, storedBuffer);
-      });
+      if (!verification) {
+        throw new ServiceBadRequestException('token is expired or invalid');
+      }
 
-      if (!match) {
+      // Constant-time comparison to avoid leaking token validity via timing
+      const tokenBuffer = Buffer.from(token);
+      const storedBuffer = Buffer.from(verification.token);
+      if (
+        tokenBuffer.length !== storedBuffer.length ||
+        !crypto.timingSafeEqual(tokenBuffer, storedBuffer)
+      ) {
         throw new ServiceBadRequestException('token is expired or invalid');
       }
     } catch (e) {

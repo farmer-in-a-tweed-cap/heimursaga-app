@@ -12,8 +12,8 @@ export class DevController {
     @Query('template') template: string,
     @Res() res: FastifyReply,
   ) {
-    // Only allow in development
-    if (process.env.NODE_ENV === 'production') {
+    // Only allow in development/test
+    if (!['development', 'test'].includes(process.env.NODE_ENV || '')) {
       return res.status(404).send('Not found');
     }
 

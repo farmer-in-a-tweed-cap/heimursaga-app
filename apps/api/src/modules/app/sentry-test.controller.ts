@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/nestjs';
 
 import { Public } from '@/common/decorators';
 
-const IS_DEVELOPMENT = process.env.NODE_ENV !== 'production';
+const IS_DEVELOPMENT = ['development', 'test'].includes(process.env.NODE_ENV || '');
 
 @ApiTags('sentry-test')
 @Controller('sentry-test')

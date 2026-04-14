@@ -562,7 +562,7 @@ export function ContentTabs({
                 </div>
                 {!isOwner && expedition.status !== 'completed' && expedition.status !== 'cancelled' && (
                   <Link
-                    href={isAuthenticated ? `/sponsor/${expedition.id}` : `/login?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
+                    href={isAuthenticated ? `/sponsor/${expedition.id}` : `/auth?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
                     className="inline-block mt-4 px-6 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] text-sm font-bold"
                   >
                     BECOME A SPONSOR

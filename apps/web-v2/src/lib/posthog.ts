@@ -17,7 +17,7 @@ export function initPostHog() {
     capture_pageview: false,
     capture_pageleave: true,
     autocapture: false,
-    persistence: 'localStorage+cookie',
+    persistence: 'memory',
   });
 }
 

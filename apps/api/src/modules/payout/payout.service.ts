@@ -182,7 +182,6 @@ export class PayoutService {
             bankAccount = {
               bankName: bank.bank_name,
               last4: bank.last4,
-              routingNumber: bank.routing_number,
             };
           }
         } catch {

@@ -205,7 +205,7 @@ export function ExpeditionNotes({
             Behind-the-scenes updates from {explorerName} during this expedition.
           </p>
           <Link
-            href={isAuthenticated ? `/sponsor/${expeditionId}` : `/login?redirect=${encodeURIComponent(`/sponsor/${expeditionId}`)}`}
+            href={isAuthenticated ? `/sponsor/${expeditionId}` : `/auth?redirect=${encodeURIComponent(`/sponsor/${expeditionId}`)}`}
             className="inline-block px-6 py-3 bg-[#ac6d46] text-white font-bold font-mono text-sm border-2 border-[#202020] hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
           >
             SPONSOR TO UNLOCK

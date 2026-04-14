@@ -52,7 +52,11 @@ export async function app() {
     const PORT = parseInt(process.env.PORT) || 5000;
     const API_VERSION = 1;
     const API_PREFIX = `v${API_VERSION}`;
-    const { SESSION_SECRET, SESSION_MAX_AGE = 720, CORS_ORIGIN } = process.env;
+    const { SESSION_SECRET, CORS_ORIGIN } = process.env;
+    const SESSION_MAX_AGE = Math.min(
+      parseInt(String(process.env.SESSION_MAX_AGE ?? '720'), 10) || 720,
+      8760,
+    );
     if (!SESSION_SECRET || !/^[0-9a-f]+$/i.test(SESSION_SECRET)) {
       throw new Error('SESSION_SECRET must be a valid hex string');
     }
@@ -60,7 +64,7 @@ export async function app() {
 
     // create a fastify adapter
     const adapter = new FastifyAdapter({
-      trustProxy: true,
+      trustProxy: IS_PRODUCTION ? 1 : true,
       bodyLimit: 25 * 1024 * 1024,
       genReqId: (req) =>
         (req.headers['x-request-id'] as string) || randomUUID(),
@@ -77,7 +81,7 @@ export async function app() {
 
     // set fastify plugins
     await fastify.register<FastifyCorsOptions>(fastifyCors as any, {
-      origin: CORS_ORIGIN?.split(';') || (IS_DEVELOPMENT ? true : []),
+      origin: CORS_ORIGIN ? CORS_ORIGIN.split(';') : (IS_DEVELOPMENT ? true : []),
       credentials: true,
       methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     } satisfies FastifyCorsOptions);
@@ -261,10 +265,10 @@ export async function app() {
     appInstance = app;
 
     // In dev mode, kill any stale process on the port before listening
-    if (IS_DEVELOPMENT) {
+    if (IS_DEVELOPMENT && Number.isInteger(PORT) && PORT > 0 && PORT < 65536) {
       try {
         const pids = execSync(`lsof -ti:${PORT}`, { encoding: 'utf-8' }).trim();
-        if (pids) {
+        if (pids && /^[\d\s]+$/.test(pids)) {
           console.log(
             `Killing stale process(es) on port ${PORT}: ${pids.replace(/\n/g, ', ')}`,
           );

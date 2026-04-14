@@ -1645,7 +1645,13 @@ export class PaymentService {
         return { success: true, message: 'Checkout already completed' };
       }
 
-      // Complete the subscription upgrade
+      if (checkout.status !== CheckoutStatus.PENDING) {
+        throw new ServiceBadRequestException(
+          'Checkout is not in a completable state',
+        );
+      }
+
+      // Complete the subscription upgrade (verifies Stripe payment intent internally)
       await this.completeSubscriptionPlanUpgrade({ checkoutId });
 
       return { success: true, message: 'Checkout completed successfully' };

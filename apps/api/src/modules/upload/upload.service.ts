@@ -521,6 +521,20 @@ export class UploadService {
         );
       }
 
+      // Validate audio magic bytes to prevent content-type spoofing
+      const header = file.buffer.subarray(0, 12);
+      const isWebM = header[0] === 0x1a && header[1] === 0x45 && header[2] === 0xdf && header[3] === 0xa3;
+      const isMp4 = header.length >= 8 && header[4] === 0x66 && header[5] === 0x74 && header[6] === 0x79 && header[7] === 0x70;
+      const isMp3Id3 = header[0] === 0x49 && header[1] === 0x44 && header[2] === 0x33;
+      const isMp3Sync = header[0] === 0xff && (header[1] & 0xe0) === 0xe0;
+      const isOgg = header[0] === 0x4f && header[1] === 0x67 && header[2] === 0x67 && header[3] === 0x53;
+      if (!isWebM && !isMp4 && !isMp3Id3 && !isMp3Sync && !isOgg) {
+        this.logger.error(`Audio file failed magic byte validation (mime: ${file.mimetype})`);
+        throw new ServiceBadRequestException(
+          'Invalid audio file. The file content does not match the declared format.',
+        );
+      }
+
       const maxSize = 5 * 1024 * 1024; // 5MB
       if (file.buffer.length > maxSize) {
         throw new ServiceBadRequestException(
