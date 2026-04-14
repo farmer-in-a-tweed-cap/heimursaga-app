@@ -468,6 +468,7 @@ export interface ExplorerExpedition {
   tags?: string[];
   isRoundTrip?: boolean;
   waypoints?: Array<{ id?: string; title?: string; lat: number; lon: number; sequence?: number }>;
+  routeGeometry?: number[][];
 }
 
 export interface ExplorerFollower {

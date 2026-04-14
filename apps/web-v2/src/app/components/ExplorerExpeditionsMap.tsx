@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
+import Link from 'next/link';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
@@ -59,7 +60,9 @@ interface Expedition {
   color: string;
   status: 'active' | 'completed';
   waypoints: Waypoint[];
-  entries: JournalEntry[];  // Changed from SimpleEntry[] to JournalEntry[]
+  entries: JournalEntry[];
+  routeGeometry?: number[][];
+  currentLocation?: { lat: number; lng: number };
 }
 
 interface ExplorerExpeditionsMapProps {
@@ -175,6 +178,14 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
     // Track event listeners for cleanup
     const eventListeners: Array<{ element: HTMLElement; handler: () => void }> = [];
 
+    // Inject pulse animation keyframe
+    if (!document.getElementById('wp-pulse-style')) {
+      const style = document.createElement('style');
+      style.id = 'wp-pulse-style';
+      style.textContent = '@keyframes wp-pulse { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); } 100% { box-shadow: 0 0 0 16px rgba(255,255,255,0); } }';
+      document.head.appendChild(style);
+    }
+
     // Wait for map to load
     map.on('load', () => {
       applyNauticalOverlay(map, nauticalOverlay);
@@ -183,9 +194,14 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
         expeditions.forEach((expedition) => {
           const expeditionId = expedition.id;
           
-          // Add route line for each expedition
-          if (expedition.waypoints.length > 1) {
-            // Planned route (all waypoints)
+          // Add route line — use saved route geometry if available, fall back to straight lines
+          const routeCoords = expedition.routeGeometry && expedition.routeGeometry.length >= 2
+            ? expedition.routeGeometry
+            : expedition.waypoints.length > 1
+              ? expedition.waypoints.map(wp => [wp.coords.lng, wp.coords.lat])
+              : null;
+
+          if (routeCoords && routeCoords.length >= 2) {
             map.addSource(`route-${expeditionId}`, {
               type: 'geojson',
               data: {
@@ -193,7 +209,7 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
                 properties: {},
                 geometry: {
                   type: 'LineString',
-                  coordinates: expedition.waypoints.map(wp => [wp.coords.lng, wp.coords.lat]),
+                  coordinates: routeCoords,
                 },
               },
             });
@@ -322,6 +338,20 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
               )
               .addTo(map);
           });
+
+          // Add animated current location marker
+          if (expedition.currentLocation) {
+            const locEl = document.createElement('div');
+            Object.assign(locEl.style, {
+              width: '18px', height: '18px', borderRadius: '50%',
+              backgroundColor: '#ac6d46', border: '3px solid white',
+              boxShadow: '0 0 0 4px rgba(172,109,70,0.3)',
+              animation: 'wp-pulse 2s ease-out infinite',
+            });
+            new mapboxgl.Marker(locEl)
+              .setLngLat([expedition.currentLocation.lng, expedition.currentLocation.lat])
+              .addTo(map);
+          }
 
           // Add clustered journal entry markers
           const removeAllHighlights = () => {
@@ -658,20 +688,16 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
                   key={expedition.id}
                   className="flex items-center gap-3 p-2 border border-[#b5bcc4] dark:border-[#3a3a3a] bg-white dark:bg-[#202020]"
                 >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3.5 h-3.5 rotate-45 border-2 border-[#202020]"
-                      style={{ backgroundColor: expedition.color }}
-                    />
-                    <span
-                      className="text-xs px-2 py-1 text-white rounded-full"
-                      style={{ backgroundColor: expedition.color }}
-                    >
-                      {expedition.status.toUpperCase()}
-                    </span>
-                  </div>
+                  <span
+                    className="text-xs px-2 py-1 text-white rounded-full shrink-0"
+                    style={{ backgroundColor: expedition.color }}
+                  >
+                    {expedition.status.toUpperCase()}
+                  </span>
                   <div className="text-xs">
-                    <div className="font-serif font-bold dark:text-[#e5e5e5]">{expedition.title}</div>
+                    <Link href={`/expedition/${expedition.id}`} className="font-serif font-bold dark:text-[#e5e5e5] hover:text-[#ac6d46] dark:hover:text-[#ac6d46] transition-colors">
+                      {expedition.title}
+                    </Link>
                     <div className="text-[#616161] dark:text-[#b5bcc4]">
                       {expedition.waypoints.length} waypoints • {expedition.entries.length} entries
                     </div>

@@ -617,6 +617,7 @@ export class ExpeditionService {
           goal: true,
           raised: true,
           route_distance_km: true,
+          route_geometry: true,
           elevation_min_m: true,
           elevation_max_m: true,
           is_blueprint: true,
@@ -814,6 +815,11 @@ export class ExpeditionService {
                     sequence: ew.sequence,
                   }))
                 : [],
+            // Include route geometry for active expeditions (profile map)
+            routeGeometry:
+              status === 'active' && (row as any).route_geometry
+                ? JSON.parse((row as any).route_geometry)
+                : undefined,
             currentLocation:
               resolvedLoc && isPublicLoc
                 ? {
