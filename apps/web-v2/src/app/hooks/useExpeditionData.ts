@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { expeditionApi, explorerApi, entryApi, type Expedition } from '@/app/services/api';
+import { useExpeditionQuery } from '@/app/hooks/queries';
 import { haversineKm } from '@/app/utils/haversine';
 import { truncateExcerpt } from '@/app/utils/truncateExcerpt';
 import type { WaypointType, JournalEntryType, TransformedExpedition, CurrentLocationData } from '@/app/components/expedition-detail/types';
@@ -11,8 +13,9 @@ export function useExpeditionData(
   isAuthenticated: boolean,
 ) {
   const router = useRouter();
-  const [apiExpedition, setApiExpedition] = useState<Expedition | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: apiExpedition = null, isLoading: loading } = useExpeditionQuery(expeditionId);
+
   const [isFollowingExplorer, setIsFollowingExplorer] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -20,47 +23,24 @@ export function useExpeditionData(
   const [entryBookmarked, setEntryBookmarked] = useState<Set<string>>(new Set());
   const [entryBookmarkLoading, setEntryBookmarkLoading] = useState<string | null>(null);
 
-  // Track last fetched data to avoid unnecessary state updates (prevents map remount)
-  const lastDataHashRef = useRef<string>('');
-
-  // Fetch expedition from API
-  const fetchExpedition = useCallback(async (showLoading = true) => {
-    if (!expeditionId) return;
-    if (showLoading) setLoading(true);
-    try {
-      const data = await expeditionApi.getById(expeditionId);
-      const hash = JSON.stringify(data);
-      if (hash !== lastDataHashRef.current) {
-        lastDataHashRef.current = hash;
-        setApiExpedition(data);
-      }
-      if (data.bookmarked !== undefined) {
-        setIsBookmarked(data.bookmarked);
-      }
-      if (data.followingAuthor !== undefined) {
-        setIsFollowingExplorer(data.followingAuthor);
-      }
-    } catch (err) {
-      console.error('Error fetching expedition:', err);
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  }, [expeditionId]);
-
-  // Initial fetch + re-fetch when page becomes visible again
+  // Sync local interaction state from query data
   useEffect(() => {
-    fetchExpedition();
+    if (!apiExpedition) return;
+    if (apiExpedition.bookmarked !== undefined) setIsBookmarked(apiExpedition.bookmarked);
+    if (apiExpedition.followingAuthor !== undefined) setIsFollowingExplorer(apiExpedition.followingAuthor);
+  }, [apiExpedition]);
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchExpedition(false);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [fetchExpedition]);
+  // Expose a manual refetch that invalidates the cache
+  const fetchExpedition = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['expedition', expeditionId] });
+  }, [queryClient, expeditionId]);
+
+  // Setter for direct mutation of cached expedition (e.g. after local edits)
+  const setApiExpedition = useCallback((updater: Expedition | null | ((prev: Expedition | null) => Expedition | null)) => {
+    queryClient.setQueryData(['expedition', expeditionId], (prev: Expedition | null | undefined) => {
+      return typeof updater === 'function' ? updater(prev ?? null) : updater;
+    });
+  }, [queryClient, expeditionId]);
 
   // Handle follow/unfollow explorer
   const handleFollowExplorer = async (username: string) => {

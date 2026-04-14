@@ -9,10 +9,13 @@ import { ExplorerCard } from "@/app/components/ExplorerCard";
 import { RegionReport } from "@/app/components/RegionReport";
 import { FollowedExplorerStrip } from "@/app/components/FollowedExplorerStrip";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/context/AuthContext";
 import { Globe, Users, Loader2 } from "lucide-react";
 import { expeditionApi, explorerApi, entryApi, type Expedition, type ExplorerListItem, type Entry } from "@/app/services/api";
+import { useGlobalFeed, useFollowingFeed } from "@/app/hooks/queries";
+import { HomePageSkeleton } from "@/app/components/skeletons/PageSkeletons";
 import { useProFeatures } from "@/app/hooks/useProFeatures";
 import { ConfirmationModal } from "@/app/components/ConfirmationModal";
 import { toast } from "sonner";
@@ -111,6 +114,7 @@ function transformEntry(entry: Entry) {
 
 export function HomePage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuth();
   const { canAdoptBlueprints } = useProFeatures();
   const [viewMode, setViewMode] = useState<'global' | 'following'>('global');
@@ -130,24 +134,41 @@ export function HomePage() {
     }
   }, [viewMode, viewModeRestored]);
 
-  // API data state (global)
-  const [expeditions, setExpeditions] = useState<Expedition[]>([]);
-  const [explorers, setExplorers] = useState<ExplorerListItem[]>([]);
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [explorerCount, setExplorerCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  // API data via React Query
+  const { data: globalData, isLoading: loading } = useGlobalFeed();
+  const { data: followingData, isLoading: followingLoading, isFetched: followingLoaded } = useFollowingFeed(
+    viewMode === 'following' && isAuthenticated,
+  );
 
-  // Following data state
-  const [followingExpeditions, setFollowingExpeditions] = useState<Expedition[]>([]);
-  const [followingExplorers, setFollowingExplorers] = useState<ExplorerListItem[]>([]);
-  const [followingEntries, setFollowingEntries] = useState<Entry[]>([]);
-  const [followingLoading, setFollowingLoading] = useState(false);
-  const [followingLoaded, setFollowingLoaded] = useState(false);
+  const expeditions = globalData?.expeditions.data || [];
+  const explorers = globalData?.explorers.data || [];
+  const entries = globalData?.entries.data || [];
+  const explorerCount = globalData?.explorers.results || 0;
 
-  // Interaction state
+  const followingExpeditions = followingData?.expeditions.data || [];
+  const followingExplorers = followingData?.explorers.data || [];
+  const followingEntries = followingData?.entries.data || [];
+
+  // Interaction state (derived from query data, then locally toggled)
   const [followedExplorers, setFollowedExplorers] = useState<Set<string>>(new Set());
   const [bookmarkedExplorers, setBookmarkedExplorers] = useState<Set<string>>(new Set());
   const [bookmarkedExpeditions, setBookmarkedExpeditions] = useState<Set<string>>(new Set());
+
+  // Sync interaction state when global data arrives
+  useEffect(() => {
+    if (!globalData) return;
+    const followedSet = new Set<string>();
+    (globalData.explorers.data || []).forEach(exp => { if (exp.followed) followedSet.add(exp.username); });
+    setFollowedExplorers(followedSet);
+
+    const bookmarkedExpSet = new Set<string>();
+    (globalData.expeditions.data || []).forEach(exp => { if (exp.bookmarked && exp.id) bookmarkedExpSet.add(exp.id); });
+    setBookmarkedExpeditions(bookmarkedExpSet);
+
+    const bookmarkedExplSet = new Set<string>();
+    (globalData.explorers.data || []).forEach(exp => { if (exp.bookmarked) bookmarkedExplSet.add(exp.username); });
+    setBookmarkedExplorers(bookmarkedExplSet);
+  }, [globalData]);
 
   // Blueprint adoption state
   const [showActiveExpeditionModal, setShowActiveExpeditionModal] = useState(false);
@@ -239,7 +260,7 @@ export function HomePage() {
         setFollowedExplorers(prev => new Set(prev).add(username));
       }
       // Invalidate following cache so next tab switch re-fetches
-      setFollowingLoaded(false);
+      queryClient.invalidateQueries({ queryKey: ['feed', 'following'] });
     } catch (err) {
       console.error('Error following/unfollowing explorer:', err);
     } finally {
@@ -282,103 +303,6 @@ export function HomePage() {
     }
   };
 
-  // Fetch global data from API
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [expeditionsData, explorersData, entriesData] = await Promise.all([
-          expeditionApi.getAll().catch(() => ({ data: [], results: 0 })),
-          explorerApi.getAll().catch(() => ({ data: [], results: 0 })),
-          entryApi.getAll().catch(() => ({ data: [], results: 0 })),
-        ]);
-        if (!cancelled) {
-          setExpeditions(expeditionsData.data || []);
-          setExplorers(explorersData.data || []);
-          setEntries(entriesData.data || []);
-          setExplorerCount(explorersData.results || 0);
-
-          // Initialize followed state from API data
-          const followedSet = new Set<string>();
-          (explorersData.data || []).forEach(exp => {
-            if (exp.followed) {
-              followedSet.add(exp.username);
-            }
-          });
-          setFollowedExplorers(followedSet);
-
-          // Initialize bookmark state from API data
-          const bookmarkedExpSet = new Set<string>();
-          (expeditionsData.data || []).forEach(exp => {
-            if (exp.bookmarked && exp.id) {
-              bookmarkedExpSet.add(exp.id);
-            }
-          });
-          setBookmarkedExpeditions(bookmarkedExpSet);
-
-          const bookmarkedExplSet = new Set<string>();
-          (explorersData.data || []).forEach(exp => {
-            if (exp.bookmarked) {
-              bookmarkedExplSet.add(exp.username);
-            }
-          });
-          setBookmarkedExplorers(bookmarkedExplSet);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Error fetching home page data:', err);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-    fetchData();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Fetch following data when tab is selected
-  useEffect(() => {
-    if (viewMode !== 'following' || !isAuthenticated || followingLoaded) return;
-
-    let cancelled = false;
-
-    const fetchFollowingData = async () => {
-      setFollowingLoading(true);
-      try {
-        const [expeditionsData, explorersData, entriesData] = await Promise.all([
-          expeditionApi.getAll({ context: 'following' }).catch(() => ({ data: [], results: 0 })),
-          explorerApi.getAll({ context: 'following' }).catch(() => ({ data: [], results: 0 })),
-          entryApi.getAll({ context: 'following' }).catch(() => ({ data: [], results: 0 })),
-        ]);
-        if (!cancelled) {
-          setFollowingExpeditions(expeditionsData.data || []);
-          setFollowingExplorers(explorersData.data || []);
-          setFollowingEntries(entriesData.data || []);
-          setFollowingLoaded(true);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Error fetching following data:', err);
-        }
-      } finally {
-        if (!cancelled) {
-          setFollowingLoading(false);
-        }
-      }
-    };
-    fetchFollowingData();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [viewMode, isAuthenticated, followingLoaded]);
 
   // Transform global data
   const featuredExpeditions = expeditions.slice(0, 3).map(transformExpedition);
@@ -472,9 +396,8 @@ export function HomePage() {
 
         {/* Loading State (global) */}
         {viewMode === 'global' && loading && (
-          <div className="mt-6 flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-[#4676ac]" />
-            <span className="ml-3 text-[#616161] dark:text-[#b5bcc4]">Loading...</span>
+          <div className="mt-6">
+            <HomePageSkeleton />
           </div>
         )}
 

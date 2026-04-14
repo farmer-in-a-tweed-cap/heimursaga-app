@@ -20,6 +20,8 @@ import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { calculateDaysElapsed } from '@/app/utils/dateFormat';
 import { truncateExcerpt } from '@/app/utils/truncateExcerpt';
 import { explorerApi, entryApi, expeditionApi, type ExplorerProfile, type ExplorerEntry, type ExplorerExpedition, type ExplorerFollower } from '@/app/services/api';
+import { useExplorerPageData } from '@/app/hooks/queries';
+import { ExplorerProfileSkeleton } from '@/app/components/skeletons/PageSkeletons';
 import { ConfirmationModal } from '@/app/components/ConfirmationModal';
 import { toast } from 'sonner';
 import { CountryFlag } from '@/app/components/CountryFlag';
@@ -37,34 +39,38 @@ function formatSocialLink(platform: 'website' | 'twitter' | 'instagram' | 'youtu
   const cleanValue = value.replace(/^@/, '').trim();
   if (!cleanValue) return '';
 
+  // Block dangerous URI schemes
+  if (/^(javascript|data|vbscript):/i.test(cleanValue)) return '';
+  if (/^(javascript|data|vbscript):/i.test(value)) return '';
+
+  const isAbsoluteUrl = (v: string) => /^https?:\/\//i.test(v);
+  const safeHostname = (v: string, ...hosts: string[]) => {
+    try {
+      const u = new URL(isAbsoluteUrl(v) ? v : `https://${v}`);
+      return hosts.some(h => u.hostname === h || u.hostname === `www.${h}`);
+    } catch { return false; }
+  };
+
   switch (platform) {
     case 'website':
-      // If it's already a full URL, use it; otherwise add https://
-      if (value.startsWith('http://') || value.startsWith('https://')) {
-        return value;
-      }
-      return `https://${value}`;
+      return isAbsoluteUrl(value) ? value : `https://${value}`;
     case 'twitter':
-      // If it's already a full URL, use it
-      if (value.includes('twitter.com') || value.includes('x.com')) {
-        return value.startsWith('http') ? value : `https://${value}`;
+      if (safeHostname(value, 'twitter.com', 'x.com')) {
+        return isAbsoluteUrl(value) ? value : `https://${value}`;
       }
       return `https://x.com/${cleanValue}`;
     case 'instagram':
-      // If it's already a full URL, use it
-      if (value.includes('instagram.com')) {
-        return value.startsWith('http') ? value : `https://${value}`;
+      if (safeHostname(value, 'instagram.com')) {
+        return isAbsoluteUrl(value) ? value : `https://${value}`;
       }
       return `https://instagram.com/${cleanValue}`;
     case 'youtube':
-      // If it's already a full URL, use it
-      if (value.includes('youtube.com') || value.includes('youtu.be')) {
-        return value.startsWith('http') ? value : `https://${value}`;
+      if (safeHostname(value, 'youtube.com', 'youtu.be')) {
+        return isAbsoluteUrl(value) ? value : `https://${value}`;
       }
-      // Assume it's a channel handle
       return `https://youtube.com/@${cleanValue}`;
     default:
-      return value;
+      return isAbsoluteUrl(value) ? value : `https://${value}`;
   }
 }
 
@@ -74,13 +80,19 @@ export function ExplorerProfilePage() {
   const { isAuthenticated, user } = useAuth();
   const { canAdoptBlueprints } = useProFeatures();
 
-  // API data state
-  const [profile, setProfile] = useState<ExplorerProfile | null>(null);
-  const [entries, setEntries] = useState<ExplorerEntry[]>([]);
-  const [expeditions, setExpeditions] = useState<ExplorerExpedition[]>([]);
-  const [followers, setFollowers] = useState<ExplorerFollower[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Check if this is the logged-in user's own profile
+  const isOwnProfile = user && (username === user.username || username === String(user.id));
+  const usernameToFetch = isOwnProfile && user ? user.username : username;
+
+  // API data via React Query
+  const { data: pageData, isLoading: loading, error: queryError } = useExplorerPageData(usernameToFetch);
+  const profile = pageData?.profile ?? null;
+  const entries = pageData?.entries ?? [];
+  const expeditions = pageData?.expeditions ?? [];
+  const followers = pageData?.followers ?? [];
+  const error = queryError ? 'Failed to load profile' : (!loading && !profile ? 'Explorer not found' : null);
+
+  // Interaction state (synced from query data, then locally toggled)
   const [bookmarkedEntries, setBookmarkedEntries] = useState<Set<string>>(new Set());
   const [entryBookmarkingInProgress, setEntryBookmarkingInProgress] = useState<Set<string>>(new Set());
   const [bookmarkedExpeditions, setBookmarkedExpeditions] = useState<Set<string>>(new Set());
@@ -93,6 +105,22 @@ export function ExplorerProfilePage() {
   const [reportOpen, setReportOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [showActiveExpeditionModal, setShowActiveExpeditionModal] = useState(false);
+
+  // Sync interaction state when data arrives
+  useEffect(() => {
+    if (!pageData) return;
+    if (pageData.profile) {
+      setIsExplorerBookmarked(pageData.profile.bookmarked || false);
+      setIsFollowing(pageData.profile.followed || false);
+    }
+    const entryBookmarks = new Set<string>();
+    pageData.entries.forEach(entry => { if (entry.bookmarked) entryBookmarks.add(entry.id); });
+    setBookmarkedEntries(entryBookmarks);
+
+    const expBookmarks = new Set<string>();
+    pageData.expeditions.forEach(exp => { if (exp.bookmarked) expBookmarks.add(exp.id); });
+    setBookmarkedExpeditions(expBookmarks);
+  }, [pageData]);
 
   // Handle adopt blueprint
   const handleAdoptBlueprint = async (expeditionId: string) => {
@@ -217,85 +245,10 @@ export function ExplorerProfilePage() {
     }
   };
 
-  // Check if this is the logged-in user's own profile
-  const isOwnProfile = user && (username === user.username || username === String(user.id));
-
-  // Determine the username to fetch (use logged-in user's username if viewing own profile by ID)
-  const usernameToFetch = isOwnProfile && user ? user.username : username;
-
-  // Fetch explorer data from API
-  useEffect(() => {
-    if (!usernameToFetch) return;
-
-    let cancelled = false;
-
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        // Fetch all data in parallel
-        const [profileData, entriesData, expeditionsData, followersData] = await Promise.all([
-          explorerApi.getByUsername(usernameToFetch).catch(() => null),
-          explorerApi.getEntries(usernameToFetch).catch(() => ({ data: [], results: 0 })),
-          explorerApi.getExpeditions(usernameToFetch).catch(() => ({ data: [], results: 0 })),
-          explorerApi.getFollowers(usernameToFetch).catch(() => ({ data: [], results: 0 })),
-        ]);
-
-        if (cancelled) return;
-
-        if (!profileData) {
-          setError('Explorer not found');
-          return;
-        }
-
-        setProfile(profileData);
-        setIsExplorerBookmarked(profileData.bookmarked || false);
-        setIsFollowing(profileData.followed || false);
-        setEntries(entriesData.data || []);
-        setExpeditions(expeditionsData.data || []);
-        setFollowers(followersData.data || []);
-
-        // Initialize bookmark state from API data
-        const entryBookmarks = new Set<string>();
-        (entriesData.data || []).forEach(entry => {
-          if (entry.bookmarked) entryBookmarks.add(entry.id);
-        });
-        setBookmarkedEntries(entryBookmarks);
-
-        const expBookmarks = new Set<string>();
-        (expeditionsData.data || []).forEach(exp => {
-          if (exp.bookmarked) expBookmarks.add(exp.id);
-        });
-        setBookmarkedExpeditions(expBookmarks);
-      } catch {
-        if (!cancelled) {
-          setError('Failed to load profile');
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [usernameToFetch]);
 
   // Show loading state
   if (loading) {
-    return (
-      <div className="max-w-[1600px] mx-auto px-6 py-12">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-[#ac6d46]" />
-          <span className="ml-3 text-[#616161]">Loading explorer journal...</span>
-        </div>
-      </div>
-    );
+    return <ExplorerProfileSkeleton />;
   }
 
   // Show error state
@@ -917,7 +870,7 @@ export function ExplorerProfilePage() {
           {/* Sponsor button - Visible when explorer is Pro with Stripe Connect and active/planned expedition */}
           {!isOwnProfile && profile.creator && profile.stripeAccountConnected && sponsorableExpedition && (
             <Link
-              href={isAuthenticated ? `/sponsor/${sponsorableExpedition.id}` : `/login?redirect=${encodeURIComponent(`/sponsor/${sponsorableExpedition.id}`)}`}
+              href={isAuthenticated ? `/sponsor/${sponsorableExpedition.id}` : `/auth?redirect=${encodeURIComponent(`/sponsor/${sponsorableExpedition.id}`)}`}
               className="px-2 py-1.5 md:px-3 md:py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs md:text-sm font-bold font-mono flex items-center min-h-[36px] md:min-h-[44px] whitespace-nowrap flex-shrink-0"
             >
               SPONSOR

@@ -3,6 +3,8 @@
  * Centralized API client for all backend calls
  */
 
+import { reportError } from '@/lib/error-logger';
+
 // Get API URL from environment, enforce HTTPS in production
 const getApiBaseUrl = (): string => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -60,6 +62,49 @@ export class ApiError extends Error {
     super(message);
     this.name = 'ApiError';
   }
+}
+
+// ─── Request timeout + retry + circuit breaker ──────────────────────────────
+
+const DEFAULT_TIMEOUT_MS = 15_000;
+const MAX_RETRIES = 2;
+const RETRY_BASE_DELAY_MS = 1_000;
+
+/** Whether a failed request should be retried (5xx or network error, GET only) */
+function isRetryable(method: string, status?: number): boolean {
+  // Only retry idempotent methods
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) return false;
+  // Retry on 5xx server errors
+  if (status && status >= 500) return true;
+  // Retry on network failure (no status)
+  if (!status) return true;
+  return false;
+}
+
+/** Wrap fetch with an AbortController timeout */
+async function fetchWithTimeout(
+  url: string,
+  config: RequestInit,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { ...config, signal: controller.signal });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new ApiError(0, `Request timed out after ${timeoutMs}ms`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/** Sleep helper for retry backoff */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -137,32 +182,64 @@ async function request<T>(
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     try {
       headers['x-csrf-token'] = await getCsrfToken();
-    } catch {
-      // If CSRF token fetch fails, proceed without it
+    } catch (err) {
+      reportError(err, { source: 'api.csrfToken', meta: { endpoint } });
     }
   }
 
-  let response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+  const url = `${API_BASE_URL}${endpoint}`;
+  let response: Response;
+  let lastError: unknown;
 
-  // If we get a 401 (session expired), clear CSRF and notify auth context
-  if (response.status === 401) {
-    csrfToken = null;
-    sessionExpiredHandler?.();
-  }
-
-  // If we get a 403 (CSRF token expired), refresh CSRF token and retry once
-  if (response.status === 403 && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+  // Retry loop for transient failures (5xx / network errors on GET)
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      csrfToken = null;
-      headers['x-csrf-token'] = await fetchCsrfToken();
-      const retryConfig: RequestInit = { ...config, headers };
-      response = await fetch(`${API_BASE_URL}${endpoint}`, retryConfig);
-    } catch {
-      // If retry fails, return the original 403 response
+      response = await fetchWithTimeout(url, config);
+
+      // If we get a 401 (session expired), clear CSRF and notify auth context
+      if (response.status === 401) {
+        csrfToken = null;
+        sessionExpiredHandler?.();
+        return handleResponse<T>(response);
+      }
+
+      // If we get a 403 (CSRF token expired), refresh CSRF token and retry once
+      if (response.status === 403 && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+        try {
+          csrfToken = null;
+          headers['x-csrf-token'] = await fetchCsrfToken();
+          const retryConfig: RequestInit = { ...config, headers };
+          response = await fetchWithTimeout(url, retryConfig);
+        } catch (err) {
+          reportError(err, { source: 'api.csrfRetry', meta: { endpoint, method } });
+        }
+        return handleResponse<T>(response!);
+      }
+
+      // Retry on 5xx for idempotent methods
+      if (isRetryable(method, response.status) && attempt < MAX_RETRIES) {
+        await sleep(RETRY_BASE_DELAY_MS * Math.pow(2, attempt));
+        continue;
+      }
+
+      return handleResponse<T>(response);
+    } catch (err) {
+      lastError = err;
+      // Don't retry ApiError (timeout) or non-retryable
+      if (err instanceof ApiError) throw err;
+      // Retry network errors on idempotent methods
+      if (isRetryable(method) && attempt < MAX_RETRIES) {
+        reportError(err, { source: 'api.retry', meta: { endpoint, method, attempt } });
+        await sleep(RETRY_BASE_DELAY_MS * Math.pow(2, attempt));
+        continue;
+      }
+      reportError(err, { source: 'api.request', meta: { endpoint, method } });
+      throw err;
     }
   }
 
-  return handleResponse<T>(response);
+  reportError(lastError, { source: 'api.exhaustedRetries', meta: { endpoint, method, maxRetries: MAX_RETRIES } });
+  throw lastError;
 }
 
 // API methods

@@ -1,6 +1,7 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/app/context/ThemeContext';
 import { DistanceUnitProvider } from '@/app/context/DistanceUnitContext';
 import { MapLayerProvider } from '@/app/context/MapLayerContext';
@@ -66,24 +67,37 @@ function AppContent({ children }: { children: React.ReactNode }) {
 }
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60_000,        // Data is fresh for 1 minute
+        gcTime: 5 * 60_000,       // Garbage-collect after 5 minutes
+        retry: 1,                 // One retry on failure (api.ts already retries)
+        refetchOnWindowFocus: false,
+      },
+    },
+  }));
+
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <MapLayerProvider>
-          <DistanceUnitProvider>
-            <AuthProvider>
-              <StripeProvider>
-                <PageOwnerProvider>
-                <AppContent>{children}</AppContent>
-                </PageOwnerProvider>
-                <Suspense fallback={null}>
-                  <PostHogPageviewTracker />
-                </Suspense>
-              </StripeProvider>
-            </AuthProvider>
-          </DistanceUnitProvider>
-        </MapLayerProvider>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <MapLayerProvider>
+            <DistanceUnitProvider>
+              <AuthProvider>
+                <StripeProvider>
+                  <PageOwnerProvider>
+                    <AppContent>{children}</AppContent>
+                  </PageOwnerProvider>
+                  <Suspense fallback={null}>
+                    <PostHogPageviewTracker />
+                  </Suspense>
+                </StripeProvider>
+              </AuthProvider>
+            </DistanceUnitProvider>
+          </MapLayerProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

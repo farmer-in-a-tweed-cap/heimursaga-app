@@ -16,6 +16,8 @@ import { usePageOwner } from '@/app/context/PageOwnerContext';
 import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
 import { ExpeditionManagementModal } from '@/app/components/ExpeditionManagementModal';
 import { expeditionApi, explorerApi, sponsorshipApi, type ExplorerProfile, type SponsorshipTierFull, type BlueprintReview } from '@/app/services/api';
+import { useExplorerProfileQuery, useExplorerTiersQuery, useBlueprintReviewsQuery } from '@/app/hooks/queries';
+import { ExpeditionDetailSkeleton } from '@/app/components/skeletons/PageSkeletons';
 import { ReportModal } from '@/app/components/ReportModal';
 import { formatDate } from '@/app/utils/dateFormat';
 import { formatCoords } from '@/app/utils/formatCoords';
@@ -128,25 +130,16 @@ export function ExpeditionDetailPage() {
   } = useExpeditionNotes(expeditionId, isAuthenticated, isOwner, notesVisibility);
 
   // Explorer profile data (for global stats in HeroBanner)
-  const [explorerProfile, setExplorerProfile] = useState<ExplorerProfile | null>(null);
-  const [monthlyTiers, setMonthlyTiers] = useState<SponsorshipTierFull[]>([]);
-  useEffect(() => {
-    if (!expedition?.explorerId) return;
-    explorerApi.getByUsername(expedition.explorerId).then(setExplorerProfile).catch(() => {});
-    sponsorshipApi.getExplorerTiers(expedition.explorerId)
-      .then(res => setMonthlyTiers((res.data || []).filter(t => t.type === 'MONTHLY')))
-      .catch(() => {});
-  }, [expedition?.explorerId]);
+  const { data: explorerProfile = null } = useExplorerProfileQuery(expedition?.explorerId);
+  const { data: tiersData } = useExplorerTiersQuery(expedition?.explorerId);
+  const monthlyTiers = useMemo(
+    () => (tiersData?.data || []).filter((t: SponsorshipTierFull) => t.type === 'MONTHLY'),
+    [tiersData],
+  );
 
   // Blueprint reviews
-  const [blueprintReviews, setBlueprintReviews] = useState<BlueprintReview[]>([]);
-  useEffect(() => {
-    if (apiExpedition?.isBlueprint && expeditionId) {
-      expeditionApi.getReviews(expeditionId, { limit: 50 })
-        .then(res => setBlueprintReviews(res.data || []))
-        .catch(() => {});
-    }
-  }, [apiExpedition?.isBlueprint, expeditionId]);
+  const { data: reviewsData } = useBlueprintReviewsQuery(expeditionId, !!apiExpedition?.isBlueprint);
+  const blueprintReviews = reviewsData?.data || [];
 
   // Total raised = one-time sponsorships + recurring committed during expedition lifetime
   const totalRaised = (expedition?.raised || 0) + fundingStats.totalRecurringToDate;
@@ -1148,14 +1141,7 @@ export function ExpeditionDetailPage() {
 
   // Loading state
   if (loading) {
-    return (
-      <div className="max-w-[1600px] mx-auto px-6 py-12">
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-[#ac6d46]" />
-          <span className="ml-3 text-[#616161]">Loading expedition...</span>
-        </div>
-      </div>
-    );
+    return <ExpeditionDetailSkeleton />;
   }
 
   // Not found state
