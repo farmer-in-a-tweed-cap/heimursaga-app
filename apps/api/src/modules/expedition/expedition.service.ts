@@ -15,6 +15,7 @@ import {
   IWaypointCreatePayload,
   IWaypointDetail,
   IWaypointUpdatePayload,
+  SponsorshipStatus,
   UserNotificationContext,
   UserRole,
 } from '@repo/types';
@@ -2380,6 +2381,23 @@ export class ExpeditionService {
         },
       });
 
+      // Block deletion when the expedition has sponsorships — sponsors must retain
+      // access to the record of what they funded. Route them to cancellation instead,
+      // which pauses recurring subs and notifies sponsors properly.
+      const sponsorshipCount = await this.prisma.sponsorship.count({
+        where: {
+          expedition_public_id: expedition.public_id,
+          sponsored_explorer_id: explorerId,
+          status: { not: SponsorshipStatus.PENDING },
+          deleted_at: null,
+        },
+      });
+      if (sponsorshipCount > 0) {
+        throw new ServiceBadRequestException(
+          'This expedition has sponsors and cannot be deleted. Cancel it instead to preserve the record for sponsors.',
+        );
+      }
+
       // delete the expedition
       await this.prisma.expedition.update({
         where: { id: expedition.id },
@@ -2389,20 +2407,6 @@ export class ExpeditionService {
       // Clean up S3 cover image
       if (expedition.cover_image) {
         await this.uploadService.deleteFromS3(expedition.cover_image);
-      }
-
-      // Emit cancellation event so sponsors stop being billed
-      const cancellableStatuses = ['planned', 'active'];
-      if (cancellableStatuses.includes(expedition.status || '')) {
-        this.eventService.trigger({
-          event: EVENTS.EXPEDITION_CANCELLED,
-          data: {
-            expeditionPublicId: expedition.public_id,
-            expeditionTitle: expedition.title,
-            explorerId: expedition.author_id,
-            cancellationReason: 'Expedition deleted by explorer',
-          },
-        });
       }
 
       await this.checkAndUpdateRestingStatus(explorerId);
@@ -2522,15 +2526,25 @@ export class ExpeditionService {
         );
       }
 
-      // Update expedition
-      await this.prisma.expedition.update({
-        where: { id: expedition.id },
+      // Atomic check-and-update so a double-submit can't emit the event twice
+      // (duplicate events caused sponsors to receive multiple cancellation notifications).
+      const result = await this.prisma.expedition.updateMany({
+        where: {
+          id: expedition.id,
+          status: { in: allowedStatuses },
+          cancelled_at: null,
+        },
         data: {
           status: 'cancelled',
           cancelled_at: dateformat().toDate(),
           cancellation_reason: payload.cancellationReason,
         },
       });
+
+      if (result.count === 0) {
+        // Another concurrent request already cancelled this expedition.
+        return;
+      }
 
       // Emit cancellation event for sponsor refunds and notifications
       this.eventService.trigger({

@@ -746,8 +746,8 @@ export function ExpeditionBuilderPage() {
       await expeditionApi.delete(expeditionId);
       toast.success('Expedition deleted');
       router.push('/');
-    } catch {
-      toast.error('Failed to delete expedition');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete expedition');
     } finally {
       setIsDeletingExpedition(false);
     }
