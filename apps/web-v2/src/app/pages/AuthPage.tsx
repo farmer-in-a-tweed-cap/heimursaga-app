@@ -134,6 +134,16 @@ export function AuthPage() {
 
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-12">
+      {/* Hero */}
+      <div className="text-center mb-10 md:mb-12">
+        <h1 className="font-serif text-[1.75rem] sm:text-4xl md:text-5xl lg:text-6xl text-[#202020] dark:text-[#e5e5e5] mb-3 leading-tight whitespace-nowrap">
+          Write your world-story.
+        </h1>
+        <p className="font-serif text-sm md:text-base text-[#616161] dark:text-[#b5bcc4] max-w-3xl mx-auto leading-relaxed whitespace-normal md:whitespace-nowrap">
+          Journals for explorers, funded by people who care about your discoveries.
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Auth Forms */}
         <div className="lg:col-span-2">
@@ -168,6 +178,16 @@ export function AuthPage() {
               >
                 CREATE NEW ACCOUNT
               </button>
+            </div>
+
+            {/* Guest browse link */}
+            <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161] py-3 px-6 text-center">
+              <Link
+                href="/"
+                className="text-xs font-bold text-[#616161] dark:text-[#b5bcc4] hover:text-[#ac6d46] transition-colors tracking-[0.14em]"
+              >
+                OR EXPLORE WITHOUT SIGNING UP →
+              </Link>
             </div>
 
             {/* Login Form */}
