@@ -23,8 +23,8 @@ try {
   if (__DEV__) console.warn('[IAP] react-native-iap native module not available');
 }
 
-type Subscription = import('react-native-iap').Subscription;
-type SubscriptionPurchase = import('react-native-iap').SubscriptionPurchase;
+type ProductSubscription = import('react-native-iap').ProductSubscription;
+type Purchase = import('react-native-iap').Purchase;
 type PurchaseError = import('react-native-iap').PurchaseError;
 
 // ─── Product IDs (must match App Store Connect / Google Play Console) ───
@@ -69,7 +69,7 @@ export default function UpgradeScreen() {
 
   // IAP state
   const [connected, setConnected] = useState(false);
-  const [products, setProducts] = useState<Subscription[]>([]);
+  const [products, setProducts] = useState<ProductSubscription[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
 
@@ -102,9 +102,10 @@ export default function UpgradeScreen() {
         if (!mounted) return;
         setConnected(true);
 
-        const subs = await iap.getSubscriptions({ skus: PRODUCT_IDS });
+        const subs = await iap.fetchProducts({ skus: PRODUCT_IDS, type: 'subs' });
+        if (__DEV__) console.log('[IAP] fetchProducts result:', JSON.stringify(subs), 'requested:', PRODUCT_IDS);
         if (!mounted) return;
-        setProducts(subs);
+        setProducts((subs ?? []) as ProductSubscription[]);
       } catch (err) {
         if (__DEV__) console.warn('[IAP] init error:', err);
       } finally {
@@ -126,10 +127,15 @@ export default function UpgradeScreen() {
     if (!connected || !iap) return;
 
     const purchaseSub = iap.purchaseUpdatedListener(
-      async (purchase: SubscriptionPurchase) => {
-        const receiptData = Platform.OS === 'ios'
-          ? purchase.transactionReceipt
-          : purchase.purchaseToken;
+      async (purchase: Purchase) => {
+        let receiptData: string | null | undefined;
+        try {
+          receiptData = Platform.OS === 'ios'
+            ? await iap!.getReceiptIOS()
+            : purchase.purchaseToken;
+        } catch (err) {
+          if (__DEV__) console.warn('[IAP] getReceiptIOS error:', err);
+        }
 
         if (!receiptData) {
           Alert.alert('Error', 'No receipt data received.');
@@ -142,7 +148,7 @@ export default function UpgradeScreen() {
             receiptData,
             productId: purchase.productId,
             platform: Platform.OS,
-            transactionId: purchase.transactionId,
+            transactionId: purchase.id,
           });
 
           await refreshUserRef.current();
@@ -172,7 +178,7 @@ export default function UpgradeScreen() {
 
     const errorSub = iap.purchaseErrorListener((error: PurchaseError) => {
       setPurchasing(false);
-      if (error.code === 'E_USER_CANCELLED') return;
+      if (error.code === 'user-cancelled') return;
       Alert.alert('Purchase Error', error.message || 'Something went wrong.');
     });
 
@@ -192,37 +198,45 @@ export default function UpgradeScreen() {
       return;
     }
 
+    if (products.length === 0) {
+      Alert.alert(
+        'Subscriptions Unavailable',
+        'This product isn\'t available yet. Make sure your Apple ID is signed in and the subscription is approved in App Store Connect.',
+      );
+      return;
+    }
+
     setPurchasing(true);
 
     try {
-      if (Platform.OS === 'ios') {
-        await iap.requestSubscription({ sku: productId });
-      } else {
-        await iap.requestSubscription({
-          sku: productId,
-          subscriptionOffers: [{ sku: productId, offerToken: '' }],
-        });
-      }
+      await iap.requestPurchase({
+        request: Platform.OS === 'ios'
+          ? { apple: { sku: productId } }
+          : { google: { skus: [productId] } },
+        type: 'subs',
+      });
     } catch (err) {
       setPurchasing(false);
       if (__DEV__) console.warn('[IAP] purchase error:', err);
+      const msg = err instanceof Error ? err.message : 'Purchase failed. Please try again.';
+      Alert.alert('Purchase Error', msg);
     }
-  }, [billingPeriod, connected]);
+  }, [billingPeriod, connected, products.length]);
 
   // ─── Derive pricing from store products ───
 
-  const monthlyProduct = products.find(p => p.productId === MONTHLY_ID);
-  const annualProduct = products.find(p => p.productId === ANNUAL_ID);
+  const monthlyProduct = products.find(p => p.id === MONTHLY_ID);
+  const annualProduct = products.find(p => p.id === ANNUAL_ID);
 
-  const monthlyPrice = monthlyProduct?.localizedPrice ?? '$6.99';
-  const annualPrice = annualProduct?.localizedPrice ?? '$49.99';
+  const monthlyPrice = monthlyProduct?.displayPrice ?? '$6.99';
+  const annualPrice = annualProduct?.displayPrice ?? '$49.99';
   const activePrice = billingPeriod === 0 ? monthlyPrice : annualPrice;
   const activePeriod = billingPeriod === 0 ? '/month' : '/year';
 
   // Compute savings dynamically from store prices when available
   const savingsLabel = (() => {
-    const mPrice = monthlyProduct?.price ? parseFloat(monthlyProduct.price) : 6.99;
-    const aPrice = annualProduct?.price ? parseFloat(annualProduct.price) : 49.99;
+    const mPrice = monthlyProduct?.price ?? 6.99;
+    const aPrice = annualProduct?.price ?? 49.99;
     const fullYear = mPrice * 12;
     const saved = fullYear - aPrice;
     if (saved <= 0) return null;
@@ -288,7 +302,7 @@ export default function UpgradeScreen() {
               <View style={[styles.labelLine, { backgroundColor: colors.border }]} />
 
               <SegmentedControl
-                options={['MONTHLY', 'ANNUAL']}
+                options={['MONTHLY', 'YEARLY']}
                 active={billingPeriod}
                 onSelect={setBillingPeriod}
               />

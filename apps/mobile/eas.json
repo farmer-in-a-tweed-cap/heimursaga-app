@@ -26,10 +26,6 @@
     }
   },
   "submit": {
-    "production": {
-      "ios": {
-        "privacyPolicyUrl": "https://heimursaga.com/privacy"
-      }
-    }
+    "production": {}
   }
 }

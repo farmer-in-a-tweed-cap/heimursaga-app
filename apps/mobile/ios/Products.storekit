@@ -1,0 +1,74 @@
+{
+  "identifier" : "34EE2AEC-DEDA-4B47-B85D-DE380EB26F59",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "9527AA12-3539-472A-B83D-17FF250ACCF3",
+      "localizations" : [
+        {
+          "description" : "Explorer Pro subscription group",
+          "locale" : "en_US",
+          "name" : "Explorer Pro"
+        }
+      ],
+      "name" : "Explorer Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "6.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "14F2028C-A6BA-497C-9C3B-02439026C66B",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Receive sponsorships and unlock advanced explorer tools",
+              "displayName" : "Explorer Pro Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.heimursaga.pro.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Explorer Pro Monthly",
+          "subscriptionGroupID" : "9527AA12-3539-472A-B83D-17FF250ACCF3",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : []
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "49.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "9B18A1C7-02FD-4861-9E6C-07C541BA3988",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "All Explorer Pro features, billed yearly. Cancel anytime.",
+              "displayName" : "Explorer Pro Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.heimursaga.pro.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Explorer Pro Yearly",
+          "subscriptionGroupID" : "9527AA12-3539-472A-B83D-17FF250ACCF3",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : []
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

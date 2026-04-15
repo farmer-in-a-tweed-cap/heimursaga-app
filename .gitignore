@@ -45,3 +45,9 @@ yarn-error.log*
 
 # session cookies
 cookies.txt
+
+# typescript build info
+**/*.tsbuildinfo
+
+# claude tooling
+.claude/worktrees/
