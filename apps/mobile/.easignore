@@ -1,0 +1,29 @@
+# Non-mobile workspaces — excluded from EAS build uploads.
+# Mobile only depends on @repo/types (+ @repo/tsconfig transitively).
+# Keeping these out prevents pnpm from installing their deps on the EAS
+# worker (e.g. sharp in apps/api, which fails to build from source).
+apps/api/
+apps/web/
+apps/web-v2/
+apps/ios-mockups/
+packages/eslint-config/
+packages/ui/
+
+# Build artifacts and logs
+**/.next/
+**/.turbo/
+**/coverage/
+apps/*.log
+*.log
+
+# Large root-level docs and reports
+PRE_LAUNCH_AUDIT_*.md
+PRE_LAUNCH_FIX_PLAN_*.md
+STRIPE_TEST_MODE_RUNBOOK.md
+STRIPE_TESTING_CHECKLIST.md
+SEO-COMPARISON-REPORT.md
+appstore-listing.txt
+content/
+
+# Sibling lockfiles that accumulated
+pnpm-lock\ *.yaml
