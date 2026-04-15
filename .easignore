@@ -40,6 +40,22 @@ apps/*.log
 packages/eslint-config/
 packages/ui/
 
+# --- generated native folders (mirrors apps/mobile/.gitignore) ---
+# EAS regenerates these via `expo prebuild` on the worker.
+apps/mobile/ios/
+apps/mobile/android/
+apps/mobile/.expo/
+apps/mobile/web-build/
+apps/mobile/expo-env.d.ts
+apps/mobile/.kotlin/
+apps/mobile/.metro-health-check*
+apps/mobile/*.orig.*
+apps/mobile/*.jks
+apps/mobile/*.p8
+apps/mobile/*.p12
+apps/mobile/*.key
+apps/mobile/*.mobileprovision
+
 # --- but keep packages/types/dist (gitignored but needed by mobile) ---
 !packages/types/dist/
 
