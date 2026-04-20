@@ -8,7 +8,9 @@ import { useRecaptcha } from '@/app/hooks/useRecaptcha';
 import { Loader2, Check } from 'lucide-react';
 
 export function AuthPage() {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register'>(
+    typeof window !== 'undefined' && window.location.hash === '#register' ? 'register' : 'login',
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
