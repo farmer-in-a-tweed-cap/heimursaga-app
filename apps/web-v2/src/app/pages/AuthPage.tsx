@@ -136,10 +136,10 @@ export function AuthPage() {
     <div className="max-w-[1600px] mx-auto px-6 py-12">
       {/* Hero */}
       <div className="text-center mb-10 md:mb-12">
-        <h1 className="font-serif text-[1.75rem] sm:text-4xl md:text-5xl lg:text-6xl text-[#202020] dark:text-[#e5e5e5] mb-3 leading-tight whitespace-nowrap">
+        <h1 className="font-serif text-[1.75rem] sm:text-4xl md:text-5xl lg:text-6xl text-[#e5e5e5] mb-3 leading-tight whitespace-nowrap">
           Write your world-story.
         </h1>
-        <p className="font-serif text-sm md:text-base text-[#616161] dark:text-[#b5bcc4] max-w-3xl mx-auto leading-relaxed whitespace-normal md:whitespace-nowrap">
+        <p className="font-serif text-sm md:text-base text-[#b5bcc4] max-w-3xl mx-auto leading-relaxed whitespace-normal md:whitespace-nowrap">
           Journals for explorers, funded by people who care about your discoveries.
         </p>
       </div>
