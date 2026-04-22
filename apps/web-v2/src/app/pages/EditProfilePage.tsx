@@ -389,7 +389,7 @@ export function EditProfilePage() {
                     className="w-full px-3 py-2 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] bg-[#f5f5f5] dark:bg-[#1a1a1a] text-[#616161] dark:text-[#b5bcc4] text-sm cursor-not-allowed"
                   />
                   <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                    Change email in Account Settings
+                    Email address cannot be changed
                   </p>
                 </div>
               </div>
