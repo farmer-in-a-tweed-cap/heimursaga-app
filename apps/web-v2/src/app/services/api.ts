@@ -394,11 +394,11 @@ export const authApi = {
     api.post<{ success: boolean; message: string }>('/auth/resend-email-verification'),
 
   /**
-   * Exchange a Google ID token for either a session (existing user)
-   * or a pending-signup token (new user → complete with a chosen username).
+   * Exchange a Google OAuth authorization code for either a session (existing
+   * user) or a pending-signup token (new user → complete with a chosen username).
    */
-  googleAuth: (idToken: string) =>
-    api.post<GoogleAuthResponse>('/auth/google', { idToken }),
+  googleAuth: (code: string) =>
+    api.post<GoogleAuthResponse>('/auth/google', { code }),
 
   /**
    * Finish Google signup with a chosen username; creates the account

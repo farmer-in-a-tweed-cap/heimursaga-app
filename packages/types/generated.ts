@@ -81,7 +81,7 @@ export interface ISignupPayload {
 
 // google oauth
 export interface IGoogleAuthPayload {
-  idToken: string;
+  code: string;
 }
 
 export type IGoogleAuthResponse =

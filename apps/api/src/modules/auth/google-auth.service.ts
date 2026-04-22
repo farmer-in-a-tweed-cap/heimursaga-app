@@ -18,6 +18,7 @@ import { EMAIL_TEMPLATES } from '@/common/email-templates';
 import {
   ServiceBadRequestException,
   ServiceForbiddenException,
+  ServiceInternalException,
   ServiceUnauthorizedException,
 } from '@/common/exceptions';
 import { ISessionQueryWithPayload } from '@/common/interfaces';
@@ -49,6 +50,7 @@ interface PendingSignupToken {
 export class GoogleAuthService implements OnModuleInit {
   private client: OAuth2Client | null = null;
   private clientId: string | null = null;
+  private clientSecret: string | null = null;
 
   constructor(
     private readonly logger: Logger,
@@ -60,13 +62,15 @@ export class GoogleAuthService implements OnModuleInit {
 
   onModuleInit() {
     const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
-    if (!clientId) {
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+    if (!clientId || !clientSecret) {
       this.logger.warn(
-        '[GOOGLE_AUTH] GOOGLE_CLIENT_ID is not set — Google Sign-In is disabled',
+        '[GOOGLE_AUTH] GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is not set — Google Sign-In is disabled',
       );
       return;
     }
     this.clientId = clientId;
+    this.clientSecret = clientSecret;
     this.client = new OAuth2Client(clientId);
   }
 
@@ -74,10 +78,48 @@ export class GoogleAuthService implements OnModuleInit {
     return this.client !== null;
   }
 
+  /**
+   * Exchange the authorization code from the popup OAuth flow for tokens.
+   * Uses `redirect_uri=postmessage` because Google's popup code client
+   * communicates the code back via postMessage instead of a redirect.
+   */
+  private async exchangeCodeForIdToken(code: string): Promise<string> {
+    if (!this.clientId || !this.clientSecret) {
+      throw new ServiceForbiddenException('Google Sign-In is not configured');
+    }
+    const body = new URLSearchParams({
+      code,
+      client_id: this.clientId,
+      client_secret: this.clientSecret,
+      redirect_uri: 'postmessage',
+      grant_type: 'authorization_code',
+    });
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    }).catch((err) => {
+      this.logger.warn(`[GOOGLE_AUTH] Token endpoint unreachable: ${err.message}`);
+      throw new ServiceInternalException();
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      this.logger.warn(
+        `[GOOGLE_AUTH] Code exchange failed: ${res.status} ${text}`,
+      );
+      throw new ServiceUnauthorizedException('Google sign-in failed');
+    }
+    const data = (await res.json()) as { id_token?: string };
+    if (!data.id_token) {
+      throw new ServiceUnauthorizedException('Google sign-in failed');
+    }
+    return data.id_token;
+  }
+
   async authenticate({
     payload,
     session,
-  }: ISessionQueryWithPayload<{}, { idToken: string }>): Promise<
+  }: ISessionQueryWithPayload<{}, { code: string }>): Promise<
     | {
         status: 'logged_in';
         session: { sid: string; expiredAt: Date };
@@ -95,9 +137,11 @@ export class GoogleAuthService implements OnModuleInit {
       throw new ServiceForbiddenException('Google Sign-In is not configured');
     }
 
+    const idToken = await this.exchangeCodeForIdToken(payload.code);
+
     const ticket = await this.client
       .verifyIdToken({
-        idToken: payload.idToken,
+        idToken,
         audience: this.clientId,
       })
       .catch((err) => {

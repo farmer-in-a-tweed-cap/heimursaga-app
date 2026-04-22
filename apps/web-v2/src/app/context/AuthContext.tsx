@@ -24,7 +24,7 @@ interface AuthContextType {
   sessionExpired: boolean;
   login: (login: string, password: string, remember?: boolean) => Promise<void>;
   signup: (email: string, username: string, password: string, recaptchaToken?: string, inviteCode?: string) => Promise<void>;
-  googleAuth: (idToken: string) => Promise<GoogleAuthResponse>;
+  googleAuth: (code: string) => Promise<GoogleAuthResponse>;
   googleCompleteSignup: (payload: GoogleCompleteSignupPayload) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -118,8 +118,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsNewSignup(true);
   };
 
-  const googleAuth = async (idToken: string): Promise<GoogleAuthResponse> => {
-    const result = await authApi.googleAuth(idToken);
+  const googleAuth = async (code: string): Promise<GoogleAuthResponse> => {
+    const result = await authApi.googleAuth(code);
     if (result.status === 'logged_in') {
       await refreshUser();
       setSessionExpired(false);

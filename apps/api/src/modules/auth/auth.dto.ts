@@ -135,11 +135,14 @@ export class VerifyEmailDto {
 }
 
 export class GoogleAuthDto implements IGoogleAuthPayload {
-  @ApiProperty({ required: true, description: 'Google ID token (JWT)' })
+  @ApiProperty({
+    required: true,
+    description: 'Authorization code from Google OAuth popup (code flow)',
+  })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(4096)
-  idToken: string;
+  @MaxLength(1024)
+  code: string;
 }
 
 export class GoogleCompleteSignupDto implements IGoogleCompleteSignupPayload {
