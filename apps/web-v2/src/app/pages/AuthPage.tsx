@@ -266,12 +266,16 @@ export function AuthPage() {
                 </h2>
 
                 <GoogleAuthSection
-                  containerRef={google.containerRef}
-                  configured={google.configured}
-                  errorMessage={google.error}
+                  setButtonRef={google.setButtonRef}
+                  available={google.available}
                   loading={loading}
+                  label="SIGN IN WITH GOOGLE"
                 />
+                {google.available && <OrDivider />}
 
+                <div className="text-xs font-bold mb-3 text-[#202020] dark:text-[#e5e5e5] tracking-[0.14em]">
+                  SIGN IN WITH EMAIL
+                </div>
                 <form className="space-y-4" method="POST" onSubmit={handleLogin}>
                   {/* Email/Username */}
                   <div>
@@ -371,12 +375,16 @@ export function AuthPage() {
                 </h2>
 
                 <GoogleAuthSection
-                  containerRef={google.containerRef}
-                  configured={google.configured}
-                  errorMessage={google.error}
+                  setButtonRef={google.setButtonRef}
+                  available={google.available}
                   loading={loading}
+                  label="SIGN UP WITH GOOGLE"
                 />
+                {google.available && <OrDivider />}
 
+                <div className="text-xs font-bold mb-3 text-[#202020] dark:text-[#e5e5e5] tracking-[0.14em]">
+                  SIGN UP WITH EMAIL
+                </div>
                 <form className="space-y-4" method="POST" onSubmit={handleRegister}>
                   {/* Username */}
                   <div>
@@ -720,33 +728,34 @@ export function AuthPage() {
 }
 
 interface GoogleAuthSectionProps {
-  containerRef: React.MutableRefObject<HTMLDivElement | null>;
-  configured: boolean;
-  errorMessage: string | null;
+  setButtonRef: (el: HTMLDivElement | null) => void;
+  available: boolean;
   loading: boolean;
+  label: string;
 }
 
-function GoogleAuthSection({ containerRef, configured, errorMessage, loading }: GoogleAuthSectionProps) {
-  if (!configured) return null;
+function GoogleAuthSection({ setButtonRef, available, loading, label }: GoogleAuthSectionProps) {
+  if (!available) return null;
   return (
-    <div className="mb-6">
-      <div
-        ref={containerRef}
-        className="flex justify-center min-h-[44px]"
-        aria-busy={loading}
-      />
-      {errorMessage && (
-        <div className="text-xs text-[#994040] text-center mt-2 font-mono">
-          {errorMessage}
-        </div>
-      )}
-      <div className="flex items-center gap-3 my-4">
-        <div className="flex-1 border-t border-[#b5bcc4] dark:border-[#3a3a3a]" />
-        <span className="text-xs font-bold text-[#616161] dark:text-[#b5bcc4] tracking-[0.14em]">
-          OR
-        </span>
-        <div className="flex-1 border-t border-[#b5bcc4] dark:border-[#3a3a3a]" />
+    <div>
+      <div className="text-xs font-bold mb-2 text-[#202020] dark:text-[#e5e5e5] tracking-[0.14em]">
+        {label}
       </div>
+      <div className="border-2 border-[#b5bcc4] dark:border-[#3a3a3a] bg-white dark:bg-[#1a1a1a] p-4 flex justify-center">
+        <div ref={setButtonRef} className="min-h-[44px]" aria-busy={loading} />
+      </div>
+    </div>
+  );
+}
+
+function OrDivider() {
+  return (
+    <div className="flex items-center gap-3 my-5" aria-hidden="true">
+      <div className="flex-1 border-t border-[#b5bcc4] dark:border-[#3a3a3a]" />
+      <span className="text-xs font-bold text-[#616161] dark:text-[#b5bcc4] tracking-[0.14em]">
+        OR
+      </span>
+      <div className="flex-1 border-t border-[#b5bcc4] dark:border-[#3a3a3a]" />
     </div>
   );
 }

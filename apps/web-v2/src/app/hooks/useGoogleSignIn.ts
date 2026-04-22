@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 declare global {
   interface Window {
@@ -70,14 +70,17 @@ interface UseGoogleSignInOptions {
 }
 
 /**
- * Loads the Google Identity Services script and renders the official
- * Google Sign-In button into the provided ref. Returns a ref + a state
- * indicating whether Google is configured/ready.
+ * Loads Google Identity Services and renders the official Google Sign-In
+ * button into whichever DOM node is attached via the returned `setButtonRef`
+ * ref callback. Using a callback ref (instead of a stable ref object) means
+ * the button re-renders correctly when the host element remounts — e.g. when
+ * the user switches between login and register tabs on the auth page.
  */
 export function useGoogleSignIn({ onCredential }: UseGoogleSignInOptions) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [buttonEl, setButtonEl] = useState<HTMLDivElement | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const initializedRef = useRef(false);
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const configured = !!clientId;
 
@@ -87,6 +90,7 @@ export function useGoogleSignIn({ onCredential }: UseGoogleSignInOptions) {
     onCredentialRef.current = onCredential;
   }, [onCredential]);
 
+  // Load + initialize GSI once
   useEffect(() => {
     if (!configured) return;
     let cancelled = false;
@@ -94,29 +98,19 @@ export function useGoogleSignIn({ onCredential }: UseGoogleSignInOptions) {
     loadGsiScript()
       .then(() => {
         if (cancelled) return;
-        window.google!.accounts.id.initialize({
-          client_id: clientId!,
-          callback: (response) => {
-            if (response?.credential) {
-              onCredentialRef.current(response.credential);
-            }
-          },
-          auto_select: false,
-          cancel_on_tap_outside: true,
-          use_fedcm_for_prompt: true,
-        });
-
-        if (containerRef.current) {
-          // Clear in case of re-render
-          containerRef.current.innerHTML = '';
-          window.google!.accounts.id.renderButton(containerRef.current, {
-            theme: 'filled_black',
-            size: 'large',
-            text: 'continue_with',
-            shape: 'rectangular',
-            width: Math.min(containerRef.current.clientWidth || 400, 400),
-            logo_alignment: 'center',
+        if (!initializedRef.current) {
+          window.google!.accounts.id.initialize({
+            client_id: clientId!,
+            callback: (response) => {
+              if (response?.credential) {
+                onCredentialRef.current(response.credential);
+              }
+            },
+            auto_select: false,
+            cancel_on_tap_outside: true,
+            use_fedcm_for_prompt: true,
           });
+          initializedRef.current = true;
         }
         setReady(true);
       })
@@ -129,5 +123,33 @@ export function useGoogleSignIn({ onCredential }: UseGoogleSignInOptions) {
     };
   }, [clientId, configured]);
 
-  return { containerRef, ready, configured, error };
+  // (Re)render the button whenever the target element or ready state changes.
+  // This is what makes tab-switching work: when the old host node unmounts
+  // React calls the ref with null, then with the new node when the new tab
+  // mounts, re-triggering this effect.
+  useEffect(() => {
+    if (!buttonEl || !ready) return;
+    buttonEl.innerHTML = '';
+    const parentWidth = buttonEl.parentElement?.clientWidth ?? 400;
+    const width = Math.min(Math.max(parentWidth - 8, 200), 400);
+    window.google!.accounts.id.renderButton(buttonEl, {
+      theme: 'filled_black',
+      size: 'large',
+      text: 'continue_with',
+      shape: 'rectangular',
+      width,
+      logo_alignment: 'center',
+    });
+  }, [buttonEl, ready]);
+
+  const setButtonRef = useCallback((el: HTMLDivElement | null) => {
+    setButtonEl(el);
+  }, []);
+
+  // `available` = should the Google section render at all. False if not
+  // configured (no client_id) or if the GSI script failed to load (CSP,
+  // network block, offline).
+  const available = configured && !error;
+
+  return { setButtonRef, ready, configured, error, available };
 }
