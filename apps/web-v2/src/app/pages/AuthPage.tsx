@@ -741,8 +741,8 @@ function GoogleAuthSection({ setButtonRef, available, loading, label }: GoogleAu
       <div className="text-xs font-bold mb-2 text-[#202020] dark:text-[#e5e5e5] tracking-[0.14em]">
         {label}
       </div>
-      <div className="border-2 border-[#b5bcc4] dark:border-[#3a3a3a] bg-white dark:bg-[#1a1a1a] p-4 flex justify-center">
-        <div ref={setButtonRef} className="min-h-[44px]" aria-busy={loading} />
+      <div className="border-2 border-[#b5bcc4] dark:border-[#3a3a3a] bg-white dark:bg-[#1a1a1a] p-4 flex justify-center overflow-hidden">
+        <div ref={setButtonRef} className="min-h-[44px] min-w-0 max-w-full" aria-busy={loading} />
       </div>
     </div>
   );

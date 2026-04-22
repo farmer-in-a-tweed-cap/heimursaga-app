@@ -76,6 +76,11 @@ interface UseGoogleSignInOptions {
  * the button re-renders correctly when the host element remounts — e.g. when
  * the user switches between login and register tabs on the auth page.
  */
+function detectDarkMode(): boolean {
+  if (typeof document === 'undefined') return false;
+  return document.documentElement.classList.contains('dark');
+}
+
 export function useGoogleSignIn({ onCredential }: UseGoogleSignInOptions) {
   const buttonElRef = useRef<HTMLDivElement | null>(null);
   // Counter incremented on every ref-attach/detach; kicks the render effect
@@ -85,9 +90,23 @@ export function useGoogleSignIn({ onCredential }: UseGoogleSignInOptions) {
   const [refTick, setRefTick] = useState(0);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDark, setIsDark] = useState(detectDarkMode);
   const initializedRef = useRef(false);
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const configured = !!clientId;
+
+  // Track app theme changes so the button re-renders with the matching
+  // GSI theme variant (outline on dark, filled_black on light).
+  useEffect(() => {
+    if (typeof MutationObserver === 'undefined') return;
+    setIsDark(detectDarkMode());
+    const mo = new MutationObserver(() => setIsDark(detectDarkMode()));
+    mo.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    return () => mo.disconnect();
+  }, []);
 
   // Keep the callback fresh without re-initializing the SDK
   const onCredentialRef = useRef(onCredential);
@@ -132,21 +151,45 @@ export function useGoogleSignIn({ onCredential }: UseGoogleSignInOptions) {
   // This is what makes tab-switching work: when the old host node unmounts
   // the ref callback fires with null, then with the new node when the new
   // tab mounts, bumping refTick and re-triggering this effect.
+  //
+  // A ResizeObserver on the parent frame also re-renders the button when the
+  // available width changes (viewport resize, orientation flip, late layout
+  // resolution on mobile) so the button width stays in sync with the frame.
   useEffect(() => {
     const el = buttonElRef.current;
     if (!el || !ready) return;
-    el.replaceChildren();
-    const parentWidth = el.parentElement?.clientWidth ?? 400;
-    const width = Math.min(Math.max(parentWidth - 8, 200), 400);
-    window.google!.accounts.id.renderButton(el, {
-      theme: 'filled_black',
-      size: 'large',
-      text: 'continue_with',
-      shape: 'rectangular',
-      width,
-      logo_alignment: 'center',
+
+    const renderButton = () => {
+      const parent = el.parentElement;
+      if (!parent) return;
+      el.replaceChildren();
+      const parentWidth = parent.clientWidth;
+      const width = Math.min(Math.max(parentWidth - 8, 200), 400);
+      window.google!.accounts.id.renderButton(el, {
+        theme: isDark ? 'outline' : 'filled_black',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        width,
+        logo_alignment: 'center',
+      });
+    };
+
+    renderButton();
+
+    const parent = el.parentElement;
+    if (!parent || typeof ResizeObserver === 'undefined') return;
+    let lastWidth = parent.clientWidth;
+    const ro = new ResizeObserver(() => {
+      const newWidth = parent.clientWidth;
+      // Ignore sub-pixel noise; re-render only on meaningful width changes.
+      if (Math.abs(newWidth - lastWidth) < 4) return;
+      lastWidth = newWidth;
+      renderButton();
     });
-  }, [refTick, ready]);
+    ro.observe(parent);
+    return () => ro.disconnect();
+  }, [refTick, ready, isDark]);
 
   const setButtonRef = useCallback((el: HTMLDivElement | null) => {
     if (el === buttonElRef.current) return;
