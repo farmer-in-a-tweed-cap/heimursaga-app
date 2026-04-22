@@ -77,7 +77,12 @@ interface UseGoogleSignInOptions {
  * the user switches between login and register tabs on the auth page.
  */
 export function useGoogleSignIn({ onCredential }: UseGoogleSignInOptions) {
-  const [buttonEl, setButtonEl] = useState<HTMLDivElement | null>(null);
+  const buttonElRef = useRef<HTMLDivElement | null>(null);
+  // Counter incremented on every ref-attach/detach; kicks the render effect
+  // whenever the DOM node changes (e.g. user switches between login/register
+  // tabs). Using useRef for the element (instead of useState) avoids
+  // react-hooks/immutability complaints about DOM mutations.
+  const [refTick, setRefTick] = useState(0);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const initializedRef = useRef(false);
@@ -125,14 +130,15 @@ export function useGoogleSignIn({ onCredential }: UseGoogleSignInOptions) {
 
   // (Re)render the button whenever the target element or ready state changes.
   // This is what makes tab-switching work: when the old host node unmounts
-  // React calls the ref with null, then with the new node when the new tab
-  // mounts, re-triggering this effect.
+  // the ref callback fires with null, then with the new node when the new
+  // tab mounts, bumping refTick and re-triggering this effect.
   useEffect(() => {
-    if (!buttonEl || !ready) return;
-    buttonEl.innerHTML = '';
-    const parentWidth = buttonEl.parentElement?.clientWidth ?? 400;
+    const el = buttonElRef.current;
+    if (!el || !ready) return;
+    el.replaceChildren();
+    const parentWidth = el.parentElement?.clientWidth ?? 400;
     const width = Math.min(Math.max(parentWidth - 8, 200), 400);
-    window.google!.accounts.id.renderButton(buttonEl, {
+    window.google!.accounts.id.renderButton(el, {
       theme: 'filled_black',
       size: 'large',
       text: 'continue_with',
@@ -140,10 +146,12 @@ export function useGoogleSignIn({ onCredential }: UseGoogleSignInOptions) {
       width,
       logo_alignment: 'center',
     });
-  }, [buttonEl, ready]);
+  }, [refTick, ready]);
 
   const setButtonRef = useCallback((el: HTMLDivElement | null) => {
-    setButtonEl(el);
+    if (el === buttonElRef.current) return;
+    buttonElRef.current = el;
+    setRefTick((n) => n + 1);
   }, []);
 
   // `available` = should the Google section render at all. False if not
