@@ -21,6 +21,7 @@ import { hashPassword, verifyPassword } from '@/lib/utils';
 import {
   BANNED_USERNAMES,
   BANNED_USERNAME_SUBSTRINGS,
+  DISPOSABLE_EMAIL_DOMAINS,
 } from '@/common/constants';
 import { EMAIL_TEMPLATES } from '@/common/email-templates';
 import {
@@ -1186,20 +1187,6 @@ export class AuthService {
       /^[a-z]{1,3}\d{3,}$/i, // Short letters + many numbers
     ];
 
-    // Check for disposable/temporary email domains
-    const disposableEmailDomains = [
-      '10minutemail.com',
-      'tempmail.org',
-      'guerrillamail.com',
-      'maildrop.cc',
-      'throwaway.email',
-      'temp-mail.org',
-      'getnada.com',
-      'mailinator.com',
-      'yopmail.com',
-      '0-mail.com',
-    ];
-
     const emailDomain = email.split('@')[1];
 
     // Check email patterns
@@ -1213,7 +1200,7 @@ export class AuthService {
     }
 
     // Check disposable email domains
-    if (disposableEmailDomains.includes(emailDomain.toLowerCase())) {
+    if (DISPOSABLE_EMAIL_DOMAINS.has(emailDomain.toLowerCase())) {
       throw new ServiceForbiddenException(
         'Disposable email addresses are not allowed',
       );

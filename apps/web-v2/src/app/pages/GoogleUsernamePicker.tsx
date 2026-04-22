@@ -185,6 +185,10 @@ export function GoogleUsernamePicker({
             src={picture}
             alt=""
             referrerPolicy="no-referrer"
+            onError={(e) => {
+              // Hide the image on load failure rather than showing a broken icon.
+              (e.currentTarget as HTMLImageElement).style.display = 'none';
+            }}
             className="w-10 h-10 rounded-full"
           />
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">

@@ -146,10 +146,13 @@ export class GoogleAuthDto implements IGoogleAuthPayload {
 }
 
 export class GoogleCompleteSignupDto implements IGoogleCompleteSignupPayload {
-  @ApiProperty({ required: true, description: 'Pending-signup token returned by /auth/google' })
+  @ApiProperty({
+    required: true,
+    description: 'Pending-signup token returned by /auth/google',
+  })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(2048)
+  @MaxLength(1024)
   pendingToken: string;
 
   @ApiProperty({ required: true })

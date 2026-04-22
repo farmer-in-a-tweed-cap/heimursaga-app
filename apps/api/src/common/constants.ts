@@ -163,6 +163,23 @@ export const BANNED_USERNAME_SUBSTRINGS = [
   'crypto',
 ];
 
+/**
+ * Disposable / throwaway email domains. Rejected on both password signup and
+ * Google signup to prevent bulk/throwaway-account abuse.
+ */
+export const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  '10minutemail.com',
+  'tempmail.org',
+  'guerrillamail.com',
+  'maildrop.cc',
+  'throwaway.email',
+  'temp-mail.org',
+  'getnada.com',
+  'mailinator.com',
+  'yopmail.com',
+  '0-mail.com',
+]);
+
 export const ENVIRONMENTS = {
   PRODUCTION: 'production',
   STAGING: 'staging',

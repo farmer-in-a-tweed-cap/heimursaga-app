@@ -31,14 +31,13 @@ function loadGsiScript(): Promise<void> {
   if (scriptLoadPromise) return scriptLoadPromise;
 
   scriptLoadPromise = new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>(
-      `script[src="${GSI_SCRIPT_SRC}"]`,
-    );
-    if (existing) {
-      existing.addEventListener('load', () => resolve());
-      existing.addEventListener('error', () => reject(new Error('GSI script failed to load')));
-      return;
-    }
+    // Remove any previous attempt. Attaching listeners to an already-errored
+    // <script> never fires — they only catch future events. Starting fresh on
+    // each attempt makes retry after a transient network failure work.
+    document
+      .querySelectorAll<HTMLScriptElement>(`script[src="${GSI_SCRIPT_SRC}"]`)
+      .forEach((s) => s.remove());
+
     const script = document.createElement('script');
     script.src = GSI_SCRIPT_SRC;
     script.async = true;

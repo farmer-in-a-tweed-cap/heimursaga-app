@@ -8,11 +8,14 @@ import {
 import { OAuth2Client } from 'google-auth-library';
 import * as crypto from 'node:crypto';
 
+import { Prisma } from '@prisma/client';
+
 import { hashPassword } from '@/lib/utils';
 
 import {
   BANNED_USERNAMES,
   BANNED_USERNAME_SUBSTRINGS,
+  DISPOSABLE_EMAIL_DOMAINS,
 } from '@/common/constants';
 import { EMAIL_TEMPLATES } from '@/common/email-templates';
 import {
@@ -99,13 +102,24 @@ export class GoogleAuthService implements OnModuleInit {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
     }).catch((err) => {
-      this.logger.warn(`[GOOGLE_AUTH] Token endpoint unreachable: ${err.message}`);
+      this.logger.warn(
+        `[GOOGLE_AUTH] Token endpoint unreachable: ${err.message}`,
+      );
       throw new ServiceInternalException();
     });
     if (!res.ok) {
-      const text = await res.text().catch(() => '');
+      // Only log the status + error code. The raw body can echo back the
+      // submitted `code` in `error_description` and we don't want auth codes
+      // in log aggregators (short-lived but still a credential).
+      let errorCode = 'unknown';
+      try {
+        const data = (await res.json()) as { error?: string };
+        errorCode = data?.error || 'unknown';
+      } catch {
+        // ignore parse errors
+      }
       this.logger.warn(
-        `[GOOGLE_AUTH] Code exchange failed: ${res.status} ${text}`,
+        `[GOOGLE_AUTH] Code exchange failed: ${res.status} ${errorCode}`,
       );
       throw new ServiceUnauthorizedException('Google sign-in failed');
     }
@@ -151,7 +165,9 @@ export class GoogleAuthService implements OnModuleInit {
 
     const googlePayload = ticket.getPayload();
     if (!googlePayload?.sub || !googlePayload.email) {
-      throw new ServiceUnauthorizedException('Google credential missing fields');
+      throw new ServiceUnauthorizedException(
+        'Google credential missing fields',
+      );
     }
     if (!googlePayload.email_verified) {
       throw new ServiceForbiddenException(
@@ -161,6 +177,17 @@ export class GoogleAuthService implements OnModuleInit {
 
     const googleId = googlePayload.sub;
     const email = googlePayload.email.trim().toLowerCase();
+
+    // Defense in depth: if a user with this google_id is blocked, reject
+    // explicitly rather than falling through to Branch 3 (which would try to
+    // create a new row and hit the unique constraint with an opaque 500).
+    const blockedMatch = await this.prisma.explorer.findFirst({
+      where: { google_id: googleId, blocked: true },
+      select: { id: true },
+    });
+    if (blockedMatch) {
+      throw new ServiceForbiddenException('This account has been suspended');
+    }
 
     // Branch 1: known google_id → log in
     const byGoogleId = await this.prisma.explorer.findFirst({
@@ -241,9 +268,10 @@ export class GoogleAuthService implements OnModuleInit {
   async completeSignup({
     payload,
     session,
-  }: ISessionQueryWithPayload<{}, IGoogleCompleteSignupPayload>): Promise<
-    ILoginResponse
-  > {
+  }: ISessionQueryWithPayload<
+    {},
+    IGoogleCompleteSignupPayload
+  >): Promise<ILoginResponse> {
     const { pendingToken, username: rawUsername, inviteCode } = payload;
 
     // Verify and decode the pending token
@@ -261,6 +289,15 @@ export class GoogleAuthService implements OnModuleInit {
 
     const username = rawUsername.trim().toLowerCase();
     const email = pending.email.trim().toLowerCase();
+
+    // Reject disposable/throwaway email domains — matches the password
+    // signup policy (auth.service.detectSuspiciousRegistration).
+    const emailDomain = email.split('@')[1];
+    if (emailDomain && DISPOSABLE_EMAIL_DOMAINS.has(emailDomain)) {
+      throw new ServiceForbiddenException(
+        'Disposable email addresses are not allowed',
+      );
+    }
 
     // Validate username shape
     const availability = await this.checkUsernameAvailability(username);
@@ -300,6 +337,20 @@ export class GoogleAuthService implements OnModuleInit {
       crypto.randomBytes(64).toString('hex'),
     );
 
+    // Translate the Prisma unique-constraint error (P2002) into a friendly
+    // 403. This covers the race where a concurrent signup (password or
+    // Google) creates the same email/google_id between our check above and
+    // the actual insert below — the check is best-effort, the DB is truth.
+    const mapUniqueViolation = (e: unknown): never => {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new ServiceForbiddenException('Account already exists');
+      }
+      throw e;
+    };
+
     // Invite-code path (Guide signup) — reuse same semantics as password signup
     const isGuideSignup = !!inviteCode?.trim();
     let explorerId: number;
@@ -317,46 +368,50 @@ export class GoogleAuthService implements OnModuleInit {
         throw new ServiceBadRequestException('This invite code has expired');
       }
 
-      const created = await this.prisma.$transaction(async (tx) => {
-        const codeFresh = await tx.inviteCode.findUnique({ where: { code } });
-        if (!codeFresh || codeFresh.used_by !== null) {
-          throw new ServiceBadRequestException(
-            'Invite code is invalid or has already been used',
-          );
-        }
-        const user = await tx.explorer.create({
+      const created = await this.prisma
+        .$transaction(async (tx) => {
+          const codeFresh = await tx.inviteCode.findUnique({ where: { code } });
+          if (!codeFresh || codeFresh.used_by !== null) {
+            throw new ServiceBadRequestException(
+              'Invite code is invalid or has already been used',
+            );
+          }
+          const user = await tx.explorer.create({
+            data: {
+              email,
+              username,
+              role: UserRole.CREATOR,
+              is_guide: true,
+              password: unguessablePassword,
+              google_id: pending.sub,
+              is_email_verified: true,
+              profile: { create: { picture: '' } },
+            },
+            select: { id: true },
+          });
+          await tx.inviteCode.update({
+            where: { code, used_by: null },
+            data: { used_by: user.id, used_at: new Date() },
+          });
+          return user;
+        })
+        .catch(mapUniqueViolation);
+      explorerId = created.id;
+    } else {
+      const user = await this.prisma.explorer
+        .create({
           data: {
             email,
             username,
-            role: UserRole.CREATOR,
-            is_guide: true,
-            password: null,
+            role: UserRole.USER,
+            password: unguessablePassword,
             google_id: pending.sub,
             is_email_verified: true,
             profile: { create: { picture: '' } },
           },
           select: { id: true },
-        });
-        await tx.inviteCode.update({
-          where: { code, used_by: null },
-          data: { used_by: user.id, used_at: new Date() },
-        });
-        return user;
-      });
-      explorerId = created.id;
-    } else {
-      const user = await this.prisma.explorer.create({
-        data: {
-          email,
-          username,
-          role: UserRole.USER,
-          password: unguessablePassword,
-          google_id: pending.sub,
-          is_email_verified: true,
-          profile: { create: { picture: '' } },
-        },
-        select: { id: true },
-      });
+        })
+        .catch(mapUniqueViolation);
       explorerId = user.id;
     }
 
@@ -372,7 +427,7 @@ export class GoogleAuthService implements OnModuleInit {
         username,
         email,
         signupDate: new Date().toISOString(),
-        userProfileUrl: `${process.env.NEXT_PUBLIC_APP_BASE_URL || 'https://heimursaga.com'}/${username}`,
+        userProfileUrl: `${process.env.APP_BASE_URL || 'https://heimursaga.com'}/${username}`,
       },
     });
 

@@ -78,6 +78,15 @@ export function AuthPage() {
     onCancel: handleGoogleCancel,
   });
 
+  const handleGoogleClick = useCallback(() => {
+    // Set loading state up-front so the button visually disables while the
+    // popup is open — otherwise a user could double-click and trigger two
+    // concurrent code requests.
+    setError(null);
+    setLoading(true);
+    google.signIn();
+  }, [google]);
+
   const getSafeRedirect = () => {
     const redirect = searchParams.get('redirect') || searchParams.get('from');
     if (!redirect) return '/';
@@ -274,7 +283,7 @@ export function AuthPage() {
                 </h2>
 
                 <GoogleAuthSection
-                  onClick={google.signIn}
+                  onClick={handleGoogleClick}
                   available={google.available}
                   ready={google.ready}
                   loading={loading}
@@ -385,7 +394,7 @@ export function AuthPage() {
                 </h2>
 
                 <GoogleAuthSection
-                  onClick={google.signIn}
+                  onClick={handleGoogleClick}
                   available={google.available}
                   ready={google.ready}
                   loading={loading}
