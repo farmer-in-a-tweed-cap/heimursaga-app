@@ -1,11 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, ApiError } from '@/app/context/AuthContext';
 import { useRecaptcha } from '@/app/hooks/useRecaptcha';
+import { useGoogleSignIn } from '@/app/hooks/useGoogleSignIn';
 import { Loader2, Check } from 'lucide-react';
+import { GoogleUsernamePicker } from './GoogleUsernamePicker';
+
+interface PendingGoogleSignup {
+  pendingToken: string;
+  suggestedUsername: string;
+  email: string;
+  name?: string;
+  picture?: string;
+}
 
 export function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>(
@@ -16,10 +26,49 @@ export function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const { login, signup } = useAuth();
+  const [pendingGoogle, setPendingGoogle] = useState<PendingGoogleSignup | null>(null);
+  const { login, signup, googleAuth } = useAuth();
   const { executeRecaptcha, isConfigured: recaptchaConfigured } = useRecaptcha();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const handleGoogleCredential = useCallback(
+    async (idToken: string) => {
+      setError(null);
+      setLoading(true);
+      try {
+        const result = await googleAuth(idToken);
+        if (result.status === 'logged_in') {
+          router.push(getSafeRedirect());
+        } else {
+          setPendingGoogle({
+            pendingToken: result.pendingToken,
+            suggestedUsername: result.suggestedUsername,
+            email: result.email,
+            name: result.name,
+            picture: result.picture,
+          });
+        }
+      } catch (err) {
+        if (err instanceof ApiError) {
+          if (err.status === 429) {
+            setError('Too many attempts. Please wait a minute and try again.');
+          } else {
+            setError(err.message || 'Google sign-in failed.');
+          }
+        } else {
+          setError('Google sign-in failed. Please try again.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    // getSafeRedirect defined below — intentionally not in deps (pure function of searchParams)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [googleAuth, router],
+  );
+
+  const google = useGoogleSignIn({ onCredential: handleGoogleCredential });
 
   const getSafeRedirect = () => {
     const redirect = searchParams.get('redirect') || searchParams.get('from');
@@ -149,6 +198,23 @@ export function AuthPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Auth Forms */}
         <div className="lg:col-span-2">
+          {pendingGoogle ? (
+            <GoogleUsernamePicker
+              pendingToken={pendingGoogle.pendingToken}
+              suggestedUsername={pendingGoogle.suggestedUsername}
+              email={pendingGoogle.email}
+              name={pendingGoogle.name}
+              picture={pendingGoogle.picture}
+              onDone={() => {
+                if (typeof window.fbq === 'function') {
+                  window.fbq('track', 'CompleteRegistration');
+                }
+                router.push(getSafeRedirect());
+              }}
+              onCancel={() => setPendingGoogle(null)}
+            />
+          ) : (
+          <>
           {/* Error Message */}
           {error && (
             <div className="bg-white dark:bg-[#202020] border-2 border-[#ac6d46] mb-6 p-4">
@@ -198,6 +264,13 @@ export function AuthPage() {
                 <h2 className="text-xl font-bold mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
                   ACCOUNT LOGIN
                 </h2>
+
+                <GoogleAuthSection
+                  containerRef={google.containerRef}
+                  configured={google.configured}
+                  errorMessage={google.error}
+                  loading={loading}
+                />
 
                 <form className="space-y-4" method="POST" onSubmit={handleLogin}>
                   {/* Email/Username */}
@@ -296,6 +369,13 @@ export function AuthPage() {
                 <h2 className="text-xl font-bold mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
                   CREATE NEW EXPLORER ACCOUNT
                 </h2>
+
+                <GoogleAuthSection
+                  containerRef={google.containerRef}
+                  configured={google.configured}
+                  errorMessage={google.error}
+                  loading={loading}
+                />
 
                 <form className="space-y-4" method="POST" onSubmit={handleRegister}>
                   {/* Username */}
@@ -551,6 +631,8 @@ export function AuthPage() {
               </div>
             </div>
           </div>
+          </>
+          )}
         </div>
 
         {/* Right Column - System Information */}
@@ -632,6 +714,38 @@ export function AuthPage() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+interface GoogleAuthSectionProps {
+  containerRef: React.MutableRefObject<HTMLDivElement | null>;
+  configured: boolean;
+  errorMessage: string | null;
+  loading: boolean;
+}
+
+function GoogleAuthSection({ containerRef, configured, errorMessage, loading }: GoogleAuthSectionProps) {
+  if (!configured) return null;
+  return (
+    <div className="mb-6">
+      <div
+        ref={containerRef}
+        className="flex justify-center min-h-[44px]"
+        aria-busy={loading}
+      />
+      {errorMessage && (
+        <div className="text-xs text-[#994040] text-center mt-2 font-mono">
+          {errorMessage}
+        </div>
+      )}
+      <div className="flex items-center gap-3 my-4">
+        <div className="flex-1 border-t border-[#b5bcc4] dark:border-[#3a3a3a]" />
+        <span className="text-xs font-bold text-[#616161] dark:text-[#b5bcc4] tracking-[0.14em]">
+          OR
+        </span>
+        <div className="flex-1 border-t border-[#b5bcc4] dark:border-[#3a3a3a]" />
       </div>
     </div>
   );

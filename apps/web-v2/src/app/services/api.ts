@@ -299,6 +299,28 @@ export interface PasswordUpdatePayload {
   password: string;
 }
 
+export type GoogleAuthResponse =
+  | { status: 'logged_in' }
+  | {
+      status: 'needs_username';
+      pendingToken: string;
+      suggestedUsername: string;
+      email: string;
+      name?: string;
+      picture?: string;
+    };
+
+export interface GoogleCompleteSignupPayload {
+  pendingToken: string;
+  username: string;
+  inviteCode?: string;
+}
+
+export interface UsernameAvailableResponse {
+  available: boolean;
+  reason?: 'invalid' | 'reserved' | 'taken';
+}
+
 // Auth API endpoints
 export const authApi = {
   /**
@@ -370,6 +392,28 @@ export const authApi = {
    */
   resendEmailVerification: () =>
     api.post<{ success: boolean; message: string }>('/auth/resend-email-verification'),
+
+  /**
+   * Exchange a Google ID token for either a session (existing user)
+   * or a pending-signup token (new user → complete with a chosen username).
+   */
+  googleAuth: (idToken: string) =>
+    api.post<GoogleAuthResponse>('/auth/google', { idToken }),
+
+  /**
+   * Finish Google signup with a chosen username; creates the account
+   * and a session.
+   */
+  googleCompleteSignup: (payload: GoogleCompleteSignupPayload) =>
+    api.post<void>('/auth/google/complete-signup', payload),
+
+  /**
+   * Check whether a username is available (3-30 chars, regex-valid, not reserved/taken).
+   */
+  usernameAvailable: (username: string) =>
+    api.get<UsernameAvailableResponse>(
+      `/auth/username-available?username=${encodeURIComponent(username)}`,
+    ),
 };
 
 // Explorer types matching API

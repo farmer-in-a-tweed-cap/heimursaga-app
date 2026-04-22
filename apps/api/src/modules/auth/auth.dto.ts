@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IGoogleAuthPayload,
+  IGoogleCompleteSignupPayload,
   ILoginPayload,
   IPasswordResetPayload,
   IPasswordUpdatePayload,
@@ -130,4 +132,36 @@ export class VerifyEmailDto {
   @IsString()
   @IsNotEmpty()
   token: string;
+}
+
+export class GoogleAuthDto implements IGoogleAuthPayload {
+  @ApiProperty({ required: true, description: 'Google ID token (JWT)' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(4096)
+  idToken: string;
+}
+
+export class GoogleCompleteSignupDto implements IGoogleCompleteSignupPayload {
+  @ApiProperty({ required: true, description: 'Pending-signup token returned by /auth/google' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(2048)
+  pendingToken: string;
+
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(3, { message: 'Username must be at least 3 characters' })
+  @MaxLength(30, { message: 'Username must not exceed 30 characters' })
+  @Matches(/^[a-zA-Z0-9_]+$/, {
+    message: 'Username may only contain letters, numbers, and underscores',
+  })
+  username: string;
+
+  @ApiProperty({ required: false, description: 'Invite code for Guide access' })
+  @IsString()
+  @IsOptional()
+  @MaxLength(40)
+  inviteCode?: string;
 }

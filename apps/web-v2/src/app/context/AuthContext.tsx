@@ -1,7 +1,15 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { authApi, SessionUser, ApiError, clearCsrfToken, onSessionExpired } from '@/app/services/api';
+import {
+  authApi,
+  SessionUser,
+  ApiError,
+  clearCsrfToken,
+  onSessionExpired,
+  GoogleAuthResponse,
+  GoogleCompleteSignupPayload,
+} from '@/app/services/api';
 import { posthog } from '@/lib/posthog';
 import { hasAnalyticsConsent } from '@/lib/analytics-consent';
 
@@ -16,6 +24,8 @@ interface AuthContextType {
   sessionExpired: boolean;
   login: (login: string, password: string, remember?: boolean) => Promise<void>;
   signup: (email: string, username: string, password: string, recaptchaToken?: string, inviteCode?: string) => Promise<void>;
+  googleAuth: (idToken: string) => Promise<GoogleAuthResponse>;
+  googleCompleteSignup: (payload: GoogleCompleteSignupPayload) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   clearNewSignup: () => void;
@@ -108,6 +118,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsNewSignup(true);
   };
 
+  const googleAuth = async (idToken: string): Promise<GoogleAuthResponse> => {
+    const result = await authApi.googleAuth(idToken);
+    if (result.status === 'logged_in') {
+      await refreshUser();
+      setSessionExpired(false);
+      if (posthog.__loaded) posthog.capture('login', { method: 'google' });
+    }
+    return result;
+  };
+
+  const googleCompleteSignup = async (payload: GoogleCompleteSignupPayload) => {
+    await authApi.googleCompleteSignup(payload);
+    await refreshUser();
+    setSessionExpired(false);
+    if (posthog.__loaded) posthog.capture('signup', { method: 'google' });
+    setIsNewSignup(true);
+  };
+
   const logout = async () => {
     try {
       await authApi.logout();
@@ -128,6 +156,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionExpired,
       login,
       signup,
+      googleAuth,
+      googleCompleteSignup,
       logout,
       refreshUser,
       clearNewSignup,

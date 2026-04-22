@@ -79,6 +79,33 @@ export interface ISignupPayload {
   // name: string;
 }
 
+// google oauth
+export interface IGoogleAuthPayload {
+  idToken: string;
+}
+
+export type IGoogleAuthResponse =
+  | { status: 'logged_in' }
+  | {
+      status: 'needs_username';
+      pendingToken: string;
+      suggestedUsername: string;
+      email: string;
+      name?: string;
+      picture?: string;
+    };
+
+export interface IGoogleCompleteSignupPayload {
+  pendingToken: string;
+  username: string;
+  inviteCode?: string;
+}
+
+export interface IUsernameAvailableResponse {
+  available: boolean;
+  reason?: 'invalid' | 'reserved' | 'taken';
+}
+
 // password reset
 export interface IPasswordResetPayload {
   email: string;

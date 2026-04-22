@@ -23,6 +23,8 @@ import { IRequest, IResponse, ISession } from '@/common/interfaces';
 import { SessionExplorerService } from '@/modules/explorer/explorer.service';
 
 import {
+  GoogleAuthDto,
+  GoogleCompleteSignupDto,
   LoginDto,
   MobileRefreshDto,
   PasswordResetDto,
@@ -32,12 +34,14 @@ import {
   VerifyEmailDto,
 } from './auth.dto';
 import { AuthService } from './auth.service';
+import { GoogleAuthService } from './google-auth.service';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
+    private googleAuthService: GoogleAuthService,
     private sessionExplorerService: SessionExplorerService,
   ) {}
 
@@ -90,6 +94,82 @@ export class AuthController {
 
     req.session.set(SESSION_KEYS.SID, user.session.sid);
     res.send();
+  }
+
+  @Public()
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short: { limit: 5, ttl: 60000 },
+    medium: { limit: 20, ttl: 600000 },
+    long: { limit: 50, ttl: 3600000 },
+  })
+  async googleAuth(
+    @Req() req: IRequest,
+    @Res() res: IResponse,
+    @Body() body: GoogleAuthDto,
+    @Session() session: ISession,
+  ) {
+    const result = await this.googleAuthService.authenticate({
+      query: {},
+      payload: body,
+      session,
+    });
+
+    if (result.status === 'logged_in') {
+      req.session.set(SESSION_KEYS.SID, result.session.sid);
+      res.send({ status: 'logged_in' });
+      return;
+    }
+
+    // needs_username — frontend will call /auth/google/complete-signup next
+    res.send({
+      status: result.status,
+      pendingToken: result.pendingToken,
+      suggestedUsername: result.suggestedUsername,
+      email: result.email,
+      name: result.name,
+      picture: result.picture,
+    });
+  }
+
+  @Public()
+  @Post('google/complete-signup')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short: { limit: 5, ttl: 300000 },
+    medium: { limit: 5, ttl: 300000 },
+    long: { limit: 5, ttl: 300000 },
+  })
+  async googleCompleteSignup(
+    @Req() req: IRequest,
+    @Res() res: IResponse,
+    @Body() body: GoogleCompleteSignupDto,
+    @Session() session: ISession,
+  ) {
+    const result = await this.googleAuthService.completeSignup({
+      query: {},
+      payload: body,
+      session,
+    });
+
+    req.session.set(SESSION_KEYS.SID, result.session.sid);
+    res.send();
+  }
+
+  @Public()
+  @Get('username-available')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short: { limit: 30, ttl: 60000 },
+    medium: { limit: 100, ttl: 600000 },
+    long: { limit: 300, ttl: 3600000 },
+  })
+  async usernameAvailable(@Req() req: IRequest) {
+    const username = String(
+      (req.query as Record<string, unknown>)?.username || '',
+    ).trim();
+    return this.googleAuthService.checkUsernameAvailability(username);
   }
 
   @Post('logout')
