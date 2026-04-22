@@ -1435,13 +1435,16 @@ export class AuthService {
       const deletedUsername = `deleted_${userId}`;
 
       await this.prisma.$transaction(async (tx) => {
-        // Anonymize explorer
+        // Anonymize explorer. google_id must be cleared so the same Google
+        // account can re-register later; otherwise the unique constraint on
+        // the blocked row blocks creation.
         await tx.explorer.update({
           where: { id: userId },
           data: {
             email: deletedEmail,
             username: deletedUsername,
             password: 'DELETED',
+            google_id: null,
             blocked: true,
             is_premium: false,
             role: UserRole.USER,
