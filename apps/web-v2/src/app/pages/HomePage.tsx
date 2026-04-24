@@ -16,7 +16,6 @@ import { Globe, Users, Loader2 } from "lucide-react";
 import { expeditionApi, explorerApi, entryApi, type Expedition, type ExplorerListItem, type Entry } from "@/app/services/api";
 import { useGlobalFeed, useFollowingFeed } from "@/app/hooks/queries";
 import { HomePageSkeleton } from "@/app/components/skeletons/PageSkeletons";
-import { useProFeatures } from "@/app/hooks/useProFeatures";
 import { ConfirmationModal } from "@/app/components/ConfirmationModal";
 import { toast } from "sonner";
 import { truncateExcerpt } from "@/app/utils/truncateExcerpt";
@@ -116,7 +115,6 @@ export function HomePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuth();
-  const { canAdoptBlueprints } = useProFeatures();
   const [viewMode, setViewMode] = useState<'global' | 'following'>('global');
   const [viewModeRestored, setViewModeRestored] = useState(false);
 
@@ -182,10 +180,6 @@ export function HomePage() {
   const handleAdoptBlueprint = async (expeditionId: string) => {
     if (!isAuthenticated) {
       router.push('/auth');
-      return;
-    }
-    if (!canAdoptBlueprints) {
-      toast.error('Guide accounts cannot launch blueprints');
       return;
     }
     try {

@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter, usePathname, useParams } from 'next/navigation';
+import { useRouter, usePathname, useParams, useSearchParams } from 'next/navigation';
 import { MapPin, Trash2, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown, AlertTriangle, Search, Plus, RotateCw, Download } from 'lucide-react';
 import { Slider } from '@/app/components/ui/slider';
 import { DatePicker } from '@/app/components/DatePicker';
@@ -192,15 +192,26 @@ export function ExpeditionBuilderPage() {
   const nauticalOverlayRef = useRef(nauticalOverlay);
   nauticalOverlayRef.current = nauticalOverlay;
   const { formatDistance, unit } = useDistanceUnit();
-  const { isPro, isGuide, canCreateBlueprints } = useProFeatures();
+  const { isPro, isGuide, canCreateBlueprints: canCreateBlueprintsRaw } = useProFeatures();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { expeditionId } = useParams<{ expeditionId: string }>();
+  const isEditMode = !!expeditionId;
+  // When editing an existing expedition, respect the loaded row's type rather
+  // than the user's account capabilities — a guide editing one of their own
+  // standard (non-blueprint) expeditions must stay in expedition mode, and
+  // editing a blueprint must stay in blueprint mode.
+  const [loadedIsBlueprint, setLoadedIsBlueprint] = useState<boolean | null>(null);
+  // In create mode: guides default to blueprint, `?mode=expedition` forces
+  // standard. In edit mode: whatever the loaded expedition is.
+  const canCreateBlueprints = isEditMode
+    ? loadedIsBlueprint === true
+    : canCreateBlueprintsRaw && searchParams?.get('mode') !== 'expedition';
   // Guides get a much higher waypoint description cap so they can document route details
   // (trailheads, hazards, campsites, etc.) when publishing blueprints, including content
   // imported from GPX/KML/GeoJSON files which often contain long trip reports.
   const waypointDescriptionMax = isGuide ? 4000 : 500;
-  const router = useRouter();
-  const pathname = usePathname();
-  const { expeditionId } = useParams<{ expeditionId: string }>();
-  const isEditMode = !!expeditionId;
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
@@ -1918,6 +1929,10 @@ export function ExpeditionBuilderPage() {
           router.push(`/expedition-quick-entry/${expeditionId}`);
           return;
         }
+
+        // Lock the form mode to whatever the loaded expedition is so a guide
+        // editing their own standard expedition doesn't get blueprint-only UI.
+        setLoadedIsBlueprint((expedition as any).isBlueprint === true);
 
         setServerStatus(expedition.status || null);
         if (expedition.originalStartDate) {

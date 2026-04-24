@@ -8,7 +8,6 @@ import { Compass, Loader2 } from 'lucide-react';
 import { expeditionApi, explorerApi, type Expedition } from '@/app/services/api';
 import { calculateDaysElapsed } from '@/app/utils/dateFormat';
 import { useAuth } from '@/app/context/AuthContext';
-import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { ExpeditionCardSkeleton, SKELETON_COUNT } from '@/app/components/skeletons/CardSkeletons';
 import { ErrorState } from '@/app/components/ErrorState';
 import { ConfirmationModal } from '@/app/components/ConfirmationModal';
@@ -18,7 +17,6 @@ export function ExpeditionsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, user } = useAuth();
-  const { canAdoptBlueprints } = useProFeatures();
 
   // API data state
   const [apiExpeditions, setApiExpeditions] = useState<Expedition[]>([]);
@@ -44,11 +42,6 @@ export function ExpeditionsPage() {
   const handleAdoptBlueprint = async (expeditionId: string) => {
     if (!isAuthenticated) {
       router.push('/auth');
-      return;
-    }
-    if (!canAdoptBlueprints) {
-      // Guides cannot adopt their own (or any) blueprints — they create them.
-      toast.error('Guide accounts cannot launch blueprints');
       return;
     }
     try {

@@ -16,7 +16,6 @@ import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { CoverPhotoFallback } from '@/app/components/CoverPhotoFallback';
 import { getExplorerStatus, getCurrentExpeditionInfo } from '@/app/components/ExplorerStatusBadge';
 import { useAuth } from '@/app/context/AuthContext';
-import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { calculateDaysElapsed } from '@/app/utils/dateFormat';
 import { truncateExcerpt } from '@/app/utils/truncateExcerpt';
 import { explorerApi, entryApi, expeditionApi, type ExplorerProfile, type ExplorerEntry, type ExplorerExpedition, type ExplorerFollower } from '@/app/services/api';
@@ -78,7 +77,6 @@ export function ExplorerProfilePage() {
   const { username } = useParams<{ username: string }>();
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
-  const { canAdoptBlueprints } = useProFeatures();
 
   // Check if this is the logged-in user's own profile
   const isOwnProfile = user && (username === user.username || username === String(user.id));
@@ -126,10 +124,6 @@ export function ExplorerProfilePage() {
   const handleAdoptBlueprint = async (expeditionId: string) => {
     if (!isAuthenticated) {
       router.push('/auth');
-      return;
-    }
-    if (!canAdoptBlueprints) {
-      toast.error('Guide accounts cannot launch blueprints');
       return;
     }
     try {
@@ -322,11 +316,13 @@ export function ExplorerProfilePage() {
     avatarUrl: profile.picture || '',
     coverImageUrl: profile.coverPhoto || '',
 
-    // Stats from fetched data
+    // Stats from fetched data. totalExpeditions counts standard (non-blueprint)
+    // expeditions; totalBlueprints tracks the guide portfolio separately.
     stats: {
-      totalExpeditions: expeditions.length,
-      activeExpeditions: expeditions.filter(e => e.status === 'active').length,
-      completedExpeditions: expeditions.filter(e => e.status === 'completed').length,
+      totalExpeditions: expeditions.filter(e => !e.isBlueprint).length,
+      totalBlueprints: expeditions.filter(e => e.isBlueprint).length,
+      activeExpeditions: expeditions.filter(e => e.status === 'active' && !e.isBlueprint).length,
+      completedExpeditions: expeditions.filter(e => e.status === 'completed' && !e.isBlueprint).length,
       totalEntries: entries.length,
       totalPhotos: 0,
       totalVideo: 0,
@@ -500,6 +496,16 @@ export function ExplorerProfilePage() {
         ? { lat: e.currentLocation.lat, lng: e.currentLocation.lon }
         : undefined,
     }));
+
+  // Split expeditions by type so guide profiles can surface a Portfolio
+  // (blueprints) and a Journal (standard expeditions) side-by-side. For
+  // non-guides, recentBlueprints is always empty — they cannot own
+  // blueprints — so the blueprints section is skipped entirely.
+  const recentBlueprints = explorer.recentExpeditions.filter(e => e.isBlueprint);
+  const recentJournalExpeditions = explorer.recentExpeditions.filter(e => !e.isBlueprint);
+  const guideHasJournalContent =
+    profile.isGuide &&
+    (recentJournalExpeditions.length > 0 || explorer.recentEntries.length > 0);
 
   return (
     <div className="max-w-[1600px] mx-auto px-3 py-4 md:px-6 md:py-12">
@@ -926,8 +932,10 @@ export function ExplorerProfilePage() {
         )}
       </div>
 
-      {/* Map of All Expeditions — hidden for guide profiles */}
-      {!profile.isGuide && (
+      {/* Map of All Expeditions — shown for non-guides always, and for guides
+          once they have journal content. Pure portfolio-only guides skip the
+          map since blueprints don't have active/planned locations to plot. */}
+      {(!profile.isGuide || guideHasJournalContent || isOwnProfile) && (
       <div className="mb-4 md:mb-6">
         {entriesForMap.length === 0 && expeditionsForMap.length === 0 ? (
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
@@ -987,14 +995,16 @@ export function ExplorerProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Left Column - Main Content */}
         <div className="lg:col-span-2 space-y-4 md:space-y-6">
-          {/* Recent Expeditions / Blueprints */}
+          {/* Recent Expeditions / Blueprints. For guides the list is filtered
+              to blueprints only; their standard expeditions render in a
+              separate Journal section below. */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4 md:p-6">
             <h3 className="text-xs md:text-sm font-bold mb-3 md:mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
               {profile.isGuide ? 'EXPEDITION BLUEPRINTS' : 'RECENT EXPEDITIONS'}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-              {explorer.recentExpeditions.length > 0 ? (
-                explorer.recentExpeditions.map((expedition) => (
+              {(profile.isGuide ? recentBlueprints : explorer.recentExpeditions).length > 0 ? (
+                (profile.isGuide ? recentBlueprints : explorer.recentExpeditions).map((expedition) => (
                   <ExpeditionCard
                     key={expedition.id}
                     id={expedition.id}
@@ -1046,7 +1056,9 @@ export function ExplorerProfilePage() {
                 </div>
               )}
             </div>
-            {explorer.recentExpeditions.length < explorer.stats.totalExpeditions && (
+            {(profile.isGuide
+              ? recentBlueprints.length < explorer.stats.totalBlueprints
+              : explorer.recentExpeditions.length < explorer.stats.totalExpeditions) && (
               <button
                 onClick={() => setExpeditionsLimit(prev => prev + 5)}
                 className="w-full mt-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm"
@@ -1056,8 +1068,83 @@ export function ExplorerProfilePage() {
             )}
           </div>
 
-          {/* Recent Journal Entries — hidden for guide profiles */}
-          {!profile.isGuide && (
+          {/* Journal Expeditions — guide profiles only, shown when the guide
+              has any non-blueprint expeditions or is the owner (so their own
+              empty-state nudges them toward journaling). */}
+          {profile.isGuide && (recentJournalExpeditions.length > 0 || isOwnProfile) && (
+            <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4 md:p-6">
+              <h3 className="text-xs md:text-sm font-bold mb-3 md:mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
+                JOURNAL EXPEDITIONS
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                {recentJournalExpeditions.length > 0 ? (
+                  recentJournalExpeditions.map((expedition) => (
+                    <ExpeditionCard
+                      key={expedition.id}
+                      id={expedition.id}
+                      title={expedition.title}
+                      explorer={explorer.name}
+                      description={expedition.description || ''}
+                      imageUrl={expedition.coverImage || ''}
+                      location={expedition.currentLocation || ''}
+                      region={expedition.region}
+                      locationName={expedition.locationName}
+                      coordinates=""
+                      startDate={expedition.startDate}
+                      endDate={expedition.endDate || null}
+                      journalEntries={expedition.entriesCount}
+                      fundingGoal={expedition.goal}
+                      fundingCurrent={expedition.raised}
+                      fundingPercentage={expedition.goal > 0 ? (expedition.raised / expedition.goal) * 100 : 0}
+                      backers={expedition.sponsorsCount}
+                      distance={expedition.totalDistanceKm || 0}
+                      status={expedition.status}
+                      visibility={expedition.visibility as 'public' | 'off-grid' | 'private'}
+                      terrain=""
+                      averageSpeed={0}
+                      onViewJournal={() => router.push(`/expedition/${expedition.id}`)}
+                      onSupport={() => router.push(`/sponsor/${expedition.id}`)}
+                      sponsorshipsEnabled={expedition.goal > 0}
+                      explorerIsPro={profile.creator}
+                      stripeConnected={profile.stripeAccountConnected}
+                      isBookmarked={bookmarkedExpeditions.has(expedition.id)}
+                      onBookmark={() => handleBookmarkExpedition(expedition.id)}
+                      isBlueprint={expedition.isBlueprint}
+                      mode={expedition.mode}
+                      adoptionsCount={expedition.adoptionsCount ?? 0}
+                      averageRating={expedition.averageRating}
+                      ratingsCount={expedition.ratingsCount ?? 0}
+                      elevationMinM={expedition.elevationMinM}
+                      elevationMaxM={expedition.elevationMaxM}
+                      estimatedDurationH={expedition.estimatedDurationH}
+                      waypointsCount={expedition.waypointsCount ?? 0}
+                      waypointCoords={(expedition.waypoints || [])
+                        .filter((w: any) => w.lat != null && w.lon != null)
+                        .map((w: any) => ({ lat: w.lat, lng: w.lon }))}
+                      onAdopt={() => handleAdoptBlueprint(expedition.id)}
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-2 text-center py-8 text-[#616161] dark:text-[#b5bcc4]">
+                    No journal expeditions yet{isOwnProfile ? ' — log your first entry to start one' : ''}
+                  </div>
+                )}
+              </div>
+              {recentJournalExpeditions.length < explorer.stats.totalExpeditions && (
+                <button
+                  onClick={() => setExpeditionsLimit(prev => prev + 5)}
+                  className="w-full mt-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm"
+                >
+                  LOAD MORE EXPEDITIONS
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Recent Journal Entries. Non-guides always see the section. Guides
+              see it once they have entries (or are the owner viewing their
+              own profile — the empty state nudges toward journaling). */}
+          {(!profile.isGuide || explorer.recentEntries.length > 0 || isOwnProfile) && (
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4 md:p-6">
             <h3 className="text-xs md:text-sm font-bold mb-3 md:mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
               RECENT JOURNAL ENTRIES
@@ -1334,33 +1421,45 @@ export function ExplorerProfilePage() {
             <div className="space-y-3 text-xs">
               <div className="flex justify-between">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">{profile.isGuide ? 'Total Blueprints' : 'Total Expeditions'}</span>
-                <span className="font-bold dark:text-[#e5e5e5]">{explorer.stats.totalExpeditions}</span>
+                <span className="font-bold dark:text-[#e5e5e5]">{profile.isGuide ? explorer.stats.totalBlueprints : explorer.stats.totalExpeditions}</span>
               </div>
               {profile.isGuide ? (
                 <>
                   <div className="flex justify-between">
                     <span className="text-[#616161] dark:text-[#b5bcc4]">Published</span>
                     <span className="font-bold dark:text-[#e5e5e5]">
-                      {expeditions.filter(e => e.status === 'published').length}
+                      {expeditions.filter(e => e.isBlueprint && e.status === 'published').length}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#616161] dark:text-[#b5bcc4]">Total Adoptions</span>
                     <span className="font-bold text-[#ac6d46]">
-                      {expeditions.reduce((sum, e) => sum + (e.adoptionsCount ?? 0), 0)}
+                      {expeditions.filter(e => e.isBlueprint).reduce((sum, e) => sum + (e.adoptionsCount ?? 0), 0)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#616161] dark:text-[#b5bcc4]">Avg. Rating</span>
                     <span className="font-bold dark:text-[#e5e5e5]">
                       {(() => {
-                        const rated = expeditions.filter(e => e.averageRating != null && e.ratingsCount && e.ratingsCount > 0);
+                        const rated = expeditions.filter(e => e.isBlueprint && e.averageRating != null && e.ratingsCount && e.ratingsCount > 0);
                         if (rated.length === 0) return '—';
                         const avg = rated.reduce((sum, e) => sum + (e.averageRating ?? 0), 0) / rated.length;
                         return avg.toFixed(1);
                       })()}
                     </span>
                   </div>
+                  {(explorer.stats.totalExpeditions > 0 || explorer.stats.totalEntries > 0) && (
+                    <>
+                      <div className="flex justify-between border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2">
+                        <span className="text-[#616161] dark:text-[#b5bcc4]">Journal Expeditions</span>
+                        <span className="font-bold dark:text-[#e5e5e5]">{explorer.stats.totalExpeditions}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#616161] dark:text-[#b5bcc4]">Journal Entries</span>
+                        <span className="font-bold dark:text-[#e5e5e5]">{explorer.stats.totalEntries}</span>
+                      </div>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
