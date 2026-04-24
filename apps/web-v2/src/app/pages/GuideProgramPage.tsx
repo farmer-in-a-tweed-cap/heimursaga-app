@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Compass, Map, Route, Star, DollarSign, Shield, Users, CheckCircle, Layers, Rocket } from 'lucide-react';
+import { Compass, Map, Route, Star, DollarSign, Shield, Users, CheckCircle, Layers, Rocket, ArrowLeftRight } from 'lucide-react';
 
 export function GuideProgramPage() {
   return (
@@ -12,8 +12,11 @@ export function GuideProgramPage() {
           <div className="flex items-center mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
             <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">EXPEDITION GUIDE PROGRAM</h1>
           </div>
-          <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
+          <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-2">
             Professional guides create curated, field-tested expedition blueprints that explorers can launch and experience on their own terms
+          </p>
+          <p className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
+            Heimursaga is complementary to Gaia GPS, CalTopo, AllTrails, Garmin Connect, Komoot, and other GPS tools&mdash;import the routes you plan there, publish them as blueprints, and export them back out for field navigation.
           </p>
         </div>
       </div>
@@ -32,6 +35,9 @@ export function GuideProgramPage() {
           </a>
           <a href="#creating-blueprints" className="text-xs text-[#598636] hover:text-[#4676ac] font-mono">
             &rarr; Creating a Blueprint
+          </a>
+          <a href="#import-export" className="text-xs text-[#598636] hover:text-[#4676ac] font-mono">
+            &rarr; Import &amp; Export Routes
           </a>
           <a href="#launching-blueprints" className="text-xs text-[#598636] hover:text-[#4676ac] font-mono">
             &rarr; Launching a Blueprint
@@ -201,7 +207,98 @@ export function GuideProgramPage() {
           </div>
         </section>
 
-        {/* 4. Launching a Blueprint */}
+        {/* 4. Route Import & Export */}
+        <section id="import-export" className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
+          <div className="bg-[#4676ac] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
+            <ArrowLeftRight className="w-5 h-5" />
+            <h2 className="text-lg font-bold">ROUTE IMPORT &amp; EXPORT</h2>
+          </div>
+          <div className="p-6 space-y-4">
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Complementary to Your GPS App</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+                Heimursaga is not a replacement for Gaia GPS, CalTopo, AllTrails, Garmin Connect, or
+                Komoot&mdash;it is designed to work alongside them. Guides plan routes in the GPS tool they
+                already trust, import the finished route into the blueprint builder, and publish it for
+                explorers to discover. Explorers can then export the route back out as a GPX file and load
+                it into their own GPS app for turn-by-turn field navigation. Heimursaga handles
+                publishing, discovery, storytelling, ratings, and tipping; your GPS app handles navigation
+                in the field.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Importing Routes (Guide Feature)</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-3">
+                Guides can upload a route file directly into the expedition blueprint builder. The
+                builder parses the file, places waypoints, draws the full trackline, and computes
+                distance automatically. From there, you can refine names, descriptions, and waypoint
+                order before publishing.
+              </p>
+              <ul className="space-y-2 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#4676ac] mt-1">&bull;</span>
+                  <span><strong>Supported formats</strong>&mdash;GPX, KML, and GeoJSON</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#4676ac] mt-1">&bull;</span>
+                  <span><strong>Compatible sources</strong>&mdash;Gaia GPS, CalTopo, AllTrails, Garmin
+                  Connect, Komoot, Strava, and any other tool that exports standard route files</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#4676ac] mt-1">&bull;</span>
+                  <span><strong>What gets imported</strong>&mdash;waypoint coordinates with names and
+                  descriptions, the full trackline geometry, and elevation data when present in the file</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#4676ac] mt-1">&bull;</span>
+                  <span><strong>Limits</strong>&mdash;5 MB per file, 500 waypoints, and 20,000 track points</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Exporting Routes</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-3">
+                Blueprints and launched expeditions can be exported as a GPX 1.1 file&mdash;the universal
+                standard that loads into virtually every GPS app and handheld device. This lets
+                explorers carry the guide&apos;s curated route into the field without being tethered to
+                Heimursaga for navigation.
+              </p>
+              <ul className="space-y-2 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#598636] mt-1">&bull;</span>
+                  <span><strong>Guides</strong> can always export their own blueprints&mdash;useful for
+                  validating routes against the source GPS app before publishing</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#598636] mt-1">&bull;</span>
+                  <span><strong>Explorers</strong> can export the GPX for any blueprint they have launched
+                  into their own account</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#598636] mt-1">&bull;</span>
+                  <span><strong>Compatible destinations</strong>&mdash;Gaia GPS, CalTopo, AllTrails, Garmin
+                  Connect, Komoot, and most handheld GPS units</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#598636] mt-1">&bull;</span>
+                  <span><strong>Guide control</strong>&mdash;guides can disable downloads on a blueprint if
+                  they prefer explorers follow the route only through Heimursaga</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
+              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
+                Heimursaga does not offer offline maps or turn-by-turn navigation. The expectation is
+                that you pair it with the GPS app you already use in the field.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* 5. Launching a Blueprint */}
         <section id="launching-blueprints" className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
           <div className="bg-[#ac6d46] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
             <Rocket className="w-5 h-5" />
