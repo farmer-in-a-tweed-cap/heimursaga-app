@@ -3983,6 +3983,7 @@ export class ExpeditionService {
           },
           select: {
             id: true,
+            author_id: true,
             title: true,
             description: true,
             cover_image: true,
@@ -4073,7 +4074,11 @@ export class ExpeditionService {
               vessel_crew_size: blueprint.vessel_crew_size,
               author_id: explorerId,
               blueprint_id: blueprint.id,
-              is_route_locked: true,
+              // Route is locked on adoption to preserve the guide's curated
+              // route for external adopters. Guides adopting their own
+              // blueprint stay unlocked — they're living their own route and
+              // may need to tweak waypoints in the field.
+              is_route_locked: blueprint.author_id !== explorerId,
               is_blueprint: false,
               status: 'draft',
               visibility: 'public',

@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import { toast } from 'sonner';
 import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
-import { Map, Zap, Lock, FileText, Archive, Loader2, AlertTriangle } from 'lucide-react';
+import { Map, Zap, Lock, FileText, Archive, Loader2, AlertTriangle, Compass, Rocket } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { explorerApi, type ExplorerExpedition } from '@/app/services/api';
+import { explorerApi, expeditionApi, type ExplorerExpedition } from '@/app/services/api';
 import { formatDate, formatDateTime } from '@/app/utils/dateFormat';
 
 export function SelectExpeditionPage() {
@@ -51,12 +52,44 @@ export function SelectExpeditionPage() {
     fetchExpeditions();
   }, [isAuthenticated]);
 
-  // Filter expeditions by status
-  // Treat expeditions without a status or with 'active'/'planned' status as active
-  const activeExpeditions = expeditions.filter(e => !e.status || e.status === 'active' || e.status === 'planned');
-  const completedExpeditions = expeditions.filter(e => e.status === 'completed');
-  const draftExpeditions = expeditions.filter(e => e.status === 'draft');
+  // Filter expeditions by status. Blueprints are handled separately — they
+  // aren't "planned" expeditions in the journal sense, they're templates the
+  // guide can launch into a new standard expedition. Treat expeditions without
+  // a status or with 'active'/'planned' status as active.
+  const standardExpeditions = expeditions.filter(e => !e.isBlueprint);
+  const activeExpeditions = standardExpeditions.filter(e => !e.status || e.status === 'active' || e.status === 'planned');
+  const completedExpeditions = standardExpeditions.filter(e => e.status === 'completed');
+  const draftExpeditions = standardExpeditions.filter(e => e.status === 'draft');
   const currentExpedition = activeExpeditions[0] || null;
+  // Published blueprints the user can launch. Draft blueprints continue to
+  // appear in the general drafts section with a "continue in builder" action,
+  // since they're not yet adoptable.
+  const publishedBlueprints = expeditions.filter(e => e.isBlueprint && e.status === 'published');
+
+  // Launch the adopt-blueprint flow. Same call as external adopters, but
+  // because the guide owns the source, the backend leaves the derived
+  // expedition route-unlocked. Block when the guide already has an
+  // active/planned expedition — same rule the rest of the app enforces.
+  const [launchingBlueprintId, setLaunchingBlueprintId] = useState<string | null>(null);
+  const handleLaunchBlueprint = async (blueprintId: string) => {
+    if (launchingBlueprintId) return;
+    if (currentExpedition) {
+      toast.error(
+        'Finish or archive your current expedition before launching a new one',
+      );
+      return;
+    }
+    setLaunchingBlueprintId(blueprintId);
+    try {
+      const res = await expeditionApi.adopt(blueprintId);
+      router.push(`/expedition-quick-entry/${res.expeditionId}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to launch blueprint';
+      toast.error(msg);
+    } finally {
+      setLaunchingBlueprintId(null);
+    }
+  };
   
   // Authentication gate
   if (!isAuthenticated) {
@@ -360,6 +393,72 @@ export function SelectExpeditionPage() {
               </div>
             )}
           </div>
+
+          {/* Guide-only: launch one of the user's own published blueprints as a
+              journal expedition. Same flow as external adopters, except the
+              resulting expedition stays route-unlocked so the guide can tweak
+              waypoints in the field. */}
+          {publishedBlueprints.length > 0 && (
+            <div className="bg-white dark:bg-[#202020] border-2 border-[#598636] p-6">
+              <div className="flex items-center gap-3 mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
+                <div className="px-3 py-1 bg-[#598636] text-white font-bold text-sm">BLUEPRINTS</div>
+                <h2 className="text-sm font-bold dark:text-[#e5e5e5]">
+                  LAUNCH ONE OF YOUR BLUEPRINTS
+                </h2>
+              </div>
+              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
+                Launching copies the blueprint into a new standard expedition
+                you can journal against. Route stays editable on launches of
+                your own blueprints.
+              </p>
+              <div className="space-y-3">
+                {publishedBlueprints.map((blueprint) => {
+                  const isLaunching = launchingBlueprintId === blueprint.id;
+                  return (
+                    <div key={blueprint.id} className="border-2 border-[#598636] p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            <Compass size={16} className="text-[#598636] flex-shrink-0" />
+                            <h3 className="font-bold text-lg dark:text-[#e5e5e5]">{blueprint.title || 'Untitled Blueprint'}</h3>
+                            <span className="text-xs bg-[#598636] text-white px-2 py-1">PUBLISHED</span>
+                          </div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono flex flex-wrap gap-x-3 gap-y-1">
+                            {blueprint.mode && <span>{blueprint.mode.toUpperCase()}</span>}
+                            {typeof blueprint.totalDistanceKm === 'number' && blueprint.totalDistanceKm > 0 && (
+                              <span>{blueprint.totalDistanceKm.toFixed(1)} km</span>
+                            )}
+                            {typeof blueprint.adoptionsCount === 'number' && blueprint.adoptionsCount > 0 && (
+                              <span>{blueprint.adoptionsCount} adoption{blueprint.adoptionsCount === 1 ? '' : 's'}</span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleLaunchBlueprint(blueprint.id)}
+                          disabled={isLaunching || !!currentExpedition}
+                          title={currentExpedition ? 'Finish or archive your current expedition first' : undefined}
+                          className="px-6 py-3 bg-[#598636] text-white font-bold hover:bg-[#476b2b] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#598636] text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          {isLaunching ? (
+                            <>
+                              <Loader2 size={14} className="animate-spin" />
+                              LAUNCHING...
+                            </>
+                          ) : (
+                            <>
+                              <Rocket size={14} />
+                              LAUNCH &amp; LOG ENTRY
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* OPTION 2: Create New Expedition */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#4676ac] p-6">
