@@ -15,7 +15,7 @@ export function SelectExpeditionPage() {
   const { isPro } = useProFeatures();
   const router = useRouter();
   const pathname = usePathname();
-  const [showCompleted, setShowCompleted] = useState(false);
+  const [view, setView] = useState<'current' | 'completed' | 'blueprints'>('current');
 
   // Mobile detection — expedition builder requires desktop
   const [isMobile, setIsMobile] = useState(false);
@@ -232,26 +232,39 @@ export function SelectExpeditionPage() {
 
           {/* OPTION 1: Select Current Expedition */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#ac6d46] p-6">
-            <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
+            <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2 gap-3 flex-wrap">
               <div className="flex items-center gap-3">
                 <div className="px-3 py-1 bg-[#ac6d46] text-white font-bold text-sm">OPTION 1</div>
                 <h2 className="text-sm font-bold dark:text-[#e5e5e5]">
-                  {showCompleted ? `COMPLETED EXPEDITIONS (${completedExpeditions.length})` : 'CURRENT EXPEDITION'}
+                  {view === 'completed' && `COMPLETED EXPEDITIONS (${completedExpeditions.length})`}
+                  {view === 'blueprints' && `YOUR BLUEPRINTS (${publishedBlueprints.length})`}
+                  {view === 'current' && 'CURRENT EXPEDITION'}
                 </h2>
               </div>
-              
-              {/* Toggle Button */}
-              <button
-                onClick={() => setShowCompleted(!showCompleted)}
-                className="px-3 py-2 border-2 border-[#616161] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-xs font-bold font-mono gap-2 flex items-center"
-              >
-                <Archive size={14} strokeWidth={2} />
-                <span>{showCompleted ? 'SHOW CURRENT' : 'SHOW COMPLETED'}</span>
-              </button>
+
+              {/* View Toggles */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => setView(view === 'completed' ? 'current' : 'completed')}
+                  className="px-3 py-2 border-2 border-[#616161] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-xs font-bold font-mono gap-2 flex items-center"
+                >
+                  <Archive size={14} strokeWidth={2} />
+                  <span>{view === 'completed' ? 'SHOW CURRENT' : 'SHOW COMPLETED'}</span>
+                </button>
+                {publishedBlueprints.length > 0 && (
+                  <button
+                    onClick={() => setView(view === 'blueprints' ? 'current' : 'blueprints')}
+                    className="px-3 py-2 border-2 border-[#598636] text-[#598636] hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#598636] text-xs font-bold font-mono gap-2 flex items-center"
+                  >
+                    <Compass size={14} strokeWidth={2} />
+                    <span>{view === 'blueprints' ? 'SHOW CURRENT' : 'SHOW BLUEPRINTS'}</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Current Expedition View */}
-            {!showCompleted && currentExpedition && (
+            {view === 'current' && currentExpedition && (
               <div className="space-y-4">
                 <div className="border-2 border-[#ac6d46] dark:border-[#ac6d46] p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
@@ -318,14 +331,14 @@ export function SelectExpeditionPage() {
             )}
 
             {/* No Current Expedition */}
-            {!showCompleted && !currentExpedition && (
+            {view === 'current' && !currentExpedition && (
               <div className="text-center py-8 border-2 border-[#b5bcc4] dark:border-[#3a3a3a]">
                 <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-4">No current expedition. Create one using Option 2 below.</p>
               </div>
             )}
 
             {/* Completed Expeditions View */}
-            {showCompleted && (
+            {view === 'completed' && (
               <div className="space-y-3">
                 <div className="bg-[#fff8e1] dark:bg-[#3a3320] p-3 border-l-2 border-[#616161] mb-4">
                   <div className="text-xs font-bold mb-1 dark:text-[#e5e5e5]">RETROSPECTIVE ENTRIES:</div>
@@ -392,73 +405,76 @@ export function SelectExpeditionPage() {
                 )}
               </div>
             )}
-          </div>
 
-          {/* Guide-only: launch one of the user's own published blueprints as a
-              journal expedition. Same flow as external adopters, except the
-              resulting expedition stays route-unlocked so the guide can tweak
-              waypoints in the field. */}
-          {publishedBlueprints.length > 0 && (
-            <div className="bg-white dark:bg-[#202020] border-2 border-[#598636] p-6">
-              <div className="flex items-center gap-3 mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
-                <div className="px-3 py-1 bg-[#598636] text-white font-bold text-sm">BLUEPRINTS</div>
-                <h2 className="text-sm font-bold dark:text-[#e5e5e5]">
-                  LAUNCH ONE OF YOUR BLUEPRINTS
-                </h2>
-              </div>
-              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
-                Launching copies the blueprint into a new standard expedition
-                you can journal against. Route stays editable on launches of
-                your own blueprints.
-              </p>
+            {/* Blueprints View — launch one of the user's own published
+                blueprints as a journal expedition. Same flow as external
+                adopters, except the resulting expedition stays
+                route-unlocked so the guide can tweak waypoints in the
+                field. */}
+            {view === 'blueprints' && (
               <div className="space-y-3">
-                {publishedBlueprints.map((blueprint) => {
-                  const isLaunching = launchingBlueprintId === blueprint.id;
-                  return (
-                    <div key={blueprint.id} className="border-2 border-[#598636] p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <Compass size={16} className="text-[#598636] flex-shrink-0" />
-                            <h3 className="font-bold text-lg dark:text-[#e5e5e5]">{blueprint.title || 'Untitled Blueprint'}</h3>
-                            <span className="text-xs bg-[#598636] text-white px-2 py-1">PUBLISHED</span>
+                <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] p-3 border-l-2 border-[#598636] mb-4">
+                  <div className="text-xs font-bold mb-1 dark:text-[#e5e5e5]">LAUNCH A BLUEPRINT:</div>
+                  <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                    Copies the blueprint into a new standard expedition you
+                    can journal against. Route stays editable on launches of
+                    your own blueprints.
+                  </p>
+                </div>
+
+                {publishedBlueprints.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-[#b5bcc4] dark:border-[#3a3a3a]">
+                    <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">No published blueprints yet.</p>
+                  </div>
+                ) : (
+                  publishedBlueprints.map((blueprint) => {
+                    const isLaunching = launchingBlueprintId === blueprint.id;
+                    return (
+                      <div key={blueprint.id} className="border-2 border-[#598636] p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <Compass size={16} className="text-[#598636] flex-shrink-0" />
+                              <h3 className="font-bold text-lg dark:text-[#e5e5e5]">{blueprint.title || 'Untitled Blueprint'}</h3>
+                              <span className="text-xs bg-[#598636] text-white px-2 py-1">PUBLISHED</span>
+                            </div>
+                            <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono flex flex-wrap gap-x-3 gap-y-1">
+                              {blueprint.mode && <span>{blueprint.mode.toUpperCase()}</span>}
+                              {typeof blueprint.totalDistanceKm === 'number' && blueprint.totalDistanceKm > 0 && (
+                                <span>{blueprint.totalDistanceKm.toFixed(1)} km</span>
+                              )}
+                              {typeof blueprint.adoptionsCount === 'number' && blueprint.adoptionsCount > 0 && (
+                                <span>{blueprint.adoptionsCount} adoption{blueprint.adoptionsCount === 1 ? '' : 's'}</span>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono flex flex-wrap gap-x-3 gap-y-1">
-                            {blueprint.mode && <span>{blueprint.mode.toUpperCase()}</span>}
-                            {typeof blueprint.totalDistanceKm === 'number' && blueprint.totalDistanceKm > 0 && (
-                              <span>{blueprint.totalDistanceKm.toFixed(1)} km</span>
+                          <button
+                            type="button"
+                            onClick={() => handleLaunchBlueprint(blueprint.id)}
+                            disabled={isLaunching || !!currentExpedition}
+                            title={currentExpedition ? 'Finish or archive your current expedition first' : undefined}
+                            className="px-6 py-3 bg-[#598636] text-white font-bold hover:bg-[#476b2b] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#598636] text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+                          >
+                            {isLaunching ? (
+                              <>
+                                <Loader2 size={14} className="animate-spin" />
+                                LAUNCHING...
+                              </>
+                            ) : (
+                              <>
+                                <Rocket size={14} />
+                                LAUNCH &amp; LOG ENTRY
+                              </>
                             )}
-                            {typeof blueprint.adoptionsCount === 'number' && blueprint.adoptionsCount > 0 && (
-                              <span>{blueprint.adoptionsCount} adoption{blueprint.adoptionsCount === 1 ? '' : 's'}</span>
-                            )}
-                          </div>
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleLaunchBlueprint(blueprint.id)}
-                          disabled={isLaunching || !!currentExpedition}
-                          title={currentExpedition ? 'Finish or archive your current expedition first' : undefined}
-                          className="px-6 py-3 bg-[#598636] text-white font-bold hover:bg-[#476b2b] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#598636] text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
-                        >
-                          {isLaunching ? (
-                            <>
-                              <Loader2 size={14} className="animate-spin" />
-                              LAUNCHING...
-                            </>
-                          ) : (
-                            <>
-                              <Rocket size={14} />
-                              LAUNCH &amp; LOG ENTRY
-                            </>
-                          )}
-                        </button>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* OPTION 2: Create New Expedition */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#4676ac] p-6">
