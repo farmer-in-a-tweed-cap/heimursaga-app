@@ -78,6 +78,7 @@ interface MapExplorer {
   creator: boolean;
   locationVisibility: string;
   status: 'EXPLORING' | 'EXPLORING_OFF_GRID' | 'PLANNING' | 'RESTING';
+  isGuide: boolean;
   activeExpeditionLocation?: {
     lat: number; lon: number; name: string;
     expeditionId: string; expeditionTitle: string;
@@ -272,6 +273,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
               creator: explorer.creator || false,
               locationVisibility: hasExpeditionLoc ? 'precise_coordinates' : visibility,
               status: getExplorerStatus(explorer.recentExpeditions || [], explorer.activeExpeditionOffGrid),
+              isGuide: explorer.isGuide === true,
               activeExpeditionLocation: hasExpeditionLoc,
             };
           });
@@ -895,14 +897,22 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
               popupPosition === 'bottom-left' ? 'bottom-16 sm:bottom-20 left-4' : 'bottom-16 sm:bottom-20 right-4'
             }`}
           >
-            {/* Status banner — top of card */}
-            <div className={`px-3 py-1.5 text-white text-[10px] font-bold font-mono flex items-center gap-2 ${
-              clickedExplorer.status === 'EXPLORING' ? 'bg-[#ac6d46]' :
-              clickedExplorer.status === 'EXPLORING_OFF_GRID' ? 'bg-[#6b5c4e]' :
-              clickedExplorer.status === 'PLANNING' ? 'bg-[#4676ac]' :
-              'bg-[#616161]'
-            }`}>
-              <span className="flex-shrink-0">{clickedExplorer.status === 'EXPLORING_OFF_GRID' ? 'EXPLORING \u2022 OFF-GRID' : clickedExplorer.status}</span>
+            {/* Status banner — top of card. For guide accounts the RESTING
+                state is replaced with the green guide bar so the word RESTING
+                never displays for guides; the close button stays available. */}
+            {(() => {
+              const guideResting = clickedExplorer.isGuide && clickedExplorer.status === 'RESTING';
+              const bg = guideResting
+                ? 'bg-[#598636]'
+                : clickedExplorer.status === 'EXPLORING' ? 'bg-[#ac6d46]'
+                : clickedExplorer.status === 'EXPLORING_OFF_GRID' ? 'bg-[#6b5c4e]'
+                : clickedExplorer.status === 'PLANNING' ? 'bg-[#4676ac]'
+                : 'bg-[#616161]';
+              return (
+            <div className={`px-3 py-1.5 text-white text-[10px] font-bold font-mono flex items-center gap-2 ${bg}`}>
+              {!guideResting && (
+                <span className="flex-shrink-0">{clickedExplorer.status === 'EXPLORING_OFF_GRID' ? 'EXPLORING \u2022 OFF-GRID' : clickedExplorer.status}</span>
+              )}
               {clickedExplorer.activeExpeditionLocation && (
                 <>
                   <span className="text-white/30">|</span>
@@ -929,6 +939,8 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
                 <X className="w-3.5 h-3.5 text-white" />
               </button>
             </div>
+              );
+            })()}
 
             <div className="p-3 text-xs font-mono">
               <div className="flex items-center gap-2 border-b-2 border-[#202020] dark:border-[#616161] pb-2 mb-2">

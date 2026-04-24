@@ -8,6 +8,7 @@ interface FollowedExplorerStripProps {
     name?: string;
     picture?: string;
     isPro?: boolean;
+    isGuide?: boolean;
     status: 'exploring' | 'planning' | 'resting';
     lastEntryDate?: string;
   }>;
@@ -76,11 +77,13 @@ export function FollowedExplorerStrip({ explorers, onViewExplorer }: FollowedExp
                   {explorer.username.charAt(0).toUpperCase()}
                 </div>
               )}
-              {/* Status dot */}
-              <div
-                className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-[#202020] ${statusColors[explorer.status]}`}
-                title={statusLabels[explorer.status]}
-              />
+              {/* Status dot — guide accounts never display the resting state */}
+              {!(explorer.isGuide && explorer.status === 'resting') && (
+                <div
+                  className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-[#202020] ${statusColors[explorer.status]}`}
+                  title={statusLabels[explorer.status]}
+                />
+              )}
             </div>
 
             {/* Info */}

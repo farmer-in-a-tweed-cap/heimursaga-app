@@ -323,6 +323,7 @@ export function HomePage() {
     name: exp.name,
     picture: exp.picture,
     isPro: exp.creator === true,
+    isGuide: exp.isGuide === true,
     status: getExplorerStatus(exp),
     lastEntryDate: exp.lastEntryDate,
   }));

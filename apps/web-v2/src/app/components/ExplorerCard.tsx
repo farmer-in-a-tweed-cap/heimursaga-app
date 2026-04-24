@@ -65,8 +65,8 @@ export function ExplorerCard({
             {accountType === 'expedition-guide' ? 'EXPEDITION GUIDE' : accountType === 'explorer-pro' ? 'EXPLORER PRO' : 'EXPLORER'}
           </span>
         </div>
-        {explorerStatus && (
-          <ExplorerStatusBadge status={explorerStatus} size="sm" />
+        {explorerStatus && !(accountType === 'expedition-guide' && explorerStatus === 'RESTING') && (
+          <ExplorerStatusBadge status={explorerStatus} size="sm" showIcon={false} />
         )}
       </div>
 

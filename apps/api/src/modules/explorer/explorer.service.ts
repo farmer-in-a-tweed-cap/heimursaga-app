@@ -142,9 +142,12 @@ export class ExplorerService {
               select: { follower_id: true },
             }
           : undefined,
-        // Get expeditions for status calculation + active expedition location
+        // Get expeditions for status calculation + active expedition location.
+        // Exclude blueprints — they're route templates, not lived expeditions,
+        // and their status values (draft/published) shouldn't ever feed
+        // EXPLORING/PLANNING/RESTING. Defensive against legacy data drift.
         expeditions: {
-          where: { deleted_at: null },
+          where: { deleted_at: null, is_blueprint: { not: true } },
           select: {
             public_id: true,
             title: true,

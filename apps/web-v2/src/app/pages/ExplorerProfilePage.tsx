@@ -528,11 +528,19 @@ export function ExplorerProfilePage() {
             <div className="absolute inset-0 bg-gradient-to-b from-[#202020]/70 via-[#202020]/60 to-[#202020]/90" />
           )}
           
-          {/* Explorer Status Banner - Top Border (hidden for guides) */}
-          {explorer.accountType !== 'expedition-guide' && (() => {
-            // Use all expeditions (not just active) so PLANNING status can be detected
-            const status = getExplorerStatus(explorer.recentExpeditions, profile?.activeExpeditionOffGrid);
-            const currentExpedition = getCurrentExpeditionInfo(explorer.recentExpeditions);
+          {/* Explorer Status Banner - Top Border. Shown for non-guides always,
+              and for guides whenever they're on a live (or planned) expedition.
+              Guides whose status would compute to RESTING fall through to the
+              based-in bar below — guide accounts never display RESTING.
+              Blueprints are filtered out of the status input so they can't
+              trigger the banner. */}
+          {(() => {
+            const isGuide = explorer.accountType === 'expedition-guide';
+            const standardExpeditions = explorer.recentExpeditions.filter(e => !e.isBlueprint);
+            // Use all standard expeditions (not just active) so PLANNING status can be detected
+            const status = getExplorerStatus(standardExpeditions, profile?.activeExpeditionOffGrid);
+            const currentExpedition = getCurrentExpeditionInfo(standardExpeditions);
+            if (isGuide && status === 'RESTING') return null;
             
             return (
               <div className={`absolute top-0 left-0 right-0 py-1.5 px-3 md:py-2 md:px-6 z-10 ${
@@ -586,17 +594,26 @@ export function ExplorerProfilePage() {
             );
           })()}
 
-          {/* Guide Header Bar - Based In (replaces explorer status bar for guides) */}
-          {explorer.accountType === 'expedition-guide' && (
-            <div className="absolute top-0 left-0 right-0 py-1.5 px-3 md:py-2 md:px-6 z-10 bg-[#598636]">
-              <div className="flex items-center justify-start gap-2 md:gap-6 text-white text-xs md:text-sm font-mono">
-                <div className="flex items-center gap-1 md:gap-2">
-                  <span className="text-xs text-white/80">BASED IN:</span>
-                  <span className="font-bold truncate">{explorer.fromLocation || 'Unknown'}</span>
+          {/* Guide Header Bar - Based In (replaces explorer status bar for
+              guides who aren't currently exploring or planning a live
+              expedition). Renders only when the status banner above is
+              suppressed — i.e., when a guide would otherwise show RESTING. */}
+          {(() => {
+            if (explorer.accountType !== 'expedition-guide') return null;
+            const standardExpeditions = explorer.recentExpeditions.filter(e => !e.isBlueprint);
+            const status = getExplorerStatus(standardExpeditions, profile?.activeExpeditionOffGrid);
+            if (status !== 'RESTING') return null;
+            return (
+              <div className="absolute top-0 left-0 right-0 py-1.5 px-3 md:py-2 md:px-6 z-10 bg-[#598636]">
+                <div className="flex items-center justify-start gap-2 md:gap-6 text-white text-xs md:text-sm font-mono">
+                  <div className="flex items-center gap-1 md:gap-2">
+                    <span className="text-xs text-white/80">BASED IN:</span>
+                    <span className="font-bold truncate">{explorer.fromLocation || 'Unknown'}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Banner Content */}
           <div className="absolute inset-0 flex flex-col p-4 pt-14 md:p-6 md:pt-16">
