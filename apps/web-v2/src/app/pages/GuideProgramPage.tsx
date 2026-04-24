@@ -21,7 +21,7 @@ export function GuideProgramPage() {
         </div>
         <div className="p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-t-2 border-[#202020] dark:border-[#616161] border-l-4 border-l-[#598636]">
           <p className="text-xs text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-            <span className="font-bold text-[#598636]">FOR GUIDES:</span> Guide accounts include the full personal journaling and sponsorship experience available to every other explorer&mdash;live expeditions, daily entries, photos, sponsor tiers, and everything else on the platform&mdash;layered on top of the guide-only features (blueprints, tips, portfolio). You never have to choose between being a guide and being an explorer.
+            Guide accounts include the full personal journaling and sponsorship experience available to every other explorer&mdash;live expeditions, daily entries, photos, sponsor tiers, and everything else on the platform&mdash;layered on top of the guide-only features (blueprints, tips, portfolio). You never have to choose between being a guide and being an explorer.
           </p>
         </div>
       </div>
