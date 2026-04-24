@@ -255,6 +255,8 @@ export function ExplorersPage() {
       result = result.filter(e => e.recentExpeditions.some(exp => exp.status === 'active'));
     } else if (activeFilter === 'pro') {
       result = result.filter(e => e.creator === true);
+    } else if (activeFilter === 'guide') {
+      result = result.filter(e => e.accountType === 'expedition-guide');
     }
 
     // Apply search
@@ -345,6 +347,7 @@ export function ExplorersPage() {
               { key: 'all', label: 'ALL' },
               { key: 'active', label: 'ACTIVE NOW' },
               { key: 'pro', label: 'EXPLORER PRO' },
+              { key: 'guide', label: 'EXPEDITION GUIDE' },
             ].map(({ key, label }) => (
               <button
                 key={key}

@@ -14,7 +14,7 @@ export function DocumentationPage() {
             <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">PLATFORM DOCUMENTATION</h1>
           </div>
           <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
-            Complete guide to using Heimursaga · Journaling & Sponsorship Platform for Explorers
+            Complete guide to using Heimursaga · The Journaling & Sponsorship Platform for Explorers
           </p>
         </div>
       </div>
@@ -33,6 +33,9 @@ export function DocumentationPage() {
           </a>
           <a href="#journals-expeditions" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
             → Your Journal & Expeditions
+          </a>
+          <a href="#expedition-guides" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
+            → Expedition Guides
           </a>
           <a href="#launching-blueprints" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
             → Launching Expedition Blueprints
@@ -110,10 +113,13 @@ export function DocumentationPage() {
             <h2 className="text-lg font-bold">ACCOUNT TYPES</h2>
           </div>
           <div className="p-6">
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Explorer */}
               <div className="border-2 border-[#b5bcc4] dark:border-[#3a3a3a] p-4">
-                <h3 className="font-bold mb-3 text-[#202020] dark:text-white text-lg">Explorer (Free)</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-[#202020] dark:text-white text-lg">Explorer (Free)</h3>
+                  <span className="px-2 py-1 bg-[#ac6d46] text-white text-xs font-bold">EXPLORER</span>
+                </div>
                 <ul className="space-y-2 text-sm text-[#202020] dark:text-[#e5e5e5]">
                   <li className="flex items-start gap-2">
                     <span className="text-[#ac6d46] mt-1">●</span>
@@ -146,7 +152,7 @@ export function DocumentationPage() {
               <div className="border-2 border-[#4676ac] dark:border-[#4676ac] p-4 bg-[#f8f9fa] dark:bg-[#2a2a2a]">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-bold text-[#202020] dark:text-white text-lg">Explorer Pro ($7/month or $50/year)</h3>
-                  <span className="px-2 py-1 bg-[#4676ac] text-white text-xs font-bold">PRO</span>
+                  <span className="px-2 py-1 bg-[#ac6d46] text-white text-xs font-bold">EXPLORER PRO</span>
                 </div>
                 <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3 italic">
                   All Explorer features, plus:
@@ -182,6 +188,45 @@ export function DocumentationPage() {
                   className="block w-full mt-4 py-3 bg-[#4676ac] text-white text-center hover:bg-[#3a5f8c] transition-all text-sm font-bold"
                 >
                   UPGRADE TO PRO
+                </Link>
+              </div>
+
+              {/* Expedition Guide */}
+              <div className="border-2 border-[#598636] dark:border-[#598636] p-4 bg-[#f8f9fa] dark:bg-[#2a2a2a]">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-[#202020] dark:text-white text-lg">Expedition Guide (Invite-Only)</h3>
+                  <span className="px-2 py-1 bg-[#598636] text-white text-xs font-bold">EXPEDITION GUIDE</span>
+                </div>
+                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3 italic">
+                  All Explorer and Explorer Pro features, plus:
+                </p>
+                <ul className="space-y-2 text-sm text-[#202020] dark:text-[#e5e5e5]">
+                  <li className="flex items-start gap-2">
+                    <span className="text-[#598636] mt-1">●</span>
+                    <span><strong>Publish expedition blueprints</strong>&mdash;curated, field-tested route templates other explorers can launch</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-[#598636] mt-1">●</span>
+                    <span><strong>Receive tips</strong> on adopted blueprints via Stripe Connect</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-[#598636] mt-1">●</span>
+                    <span><strong>Portfolio profile</strong>&mdash;blueprints surface alongside your journal</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-[#598636] mt-1">●</span>
+                    <span>Route file <strong>import (GPX/KML/GeoJSON)</strong> from Gaia, CalTopo, AllTrails, etc.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-[#598636] mt-1">●</span>
+                    <span>Higher waypoint description limits for detailed route docs</span>
+                  </li>
+                </ul>
+                <Link
+                  href="/guide-program"
+                  className="block w-full mt-4 py-3 bg-[#598636] text-white text-center hover:bg-[#476b2b] transition-all text-sm font-bold"
+                >
+                  LEARN MORE
                 </Link>
               </div>
             </div>
@@ -310,6 +355,119 @@ export function DocumentationPage() {
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                 You can log journal entries for a planned expedition before it activates. The entry date range
                 spans from the expedition&apos;s creation date through today.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Expedition Guides */}
+        <section id="expedition-guides" className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
+          <div className="bg-[#616161] dark:bg-[#3a3a3a] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
+            <Compass className="w-5 h-5" />
+            <h2 className="text-lg font-bold">EXPEDITION GUIDES</h2>
+          </div>
+          <div className="p-6 space-y-4">
+            <div>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+                This section covers how to use the platform as an Expedition Guide. For the program
+                overview, who guides are, and how the dual portfolio/journal structure is framed, see
+                the <Link href="/guide-program" className="text-[#598636] hover:text-[#476b2b] underline">Expedition Guide Program</Link> page.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Joining the Program</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+                The program is invite-only. Request an invite via the <Link href="/contact" className="text-[#598636] hover:text-[#476b2b] underline">contact</Link> page,
+                then enter the invite code on the registration form. Your account is created with guide
+                status set, which unlocks the blueprint builder and bundles in Explorer Pro features.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Publishing a Blueprint</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                In the header, open <strong>CREATE &rarr; PUBLISH BLUEPRINT</strong>. The expedition builder loads
+                in blueprint mode (no start/end dates or sponsorship fields&mdash;just the route).
+              </p>
+              <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-4">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#598636]">•</span>
+                  <span>Place waypoints on the map and pick a route mode for each leg, or import a route file (see below)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#598636]">•</span>
+                  <span>Add a title, description, and activity type (hike, paddle, bike, sail, drive, mixed)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#598636]">•</span>
+                  <span>Save as draft (autosaves every 30s) or click <strong>PUBLISH BLUEPRINT</strong> once you have a title, description, and at least two waypoints</span>
+                </li>
+              </ul>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mt-2">
+                Published blueprints appear on your portfolio and become discoverable to other
+                explorers. Edit a published blueprint by reopening it from your portfolio.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Importing a Route File</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                In the blueprint builder, click <strong>Import Route</strong> and upload a file exported from
+                Gaia GPS, CalTopo, AllTrails, Garmin Connect, Komoot, Strava, or any tool that produces
+                standard route files. The builder parses the file and pre-populates waypoints, the
+                trackline, and distance.
+              </p>
+              <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-4">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#598636]">•</span>
+                  <span><strong>Supported formats:</strong> GPX, KML, GeoJSON</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#598636]">•</span>
+                  <span><strong>Limits:</strong> 5 MB per file, 500 waypoints, 20,000 track points</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Exporting a Blueprint as GPX</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+                On any of your saved blueprints, click <strong>Export GPX</strong> in the builder to download a
+                GPX 1.1 file. Use it to validate the route in your own GPS app before publishing, or
+                to carry the route into the field. To prevent explorers who launch your blueprint
+                from downloading it themselves, toggle <strong>Allow route export</strong> off on the blueprint.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Receiving Tips</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+                Tips on adopted blueprints flow through Stripe Connect. Go to <Link href="/settings/payouts" className="text-[#598636] hover:text-[#476b2b] underline">Settings &rarr; Payouts</Link> and complete Stripe
+                Connect onboarding to enable tipping on your blueprints. Heimursaga takes a 10%
+                platform fee; Stripe&apos;s standard processing fees also apply. Tipping does not appear
+                on a blueprint until your Stripe account is connected.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Journaling on a Guide Account</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+                Guides have the full Explorer and Explorer Pro experience available alongside the
+                guide-only features. To log a journal entry, open <strong>CREATE &rarr; LOG JOURNAL ENTRY</strong> in
+                the header (or visit <Link href="/select-expedition" className="text-[#598636] hover:text-[#476b2b] underline">/select-expedition</Link>).
+                Pick an existing live expedition, launch one of your own published blueprints from the
+                <strong> SHOW BLUEPRINTS</strong> toggle, or create a new standard expedition. Entries, photos, sponsor
+                tiers, expedition notes, and every other Pro feature work exactly as they do for any
+                other Explorer Pro account.
+              </p>
+            </div>
+
+            <div className="p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#598636]">
+              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
+                Launching one of your own blueprints (rather than an external guide&apos;s) leaves the
+                resulting expedition route-unlocked, so you can tweak waypoints in the field without
+                being blocked by the route lock that protects external adoptions.
               </p>
             </div>
           </div>

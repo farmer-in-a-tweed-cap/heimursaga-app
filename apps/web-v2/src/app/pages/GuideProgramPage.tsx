@@ -8,21 +8,18 @@ export function GuideProgramPage() {
     <div className="max-w-[1200px] mx-auto px-6 py-12">
       {/* Page Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
-        <div className="p-6">
-          <div className="flex items-center mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
+        <div className="p-6 space-y-4">
+          <div className="flex items-center border-b-2 border-[#202020] dark:border-[#616161] pb-2">
             <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">EXPEDITION GUIDE PROGRAM</h1>
           </div>
-          <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-2">
+          <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
             Professional guides create curated, field-tested expedition blueprints that explorers can launch and experience on their own terms
           </p>
-          <p className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-            Heimursaga is complementary to Gaia GPS, CalTopo, AllTrails, Garmin Connect, Komoot, and other GPS tools&mdash;import the routes you plan there, publish them as blueprints, and export them back out for field navigation.
-          </p>
-        </div>
-        <div className="p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-t-2 border-[#202020] dark:border-[#616161] border-l-4 border-l-[#598636]">
-          <p className="text-xs text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-            Guide accounts include the full personal journaling and sponsorship experience available to every other explorer&mdash;live expeditions, daily entries, photos, sponsor tiers, and everything else on the platform&mdash;layered on top of the guide-only features (blueprints, tips, portfolio). You never have to choose between being a guide and being an explorer.
-          </p>
+          <div className="p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#598636]">
+            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
+              Guide accounts include the full personal journaling and sponsorship experience available to every other explorer&mdash;live expeditions, daily entries, photos, sponsor tiers, and everything else on the platform&mdash;layered on top of the guide-only features (blueprints, tips, portfolio). You never have to choose between being a guide and being an explorer.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -498,8 +495,12 @@ export function GuideProgramPage() {
           <div className="p-6 space-y-4">
             <div>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
-                Guide accounts are a distinct account type on Heimursaga, designed specifically for professional
-                route design. They differ from explorer accounts in several important ways:
+                A guide account is not a stripped-down or alternate Explorer&mdash;it&apos;s the full
+                Explorer Pro experience with guide-specific capabilities layered on top. Guides get
+                everything an Explorer Pro account has (live expeditions, journal entries, sponsor
+                tiers, expedition notes, messaging, etc.) without the subscription, plus the
+                guide-only features (blueprint publishing, tipping, portfolio framing, route file
+                import).
               </p>
             </div>
 
@@ -516,40 +517,22 @@ export function GuideProgramPage() {
                 </thead>
                 <tbody className="text-[#202020] dark:text-[#e5e5e5]">
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
-                    <td className="py-2 pr-4 text-xs">Create expedition blueprints</td>
-                    <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
-                    <td className="py-2 px-4 text-center text-[#616161]">&mdash;</td>
-                    <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
-                  </tr>
-                  <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
                     <td className="py-2 pr-4 text-xs">Create live expeditions</td>
-                    <td className="py-2 px-4 text-center text-[#616161]">&mdash;</td>
+                    <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
                     <td className="py-2 px-4 text-center text-[#ac6d46] font-bold">Yes</td>
                     <td className="py-2 pl-4 text-center text-[#4676ac] font-bold">Yes</td>
                   </tr>
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
                     <td className="py-2 pr-4 text-xs">Log journal entries</td>
-                    <td className="py-2 px-4 text-center text-[#616161]">&mdash;</td>
-                    <td className="py-2 px-4 text-center text-[#ac6d46] font-bold">Yes</td>
-                    <td className="py-2 pl-4 text-center text-[#4676ac] font-bold">Yes</td>
-                  </tr>
-                  <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
-                    <td className="py-2 pr-4 text-xs">Launch blueprints</td>
-                    <td className="py-2 px-4 text-center text-[#616161]">&mdash;</td>
-                    <td className="py-2 px-4 text-center text-[#ac6d46] font-bold">Yes</td>
-                    <td className="py-2 pl-4 text-center text-[#4676ac] font-bold">Yes</td>
-                  </tr>
-                  <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
-                    <td className="py-2 pr-4 text-xs">Receive tips</td>
                     <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
-                    <td className="py-2 px-4 text-center text-[#616161]">&mdash;</td>
-                    <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
+                    <td className="py-2 px-4 text-center text-[#ac6d46] font-bold">Yes</td>
+                    <td className="py-2 pl-4 text-center text-[#4676ac] font-bold">Yes</td>
                   </tr>
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
-                    <td className="py-2 pr-4 text-xs">Receive sponsorships</td>
-                    <td className="py-2 px-4 text-center text-[#616161]">&mdash;</td>
+                    <td className="py-2 pr-4 text-xs">Launch other guides&apos; blueprints</td>
+                    <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
                     <td className="py-2 px-4 text-center text-[#ac6d46] font-bold">Yes</td>
-                    <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
+                    <td className="py-2 pl-4 text-center text-[#4676ac] font-bold">Yes</td>
                   </tr>
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
                     <td className="py-2 pr-4 text-xs">Expedition builder</td>
@@ -558,14 +541,44 @@ export function GuideProgramPage() {
                     <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
                   </tr>
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
+                    <td className="py-2 pr-4 text-xs">Receive expedition sponsorships</td>
+                    <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
+                    <td className="py-2 px-4 text-center text-[#ac6d46] font-bold">Yes</td>
+                    <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
+                  </tr>
+                  <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
+                    <td className="py-2 pr-4 text-xs">Expedition notes &amp; messaging</td>
+                    <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
+                    <td className="py-2 px-4 text-center text-[#ac6d46] font-bold">Yes</td>
+                    <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
+                  </tr>
+                  <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
+                    <td className="py-2 pr-4 text-xs">Publish expedition blueprints</td>
+                    <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
+                    <td className="py-2 px-4 text-center text-[#616161]">&mdash;</td>
+                    <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
+                  </tr>
+                  <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
+                    <td className="py-2 pr-4 text-xs">Receive tips on blueprints</td>
+                    <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
+                    <td className="py-2 px-4 text-center text-[#616161]">&mdash;</td>
+                    <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
+                  </tr>
+                  <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
+                    <td className="py-2 pr-4 text-xs">Route file import (GPX/KML/GeoJSON)</td>
+                    <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
+                    <td className="py-2 px-4 text-center text-[#616161]">&mdash;</td>
+                    <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
+                  </tr>
+                  <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
                     <td className="py-2 pr-4 text-xs">Account cost</td>
-                    <td className="py-2 px-4 text-center text-[#598636] font-bold">Free</td>
+                    <td className="py-2 px-4 text-center text-xs text-[#598636]">Invite-only</td>
                     <td className="py-2 px-4 text-center text-xs text-[#ac6d46]">Subscription</td>
                     <td className="py-2 pl-4 text-center text-[#4676ac] font-bold">Free</td>
                   </tr>
                   <tr>
                     <td className="py-2 pr-4 text-xs">Profile type</td>
-                    <td className="py-2 px-4 text-center text-xs text-[#598636]">Portfolio</td>
+                    <td className="py-2 px-4 text-center text-xs text-[#598636]">Portfolio + Journal</td>
                     <td className="py-2 px-4 text-center text-xs text-[#ac6d46]">Journal</td>
                     <td className="py-2 pl-4 text-center text-xs text-[#4676ac]">Journal</td>
                   </tr>
@@ -575,9 +588,10 @@ export function GuideProgramPage() {
 
             <div className="p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#598636]">
               <p className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-                Guide accounts are visually distinguished by green accent styling throughout the platform.
-                Guide profiles display a portfolio of published blueprints rather than a journal of expeditions
-                and entries.
+                Guide accounts are visually distinguished by green accent styling throughout the
+                platform. Guide profiles surface a portfolio of published blueprints alongside the
+                guide&apos;s journal of expeditions and entries&mdash;you never have to choose between
+                being a guide and being an explorer.
               </p>
             </div>
           </div>
