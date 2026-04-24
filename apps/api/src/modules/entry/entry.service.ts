@@ -1110,17 +1110,6 @@ export class EntryService {
       const access = !!explorerId;
       if (!access) throw new ServiceForbiddenException();
 
-      // Guide accounts cannot create journal entries
-      const explorerRecord = await this.prisma.explorer.findUnique({
-        where: { id: explorerId },
-        select: { is_guide: true },
-      });
-      if (explorerRecord?.is_guide) {
-        throw new ServiceForbiddenException(
-          'Guide accounts cannot create journal entries',
-        );
-      }
-
       const {
         title,
         lat,

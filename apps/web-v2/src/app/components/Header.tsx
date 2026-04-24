@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
-import { Bell, Settings, Sun, Moon } from 'lucide-react';
+import { Bell, Settings, Sun, Moon, ChevronDown } from 'lucide-react';
 import { useTheme } from '@/app/context/ThemeContext';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { NotificationsDropdown } from '@/app/components/NotificationsDropdown';
@@ -23,7 +23,9 @@ export function Header() {
   const [overflowMenuOpen, setOverflowMenuOpen] = useState(false);
   const [badgeLoaded, setBadgeLoaded] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const createMenuRef = useRef<HTMLDivElement>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
@@ -163,6 +165,7 @@ export function Header() {
   useEffect(() => {
     return () => {
       setOverflowMenuOpen(false);
+      setCreateMenuOpen(false);
     };
   }, [pathname]);
 
@@ -179,6 +182,23 @@ export function Header() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [notificationsRef]);
+
+  // Close create menu when clicking outside
+  useEffect(() => {
+    if (!createMenuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        createMenuRef.current &&
+        !createMenuRef.current.contains(event.target as Node)
+      ) {
+        setCreateMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [createMenuOpen]);
 
   return (
     <header className="bg-[#202020] text-white">
@@ -291,16 +311,58 @@ export function Header() {
                 >
                   BOOKMARK
                 </Link>
-                <Link
-                  href={user.isGuide ? '/expedition-builder' : '/select-expedition'}
-                  className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] ${
-                    isActive(user.isGuide ? '/expedition-builder' : '/select-expedition')
-                      ? 'bg-[#4676ac] text-white'
-                      : 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
-                  }`}
-                >
-                  {user.isGuide ? 'PUBLISH' : 'LOG ENTRY'}
-                </Link>
+                {user.isGuide ? (
+                  <div className="relative" ref={createMenuRef}>
+                    <button
+                      type="button"
+                      onClick={() => setCreateMenuOpen((v) => !v)}
+                      className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] flex items-center gap-1 ${
+                        isActive('/expedition-builder') || isActive('/select-expedition')
+                          ? 'bg-[#4676ac] text-white'
+                          : 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
+                      }`}
+                      aria-haspopup="menu"
+                      aria-expanded={createMenuOpen}
+                    >
+                      CREATE
+                      <ChevronDown size={14} className={`transition-transform ${createMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {createMenuOpen && (
+                      <div
+                        role="menu"
+                        className="absolute right-0 top-full mt-1 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-lg min-w-[220px] z-50"
+                      >
+                        <Link
+                          href="/expedition-builder"
+                          role="menuitem"
+                          onClick={() => setCreateMenuOpen(false)}
+                          className="block px-4 py-3 text-xs font-bold tracking-[0.14em] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#598636] hover:text-white transition-all"
+                        >
+                          PUBLISH BLUEPRINT
+                        </Link>
+                        <Link
+                          href="/select-expedition"
+                          role="menuitem"
+                          onClick={() => setCreateMenuOpen(false)}
+                          className="block px-4 py-3 text-xs font-bold tracking-[0.14em] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#ac6d46] hover:text-white transition-all border-t border-[#b5bcc4] dark:border-[#3a3a3a]"
+                        >
+                          LOG JOURNAL ENTRY
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Link
+                    href="/select-expedition"
+                    className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] ${
+                      isActive('/select-expedition')
+                        ? 'bg-[#4676ac] text-white'
+                        : 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
+                    }`}
+                  >
+                    LOG ENTRY
+                  </Link>
+                )}
               </>
             )}
           </nav>
@@ -586,16 +648,41 @@ export function Header() {
                     >
                       SETTINGS
                     </Link>
-                    <Link
-                      href={user.isGuide ? '/expedition-builder' : '/select-expedition'}
-                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
-                        isActive(user.isGuide ? '/expedition-builder' : '/select-expedition')
-                          ? 'bg-[#4676ac] text-white'
-                          : 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
-                      }`}
-                    >
-                      {user.isGuide ? 'PUBLISH' : 'LOG ENTRY'}
-                    </Link>
+                    {user.isGuide ? (
+                      <>
+                        <Link
+                          href="/expedition-builder"
+                          className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
+                            isActive('/expedition-builder')
+                              ? 'bg-[#4676ac] text-white'
+                              : 'bg-[#598636] text-white hover:bg-[#476b2b]'
+                          }`}
+                        >
+                          PUBLISH BLUEPRINT
+                        </Link>
+                        <Link
+                          href="/select-expedition"
+                          className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
+                            isActive('/select-expedition')
+                              ? 'bg-[#4676ac] text-white'
+                              : 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
+                          }`}
+                        >
+                          LOG JOURNAL ENTRY
+                        </Link>
+                      </>
+                    ) : (
+                      <Link
+                        href="/select-expedition"
+                        className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
+                          isActive('/select-expedition')
+                            ? 'bg-[#4676ac] text-white'
+                            : 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
+                        }`}
+                      >
+                        LOG ENTRY
+                      </Link>
+                    )}
                   </>
                 )}
               </div>

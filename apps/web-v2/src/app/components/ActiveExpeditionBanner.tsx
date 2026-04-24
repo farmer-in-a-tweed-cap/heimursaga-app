@@ -6,8 +6,6 @@ import Link from 'next/link';
 export function ActiveExpeditionBanner() {
   const { user } = useAuth();
   if (!user?.activeExpedition) return null;
-  // Don't show for guide accounts (blueprints don't have active/planned status)
-  if (user.isGuide) return null;
 
   const { publicId, title, status } = user.activeExpedition;
   const isPlanned = status === 'planned';

@@ -82,11 +82,16 @@ export class ExplorerService {
         Math.max(1, parseInt(query.limit, 10) || 20),
       );
 
-      // Always exclude blocked and guide explorers from public listings
-      // (admin dashboard has its own endpoint that shows blocked users)
+      // Exclude blocked explorers from public listings. Guides appear here
+      // only if they have journaled at least one entry — pure portfolio-only
+      // guide accounts stay on /guides. The admin dashboard has its own
+      // endpoint that shows blocked users.
       let where: Prisma.ExplorerWhereInput = {
         blocked: false,
-        is_guide: { not: true },
+        OR: [
+          { is_guide: { not: true } },
+          { is_guide: true, entries_count: { gt: 0 } },
+        ],
       };
 
       // Filter to followed explorers

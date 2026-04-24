@@ -575,16 +575,16 @@ export class ExpeditionService {
       // Check if the viewing explorer is the profile owner
       const owner = await this.prisma.explorer.findFirst({
         where: { username },
-        select: { id: true, is_guide: true },
+        select: { id: true },
       });
       const isOwner = !!explorerId && !!owner && owner.id === explorerId;
-      const isGuide = owner?.is_guide === true;
 
-      // get expeditions (owner sees all their own, others see only public and non-cancelled)
-      // For guide profiles: show only blueprints; for regular profiles: exclude blueprints
+      // get expeditions (owner sees all their own, others see only public and
+      // non-cancelled). Returns both blueprint and non-blueprint expeditions —
+      // guides surface both a portfolio (blueprints) and a journal (standard
+      // expeditions); the client tab-splits on `isBlueprint`.
       const where = {
         author: { username, blocked: false },
-        ...(isGuide ? { is_blueprint: true } : { is_blueprint: { not: true } }),
         ...(isOwner
           ? {}
           : {
@@ -3962,17 +3962,6 @@ export class ExpeditionService {
 
       if (!explorerId) throw new ServiceForbiddenException();
 
-      // Verify user is not a guide
-      const explorer = await this.prisma.explorer.findUnique({
-        where: { id: explorerId },
-        select: { is_guide: true },
-      });
-      if (explorer?.is_guide) {
-        throw new ServiceForbiddenException(
-          'Guide accounts cannot adopt blueprints',
-        );
-      }
-
       // Check for existing adoption (prevent duplicates)
       const existingAdoption = await this.prisma.expedition.findFirst({
         where: {
@@ -4223,20 +4212,13 @@ export class ExpeditionService {
 
       if (!explorerId) throw new ServiceForbiddenException();
 
-      // Verify user is not a guide
       const explorer = await this.prisma.explorer.findUnique({
         where: { id: explorerId },
         select: {
-          is_guide: true,
           username: true,
           profile: { select: { name: true, picture: true } },
         },
       });
-      if (explorer?.is_guide) {
-        throw new ServiceForbiddenException(
-          'Guide accounts cannot review blueprints',
-        );
-      }
 
       const blueprint = await this.prisma.expedition
         .findFirstOrThrow({
