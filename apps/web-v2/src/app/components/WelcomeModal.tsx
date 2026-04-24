@@ -223,7 +223,7 @@ export function WelcomeModal({ open, onClose, onSaveComplete, username, isGuide 
                     GUIDE CONTACT
                   </div>
                   <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                    How should explorers reach you when they want to book an in-person guided expedition? This appears as a Contact button on your public profile.
+                    How should explorers reach you when they have questions or want to book an in-person guided expedition? This appears as a Contact button on your public profile.
                   </p>
                 </div>
               </div>
