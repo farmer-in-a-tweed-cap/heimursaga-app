@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { usePageOwner } from '@/app/context/PageOwnerContext';
+import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
 import { ShareButton } from '@/app/components/ShareButton';
 import { InlineLocationMap } from '@/app/components/InlineLocationMap';
@@ -520,13 +521,7 @@ export function JournalEntryPage() {
                   {/* Explorer Avatar */}
                   <Link href={`/journal/${entry.explorerId}`} className="flex-shrink-0">
                     <div className={`w-16 h-16 border-2 ${entry.explorerIsPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all shadow-lg`}>
-                      <Image
-                        src={entry.explorerPicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.explorerId}`}
-                        alt={entry.explorerName}
-                        className="w-full h-full object-cover"
-                        width={64}
-                        height={64}
-                      />
+                      <ExplorerAvatar username={entry.explorerId} src={entry.explorerPicture} size={64} className="w-full h-full" />
                     </div>
                   </Link>
 
@@ -1119,13 +1114,7 @@ export function JournalEntryPage() {
                         <div className="flex items-start gap-3">
                           <Link href={`/journal/${comment.author.username}`} className="flex-shrink-0">
                             <div className={`w-10 h-10 border-2 ${comment.author.creator ? 'border-[#ac6d46]' : 'border-[#616161] dark:border-[#3a3a3a]'} overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-colors`}>
-                              <Image
-                                src={comment.author.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.author.username}`}
-                                alt={comment.author.username}
-                                className="w-full h-full object-cover"
-                                width={40}
-                                height={40}
-                              />
+                              <ExplorerAvatar username={comment.author.username} src={comment.author.picture} size={40} className="w-full h-full" />
                             </div>
                           </Link>
                           <div className="flex-1">
@@ -1260,13 +1249,7 @@ export function JournalEntryPage() {
                                 <div key={reply.id} className="flex items-start gap-2">
                                   <Link href={`/journal/${reply.author.username}`} className="flex-shrink-0">
                                     <div className={`w-6 h-6 border ${reply.author.creator ? 'border-[#ac6d46]' : 'border-[#616161] dark:border-[#3a3a3a]'} overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-colors`}>
-                                      <Image
-                                        src={reply.author.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${reply.author.username}`}
-                                        alt={reply.author.username}
-                                        className="w-full h-full object-cover"
-                                        width={24}
-                                        height={24}
-                                      />
+                                      <ExplorerAvatar username={reply.author.username} src={reply.author.picture} size={24} className="w-full h-full" />
                                     </div>
                                   </Link>
                                   <div className="flex-1">
@@ -1475,13 +1458,7 @@ export function JournalEntryPage() {
               <div className="flex items-center gap-3 mb-3">
                 <Link href={`/journal/${entry.explorerId}`} className="flex-shrink-0">
                   <div className={`w-16 h-16 border-2 ${entry.explorerIsPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-all`}>
-                    <Image
-                      src={entry.explorerPicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.explorerId}`}
-                      alt={entry.explorerName}
-                      className="w-full h-full object-cover"
-                      width={64}
-                      height={64}
-                    />
+                    <ExplorerAvatar username={entry.explorerId} src={entry.explorerPicture} size={64} className="w-full h-full" />
                   </div>
                 </Link>
                 <div>
