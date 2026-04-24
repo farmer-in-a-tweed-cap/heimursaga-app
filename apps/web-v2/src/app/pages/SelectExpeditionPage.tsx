@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
-import { Map, Zap, Lock, FileText, Archive, Loader2, AlertTriangle, Compass, Rocket } from 'lucide-react';
+import { Map, Zap, Lock, FileText, Archive, Loader2, AlertTriangle, Compass } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { explorerApi, expeditionApi, type ExplorerExpedition } from '@/app/services/api';
 import { formatDate, formatDateTime } from '@/app/utils/dateFormat';
@@ -52,18 +52,14 @@ export function SelectExpeditionPage() {
     fetchExpeditions();
   }, [isAuthenticated]);
 
-  // Filter expeditions by status. Blueprints are handled separately — they
-  // aren't "planned" expeditions in the journal sense, they're templates the
-  // guide can launch into a new standard expedition. Treat expeditions without
-  // a status or with 'active'/'planned' status as active.
-  const standardExpeditions = expeditions.filter(e => !e.isBlueprint);
-  const activeExpeditions = standardExpeditions.filter(e => !e.status || e.status === 'active' || e.status === 'planned');
-  const completedExpeditions = standardExpeditions.filter(e => e.status === 'completed');
-  const draftExpeditions = standardExpeditions.filter(e => e.status === 'draft');
+  // Filter expeditions by status. Published blueprints are handled in the
+  // dedicated blueprints view (launchable templates); draft blueprints stay
+  // in UNSAVED EXPEDITIONS alongside standard-expedition drafts, since they
+  // need the same "continue in builder" action and can't be launched yet.
+  const activeExpeditions = expeditions.filter(e => !e.isBlueprint && (!e.status || e.status === 'active' || e.status === 'planned'));
+  const completedExpeditions = expeditions.filter(e => !e.isBlueprint && e.status === 'completed');
+  const draftExpeditions = expeditions.filter(e => e.status === 'draft'); // includes blueprint drafts
   const currentExpedition = activeExpeditions[0] || null;
-  // Published blueprints the user can launch. Draft blueprints continue to
-  // appear in the general drafts section with a "continue in builder" action,
-  // since they're not yet adoptable.
   const publishedBlueprints = expeditions.filter(e => e.isBlueprint && e.status === 'published');
 
   // Launch the adopt-blueprint flow. Same call as external adopters, but
@@ -407,10 +403,11 @@ export function SelectExpeditionPage() {
             )}
 
             {/* Blueprints View — launch one of the user's own published
-                blueprints as a journal expedition. Same flow as external
-                adopters, except the resulting expedition stays
-                route-unlocked so the guide can tweak waypoints in the
-                field. */}
+                blueprints as a new journal expedition. Same flow as external
+                adopters, except the resulting expedition stays route-unlocked
+                so the guide can tweak waypoints in the field. Draft
+                blueprints aren't shown here — they live in UNSAVED
+                EXPEDITIONS above. */}
             {view === 'blueprints' && (
               <div className="space-y-3">
                 <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] p-3 border-l-2 border-[#598636] mb-4">
@@ -461,10 +458,7 @@ export function SelectExpeditionPage() {
                                 LAUNCHING...
                               </>
                             ) : (
-                              <>
-                                <Rocket size={14} />
-                                LAUNCH &amp; LOG ENTRY
-                              </>
+                              <>LAUNCH &amp; LOG ENTRY</>
                             )}
                           </button>
                         </div>

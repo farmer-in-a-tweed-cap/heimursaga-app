@@ -1718,6 +1718,34 @@ export class ExpeditionService {
             'Only expedition guides can create blueprints',
           );
         }
+
+        // Collapse duplicate blueprint creation onto the existing row. The
+        // autosave on /expedition-builder re-fires on every fresh mount,
+        // which previously created a new draft for every visit even if the
+        // guide had already published a blueprint with the same title.
+        // Match by trimmed title + author: drafts resolve idempotently;
+        // published duplicates are rejected so the guide renames or edits
+        // the existing blueprint instead of orphaning a copy.
+        const trimmedTitle = (payload.title || '').trim();
+        if (trimmedTitle) {
+          const existing = await this.prisma.expedition.findFirst({
+            where: {
+              author_id: explorerId,
+              is_blueprint: true,
+              title: trimmedTitle,
+              deleted_at: null,
+            },
+            select: { public_id: true, status: true },
+          });
+          if (existing) {
+            if (existing.status === 'draft') {
+              return { expeditionId: existing.public_id };
+            }
+            throw new ServiceBadRequestException(
+              `You already have a blueprint titled "${trimmedTitle}". Use a different title or edit the existing blueprint.`,
+            );
+          }
+        }
       }
 
       // Enforce single draft per explorer
@@ -1975,7 +2003,6 @@ export class ExpeditionService {
           startDate,
           endDate,
           goal,
-          category,
           region,
           tags,
           visibility: (payload as any).visibility,

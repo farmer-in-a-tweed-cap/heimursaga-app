@@ -201,12 +201,12 @@ export function ExpeditionBuilderPage() {
   // When editing an existing expedition, respect the loaded row's type rather
   // than the user's account capabilities — a guide editing one of their own
   // standard (non-blueprint) expeditions must stay in expedition mode, and
-  // editing a blueprint must stay in blueprint mode.
+  // editing a blueprint must stay in blueprint mode. Until the load finishes,
+  // fall back to the account-capability default so effects that fire on the
+  // initial render don't see the wrong value and reset map/route state.
   const [loadedIsBlueprint, setLoadedIsBlueprint] = useState<boolean | null>(null);
-  // In create mode: guides default to blueprint, `?mode=expedition` forces
-  // standard. In edit mode: whatever the loaded expedition is.
-  const canCreateBlueprints = isEditMode
-    ? loadedIsBlueprint === true
+  const canCreateBlueprints = isEditMode && loadedIsBlueprint !== null
+    ? loadedIsBlueprint
     : canCreateBlueprintsRaw && searchParams?.get('mode') !== 'expedition';
   // Guides get a much higher waypoint description cap so they can document route details
   // (trailheads, hazards, campsites, etc.) when publishing blueprints, including content
@@ -5543,13 +5543,11 @@ export function ExpeditionBuilderPage() {
               <div>
                 <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
                   CATEGORY <span className="text-[#ac6d46]">*</span>
-                  {isEditMode && <span className="ml-2 text-xs text-[#616161] dark:text-[#b5bcc4]">(LOCKED)</span>}
                 </label>
                 <select
                   value={expeditionData.category}
                   onChange={(e) => setExpeditionData({ ...expeditionData, category: e.target.value })}
                   className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
-                  disabled={isEditMode}
                 >
                   <option value="">Select category...</option>
                   <option>Culture & Photography</option>
@@ -5897,7 +5895,7 @@ export function ExpeditionBuilderPage() {
               <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border-l-2 border-yellow-600 text-xs">
                 <strong className="text-yellow-700 dark:text-yellow-500"><AlertTriangle className="inline w-4 h-4 mr-1 -mt-0.5" /> PERMANENT SETTING:</strong>
                 <div className="text-[#616161] dark:text-[#b5bcc4] mt-1">
-                  Private visibility <span className="font-bold">cannot be changed after creation.</span> Public and Off-Grid can be toggled freely. Category, region, and start date are also locked after creation.
+                  Private visibility <span className="font-bold">cannot be changed after creation.</span> Public and Off-Grid can be toggled freely. Region and start date are also locked after creation.
                 </div>
               </div>
             )}
@@ -5906,7 +5904,7 @@ export function ExpeditionBuilderPage() {
               <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border-l-2 border-[#4676ac] text-xs">
                 <strong className="text-[#4676ac]">LOCKED FIELDS:</strong>
                 <div className="text-[#616161] dark:text-[#b5bcc4] mt-1">
-                  Private visibility, category, region, and start date are locked for existing expeditions. Other fields including description, tags, and waypoints can be modified.
+                  Private visibility, region, and start date are locked for existing expeditions. Other fields including category, description, tags, and waypoints can be modified.
                 </div>
               </div>
             )}
@@ -5915,7 +5913,7 @@ export function ExpeditionBuilderPage() {
               <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border-l-2 border-[#4676ac] text-xs">
                 <strong className="text-[#4676ac]">LOCKED FIELDS:</strong>
                 <div className="text-[#616161] dark:text-[#b5bcc4] mt-1">
-                  Category, region, and start date are locked for existing expeditions. Visibility can be toggled between Public and Off-Grid.
+                  Region and start date are locked for existing expeditions. Category, visibility, and other fields can be modified.
                 </div>
               </div>
             )}
