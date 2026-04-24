@@ -200,8 +200,14 @@ export function SelectExpeditionPage() {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-2">
+                          {draft.isBlueprint && (
+                            <Compass size={16} className="text-[#598636] flex-shrink-0" />
+                          )}
                           <h3 className="font-bold text-lg dark:text-[#e5e5e5]">{draft.title || 'Untitled Draft'}</h3>
                           <span className="text-xs bg-[#ac6d46] text-white px-2 py-1">DRAFT</span>
+                          {draft.isBlueprint && (
+                            <span className="text-xs bg-[#598636] text-white px-2 py-1">BLUEPRINT</span>
+                          )}
                         </div>
                         <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
                           Last modified: {draft.updatedAt ? formatDateTime(new Date(draft.updatedAt)) : 'Unknown'}

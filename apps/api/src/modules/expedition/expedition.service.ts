@@ -1723,9 +1723,12 @@ export class ExpeditionService {
         // autosave on /expedition-builder re-fires on every fresh mount,
         // which previously created a new draft for every visit even if the
         // guide had already published a blueprint with the same title.
-        // Match by trimmed title + author: drafts resolve idempotently;
-        // published duplicates are rejected so the guide renames or edits
-        // the existing blueprint instead of orphaning a copy.
+        // Match by trimmed title + author: drafts resolve idempotently —
+        // and we apply the incoming payload to the existing draft so the
+        // caller's new scalar fields (description, region, route, etc.)
+        // don't get silently dropped. Published duplicates are rejected
+        // so the guide renames or edits the existing blueprint instead of
+        // orphaning a copy.
         const trimmedTitle = (payload.title || '').trim();
         if (trimmedTitle) {
           const existing = await this.prisma.expedition.findFirst({
@@ -1735,10 +1738,48 @@ export class ExpeditionService {
               title: trimmedTitle,
               deleted_at: null,
             },
-            select: { public_id: true, status: true },
+            select: { id: true, public_id: true, status: true },
           });
           if (existing) {
             if (existing.status === 'draft') {
+              await this.prisma.expedition.update({
+                where: { id: existing.id },
+                data: {
+                  title: trimmedTitle,
+                  description: payload.description ?? undefined,
+                  cover_image: payload.coverImage ?? undefined,
+                  category: payload.category ?? undefined,
+                  region: payload.region ?? undefined,
+                  location_name: payload.locationName ?? undefined,
+                  country_code: payload.countryCode ?? undefined,
+                  country_name: payload.countryName ?? undefined,
+                  state_province: payload.stateProvince ?? undefined,
+                  tags: payload.tags ? JSON.stringify(payload.tags) : undefined,
+                  is_round_trip: payload.isRoundTrip ?? undefined,
+                  route_mode: payload.routeMode ?? undefined,
+                  route_geometry: payload.routeGeometry
+                    ? JSON.stringify(payload.routeGeometry)
+                    : undefined,
+                  route_leg_modes: payload.routeLegModes
+                    ? JSON.stringify(payload.routeLegModes)
+                    : undefined,
+                  route_distance_km: payload.routeDistanceKm ?? undefined,
+                  route_obstacles: payload.routeObstacles
+                    ? JSON.stringify(payload.routeObstacles)
+                    : undefined,
+                  route_export_allowed:
+                    (payload as any).routeExportAllowed ?? undefined,
+                  mode: (payload as any).mode ?? undefined,
+                  vessel_name: (payload as any).vesselName ?? undefined,
+                  vessel_type: (payload as any).vesselType ?? undefined,
+                  vessel_length_m: (payload as any).vesselLengthM ?? undefined,
+                  vessel_draft_m: (payload as any).vesselDraftM ?? undefined,
+                  vessel_crew_size:
+                    (payload as any).vesselCrewSize ?? undefined,
+                  estimated_duration_h:
+                    (payload as any).estimatedDurationH ?? undefined,
+                },
+              });
               return { expeditionId: existing.public_id };
             }
             throw new ServiceBadRequestException(
@@ -1793,7 +1834,7 @@ export class ExpeditionService {
       const expedition = await this.prisma.expedition.create({
         data: {
           public_id: generator.publicId(),
-          title: payload.title,
+          title: (payload.title || '').trim() || payload.title,
           description: payload.description,
           public: isBlueprint
             ? true
@@ -2018,7 +2059,7 @@ export class ExpeditionService {
           );
         }
       }
-      const updateData: any = { title };
+      const updateData: any = { title: typeof title === 'string' ? title.trim() || title : title };
       if ((payload as any).visibility !== undefined) {
         const vis = (payload as any).visibility;
         if (['public', 'off-grid', 'private'].includes(vis)) {

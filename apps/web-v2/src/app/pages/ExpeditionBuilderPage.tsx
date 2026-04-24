@@ -703,6 +703,7 @@ export function ExpeditionBuilderPage() {
   const [draftId, setDraftId] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [autoSaveError, setAutoSaveError] = useState<string | null>(null);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
   const [existingDraft, setExistingDraft] = useState<any | null>(null);
   const lastSavedContentRef = useRef<string>('');
@@ -851,9 +852,18 @@ export function ExpeditionBuilderPage() {
         estimatedDurationH: estimatedDurationH ? Number(estimatedDurationH) : undefined,
       };
 
-      // Completed expeditions: only send allowed fields (title, description, cover, waypoints)
+      // Completed expeditions: only send allowed fields (title, description,
+      // cover, category, waypoints, and route). Category was unlocked for
+      // edits on completed expeditions — include it here so changes actually
+      // round-trip to the server instead of being silently dropped.
       const finalPayload = isCompletedExpedition
-        ? { title: payload.title, description: payload.description, coverImage: payload.coverImage, routeGeometry: payload.routeGeometry }
+        ? {
+            title: payload.title,
+            description: payload.description,
+            coverImage: payload.coverImage,
+            category: payload.category,
+            routeGeometry: payload.routeGeometry,
+          }
         : payload;
 
       let expeditionPublicId: string;
@@ -2414,8 +2424,14 @@ export function ExpeditionBuilderPage() {
 
         lastSavedContentRef.current = currentSignature;
         setLastSaved(new Date());
-      } catch {
-        // Silent failure — don't interrupt user flow
+        setAutoSaveError(null);
+      } catch (err) {
+        // Surface the error so the user knows the draft is NOT being saved
+        // — silently swallowing meant typos/conflicts (e.g. title clashes
+        // with a published blueprint) looked identical to success.
+        const msg =
+          err instanceof Error ? err.message : 'Auto-save failed';
+        setAutoSaveError(msg);
       } finally {
         isAutoSavingRef.current = false;
         setIsAutoSaving(false);
@@ -5913,7 +5929,7 @@ export function ExpeditionBuilderPage() {
               <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border-l-2 border-[#4676ac] text-xs">
                 <strong className="text-[#4676ac]">LOCKED FIELDS:</strong>
                 <div className="text-[#616161] dark:text-[#b5bcc4] mt-1">
-                  Region and start date are locked for existing expeditions. Category, visibility, and other fields can be modified.
+                  Region and start date are locked for existing expeditions. Visibility can be toggled between Public and Off-Grid (not Private). Category, description, tags, and waypoints can be modified.
                 </div>
               </div>
             )}
@@ -6019,18 +6035,24 @@ export function ExpeditionBuilderPage() {
           )}
           {/* Autosave indicator */}
           {!isEditMode && (
-            <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono flex items-center gap-2 sm:ml-auto">
+            <div className="text-xs font-mono flex items-center gap-2 sm:ml-auto">
               {isAutoSaving && (
-                <>
+                <span className="text-[#616161] dark:text-[#b5bcc4] flex items-center gap-2">
                   <Loader2 size={12} className="animate-spin" />
-                  <span>Saving...</span>
-                </>
+                  Saving...
+                </span>
               )}
-              {!isAutoSaving && lastSaved && (
-                <span>Auto-saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              {!isAutoSaving && autoSaveError && (
+                <span className="text-[#994040] flex items-center gap-2" title={autoSaveError}>
+                  <AlertTriangle size={12} />
+                  Auto-save failed
+                </span>
               )}
-              {draftId && !isAutoSaving && !lastSaved && (
-                <span>Draft loaded</span>
+              {!isAutoSaving && !autoSaveError && lastSaved && (
+                <span className="text-[#616161] dark:text-[#b5bcc4]">Auto-saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              )}
+              {draftId && !isAutoSaving && !autoSaveError && !lastSaved && (
+                <span className="text-[#616161] dark:text-[#b5bcc4]">Draft loaded</span>
               )}
             </div>
           )}
