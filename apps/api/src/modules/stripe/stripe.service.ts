@@ -11,6 +11,14 @@ import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
 
 import { PaymentTransactionType, StripeMetadataKey } from '@/common/enums';
+
+/**
+ * Pinned Stripe API version. Bumping this is a coordinated migration: the
+ * SDK type definitions and the API surface change together. Keep all Stripe
+ * client construction (including ephemeral keys) tied to this single value.
+ */
+export const STRIPE_API_VERSION: Stripe.LatestApiVersion =
+  '2025-02-24.acacia' as Stripe.LatestApiVersion;
 import {
   ServiceBadRequestException,
   ServiceException,
@@ -45,7 +53,7 @@ export class StripeService {
     const sk = process.env.STRIPE_SECRET_KEY;
 
     this.stripe = new Stripe(sk, {
-      apiVersion: '2025-02-24.acacia',
+      apiVersion: STRIPE_API_VERSION,
     });
   }
 
@@ -168,6 +176,18 @@ export class StripeService {
       case 'customer.subscription.created':
         await this.onSubscriptionCreated(data as Stripe.Subscription);
         break;
+      case 'customer.subscription.paused':
+        await this.onSubscriptionPaused(data as Stripe.Subscription);
+        break;
+      case 'customer.subscription.resumed':
+        await this.onSubscriptionResumed(data as Stripe.Subscription);
+        break;
+      case 'payout.in_transit':
+        await this.onPayoutInTransit(data as Stripe.Payout);
+        break;
+      case 'account.application.deauthorized':
+        await this.onAccountDeauthorized(data as Stripe.Account);
+        break;
     }
   }
 
@@ -177,21 +197,70 @@ export class StripeService {
       email: string;
       name: string;
     };
+    /**
+     * If provided, the explorer's cached `stripe_customer_id` is preferred
+     * over a `customers.list({email})` lookup, and any newly-created customer
+     * is written back to the explorer record. This avoids API rate limits and
+     * the multi-account-with-same-email collision that the bare email lookup
+     * is vulnerable to.
+     */
+    userId?: number;
   }): Promise<Stripe.Customer> {
     try {
-      const { email, data } = payload || {};
+      const { email, data, userId } = payload || {};
 
-      // check if the customer exists
-      const customer = await this.stripe.customers
-        .list({ email })
+      // 1. If we have a userId, prefer the cached stripe_customer_id from the DB.
+      if (userId) {
+        const explorer = await this.prisma.explorer.findUnique({
+          where: { id: userId },
+          select: { stripe_customer_id: true },
+        });
+        if (explorer?.stripe_customer_id) {
+          const cached = await this.stripe.customers
+            .retrieve(explorer.stripe_customer_id)
+            .catch(() => null);
+          // A deleted customer comes back as { deleted: true } — treat as miss
+          // and fall through to (re)create below.
+          if (cached && !(cached as any).deleted) {
+            return cached as Stripe.Customer;
+          }
+        }
+      }
+
+      // 2. Fall back to email lookup for legacy / unauthenticated callers.
+      const existing = await this.stripe.customers
+        .list({ email, limit: 1 })
         .then(({ data }) => (data.length >= 1 ? data?.[0] : null))
         .catch(() => null);
 
-      if (!customer && data) {
-        return this.stripe.customers.create(data);
+      if (existing) {
+        // Backfill cache for future fast lookups.
+        if (userId) {
+          await this.prisma.explorer
+            .update({
+              where: { id: userId },
+              data: { stripe_customer_id: existing.id },
+            })
+            .catch(() => undefined);
+        }
+        return existing;
       }
 
-      return customer;
+      // 3. No existing customer — create one if we have data and persist the id.
+      if (data) {
+        const created = await this.stripe.customers.create(data);
+        if (userId) {
+          await this.prisma.explorer
+            .update({
+              where: { id: userId },
+              data: { stripe_customer_id: created.id },
+            })
+            .catch(() => undefined);
+        }
+        return created;
+      }
+
+      return null as unknown as Stripe.Customer;
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;
@@ -223,13 +292,14 @@ export class StripeService {
       });
       if (!user) throw new ServiceForbiddenException('customer not found');
 
-      // get the customer
+      // get the customer (cached by userId, with backfill)
       const customer = await this.getOrCreateCustomer({
         email: user.email,
         data: {
           email: user.email,
           name: user.profile.name,
         },
+        userId,
       });
       if (!customer) throw new ServiceForbiddenException('customer not found');
 
@@ -256,11 +326,38 @@ export class StripeService {
     }
   }
 
-  async createSetupIntent(): Promise<IStripeCreateSetupIntentResponse> {
+  async createSetupIntent(payload?: {
+    userId?: number;
+  }): Promise<IStripeCreateSetupIntentResponse> {
     try {
-      // No idempotency key — setup intents are safe to create multiple times
-      // (users need to add multiple cards)
-      const intent = await this.stripe.setupIntents.create({});
+      const userId = payload?.userId;
+
+      // Bind the SetupIntent to the user's Stripe customer when we have one.
+      // `usage: 'off_session'` is required so the resulting payment method can
+      // satisfy SCA mandates for merchant-initiated transactions (e.g. Quick
+      // Sponsor charges). Without this, European cards may surface a
+      // `authentication_required` error on first off-session charge.
+      let customerId: string | undefined;
+      if (userId) {
+        const user = await this.prisma.explorer.findUnique({
+          where: { id: userId },
+          select: { id: true, email: true, username: true },
+        });
+        if (user?.email) {
+          const customer = await this.getOrCreateCustomer({
+            email: user.email,
+            data: { email: user.email, name: user.username },
+            userId: user.id,
+          });
+          customerId = customer?.id;
+        }
+      }
+
+      const intent = await this.stripe.setupIntents.create({
+        ...(customerId ? { customer: customerId } : {}),
+        usage: 'off_session',
+        payment_method_types: ['card'],
+      });
 
       return {
         secret: intent.client_secret,
@@ -716,17 +813,23 @@ export class StripeService {
 
   /**
    * Handle subscription updates - sync status changes.
-   * When pause_collection is set (managed by SponsorBillingService), we skip
-   * sponsorship status sync to avoid overwriting the local 'paused' status.
+   * When pause_collection is set (either by SponsorBillingService or by a
+   * Stripe Dashboard / API call from outside the platform), we mirror the
+   * paused state to the local sponsorship row. This keeps the DB in sync
+   * even when the pause originates outside our normal flows.
    */
   async onSubscriptionUpdated(event: Stripe.Subscription) {
     const { id: stripeSubscriptionId, status } = event;
 
-    // If pause_collection is set, the SponsorBillingService is managing this
-    // subscription's local status — do not overwrite it.
     if (event.pause_collection) {
+      // Mirror Stripe pause_collection to local 'paused' status. Idempotent:
+      // if SponsorBillingService already set it, this is a no-op write.
+      await this.prisma.sponsorship.updateMany({
+        where: { stripe_subscription_id: stripeSubscriptionId },
+        data: { status: 'paused' },
+      });
       this.logger.log(
-        `Subscription ${stripeSubscriptionId} has pause_collection set, skipping sponsorship status sync`,
+        `Subscription ${stripeSubscriptionId} pause_collection set, synced sponsorship → paused`,
       );
     } else {
       // Map Stripe status to our status (lowercase, matching SponsorshipStatus enum)
@@ -831,6 +934,90 @@ export class StripeService {
         },
         data: { stripe_subscription_id: stripeSubscriptionId },
       });
+    }
+  }
+
+  /**
+   * Handle Stripe-side subscription pause (e.g. dashboard, API, or pause_collection
+   * applied by Stripe). Mirrors to local 'paused' status. Safe to run repeatedly.
+   */
+  async onSubscriptionPaused(event: Stripe.Subscription) {
+    const { id: stripeSubscriptionId } = event;
+    await this.prisma.sponsorship.updateMany({
+      where: { stripe_subscription_id: stripeSubscriptionId },
+      data: { status: 'paused' },
+    });
+    this.logger.log(
+      `Subscription ${stripeSubscriptionId} paused (customer.subscription.paused)`,
+    );
+  }
+
+  /**
+   * Handle Stripe-side subscription resume. Restores local status to 'active'
+   * for any sponsorship currently flagged as paused.
+   */
+  async onSubscriptionResumed(event: Stripe.Subscription) {
+    const { id: stripeSubscriptionId } = event;
+    await this.prisma.sponsorship.updateMany({
+      where: {
+        stripe_subscription_id: stripeSubscriptionId,
+        status: 'paused',
+      },
+      data: { status: 'active' },
+    });
+    this.logger.log(
+      `Subscription ${stripeSubscriptionId} resumed (customer.subscription.resumed)`,
+    );
+  }
+
+  /**
+   * Handle payout in-transit transitions. Captures the in-transit state so the
+   * payout dashboard can show "in transit" before "paid".
+   */
+  async onPayoutInTransit(event: Stripe.Payout) {
+    const { id: stripePayoutId, arrival_date } = event;
+    await this.prisma.payout.updateMany({
+      where: { stripe_payout_id: stripePayoutId },
+      data: {
+        status: 'IN_TRANSIT',
+        arrival_date: arrival_date ? new Date(arrival_date * 1000) : undefined,
+      },
+    });
+    this.logger.log(`Payout ${stripePayoutId} in transit`);
+  }
+
+  /**
+   * Handle Connect account deauthorization. The explorer revoked our access
+   * from Stripe's side, so we can no longer create transfers to that account.
+   * Flip is_stripe_account_connected and is_verified to false so the platform
+   * stops attempting payments / payouts to a dead account.
+   */
+  async onAccountDeauthorized(event: Stripe.Account) {
+    const stripeAccountId = event.id;
+    if (!stripeAccountId) return;
+
+    const payoutMethod = await this.prisma.payoutMethod.findFirst({
+      where: { stripe_account_id: stripeAccountId },
+      select: { explorer_id: true },
+    });
+
+    await this.prisma.payoutMethod.updateMany({
+      where: { stripe_account_id: stripeAccountId },
+      data: { is_verified: false },
+    });
+
+    if (payoutMethod?.explorer_id) {
+      await this.prisma.explorer.update({
+        where: { id: payoutMethod.explorer_id },
+        data: { is_stripe_account_connected: false },
+      });
+      this.logger.warn(
+        `Stripe account ${stripeAccountId} deauthorized — explorer ${payoutMethod.explorer_id} marked disconnected`,
+      );
+    } else {
+      this.logger.warn(
+        `Stripe account ${stripeAccountId} deauthorized — no matching payout method found`,
+      );
     }
   }
 
@@ -1073,7 +1260,7 @@ export class StripeService {
     try {
       const key = await this.stripe.ephemeralKeys.create(
         { customer: customerId },
-        { apiVersion: '2025-02-24.acacia' },
+        { apiVersion: STRIPE_API_VERSION },
       );
       return key.secret;
     } catch (e) {
@@ -1081,5 +1268,51 @@ export class StripeService {
       if (e.status) throw e;
       throw new ServiceInternalException();
     }
+  }
+
+  // ============================================
+  // Version-tolerant readers — these absorb shape changes between Stripe API
+  // versions so callers do not need to know whether they are on
+  // 2025-02-24.acacia (top-level fields) or 2025-08-27+ (per-item / confirmation_secret).
+  // Centralizing the reads here makes the API version bump a one-file change.
+  // ============================================
+
+  /**
+   * Returns the current period end (unix seconds) for a subscription.
+   * Newer API versions moved this to subscription.items.data[0].current_period_end;
+   * older versions kept it on the top-level subscription. Read items first.
+   */
+  getSubscriptionCurrentPeriodEnd(sub: Stripe.Subscription): number | null {
+    const itemPeriodEnd = (sub.items?.data?.[0] as any)?.current_period_end;
+    if (typeof itemPeriodEnd === 'number') return itemPeriodEnd;
+    const topLevel = (sub as any).current_period_end;
+    return typeof topLevel === 'number' ? topLevel : null;
+  }
+
+  /**
+   * Returns the payment intent id from an invoice.
+   * Newer API versions removed invoice.payment_intent in favor of expanding
+   * invoice.confirmation_secret, but the legacy field is retained in older
+   * versions. Read whichever is present.
+   */
+  getInvoicePaymentIntentId(invoice: Stripe.Invoice): string | null {
+    const legacy = (invoice as any).payment_intent;
+    if (typeof legacy === 'string') return legacy;
+    if (legacy?.id) return legacy.id;
+    return null;
+  }
+
+  /**
+   * Returns the client secret to confirm an invoice's payment.
+   * Newer API uses invoice.confirmation_secret.client_secret; older API
+   * exposed it via the expanded invoice.payment_intent.client_secret.
+   */
+  getInvoiceClientSecret(invoice: Stripe.Invoice): string | null {
+    const confirmationSecret = (invoice as any).confirmation_secret
+      ?.client_secret;
+    if (confirmationSecret) return confirmationSecret;
+    const pi = (invoice as any).payment_intent;
+    if (pi?.client_secret) return pi.client_secret;
+    return null;
   }
 }

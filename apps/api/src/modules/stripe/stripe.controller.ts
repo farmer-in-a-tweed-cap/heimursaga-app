@@ -9,7 +9,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { SkipThrottle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { UserRole } from '@repo/types';
 
 import { Public, Roles, Session } from '@/common/decorators';
@@ -35,12 +35,16 @@ export class StripeController {
   }
 
   @Post('create-setup-intent')
+  @Throttle({
+    short: { limit: 10, ttl: 60_000 },
+    medium: { limit: 30, ttl: 600_000 },
+  })
   createStripeSetupIntent(@Session() session: ISession) {
     // Require authenticated user
     if (!session?.userId) {
       throw new ForbiddenException('Authentication required');
     }
-    return this.stripeService.createSetupIntent();
+    return this.stripeService.createSetupIntent({ userId: session.userId });
   }
 
   @Roles(UserRole.CREATOR)

@@ -310,7 +310,9 @@ describe('SponsorService', () => {
     it('should create sponsorship and update expedition raised', async () => {
       const txMock = {
         checkout: {
-          findFirstOrThrow: jest.fn().mockResolvedValue({
+          // Note: completeCheckout uses findFirst (not findFirstOrThrow) so the
+          // null-return branch can short-circuit on duplicate webhook+API calls.
+          findFirst: jest.fn().mockResolvedValue({
             id: 100,
             transaction_type: 'sponsorship',
             total: 5000,

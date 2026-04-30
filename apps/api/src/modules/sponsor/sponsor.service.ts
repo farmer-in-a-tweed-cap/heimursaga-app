@@ -257,13 +257,14 @@ export class SponsorService {
         );
       }
 
-      // get a stripe customer (needed for both PM resolution and checkout)
+      // get a stripe customer (cached by userId, with backfill)
       const stripeCustomer = await this.stripeService.getOrCreateCustomer({
         email: user.email,
         data: {
           email: user.email,
           name: user.username,
         },
+        userId: user.id,
       });
 
       // Resolve the Stripe payment method ID
@@ -575,15 +576,17 @@ export class SponsorService {
           const invoiceId = subscription.latest_invoice as string;
           const invoice = await this.stripeService.invoices.retrieve(
             invoiceId,
-            { expand: ['payment_intent'] },
+            { expand: ['payment_intent', 'confirmation_secret'] },
           );
-          const paymentIntent = invoice.payment_intent as {
-            id: string;
-            client_secret: string;
-          };
+          const piId = this.stripeService.getInvoicePaymentIntentId(invoice);
+          const piClientSecret =
+            this.stripeService.getInvoiceClientSecret(invoice);
+          if (!piId || !piClientSecret) {
+            throw new ServiceInternalException();
+          }
 
-          stripePaymentIntentId = paymentIntent.id;
-          clientSecret = paymentIntent.client_secret;
+          stripePaymentIntentId = piId;
+          clientSecret = piClientSecret;
 
           // Update checkout with stripe IDs
           await tx.checkout.update({
@@ -780,10 +783,11 @@ export class SponsorService {
         );
       }
 
-      // Get/create Stripe customer
+      // Get/create Stripe customer (cached by userId, with backfill)
       const stripeCustomer = await this.stripeService.getOrCreateCustomer({
         email: user.email,
         data: { email: user.email, name: user.username },
+        userId: user.id,
       });
 
       // Create ephemeral key for PaymentSheet
@@ -998,7 +1002,10 @@ export class SponsorService {
                 save_default_payment_method: 'on_subscription',
                 payment_method_types: ['card'],
               },
-              expand: ['latest_invoice.payment_intent'],
+              expand: [
+                'latest_invoice.payment_intent',
+                'latest_invoice.confirmation_secret',
+              ],
               metadata: {
                 [StripeMetadataKey.TRANSACTION]:
                   PaymentTransactionType.SPONSORSHIP,
@@ -1012,18 +1019,23 @@ export class SponsorService {
           );
 
           const invoice = subscription.latest_invoice as Stripe.Invoice;
-          const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+          const piId = this.stripeService.getInvoicePaymentIntentId(invoice);
+          const piClientSecret =
+            this.stripeService.getInvoiceClientSecret(invoice);
+          if (!piId || !piClientSecret) {
+            throw new ServiceInternalException();
+          }
 
           await tx.checkout.update({
             where: { id: checkout.id },
             data: {
-              stripe_payment_intent_id: paymentIntent.id,
+              stripe_payment_intent_id: piId,
               stripe_subscription_id: subscription.id,
             },
           });
 
           // Add metadata to the payment intent
-          await this.stripeService.paymentIntents.update(paymentIntent.id, {
+          await this.stripeService.paymentIntents.update(piId, {
             metadata: {
               [StripeMetadataKey.TRANSACTION]:
                 PaymentTransactionType.SPONSORSHIP,
@@ -1033,8 +1045,8 @@ export class SponsorService {
             },
           });
 
-          clientSecret = paymentIntent.client_secret;
-          paymentIntentId = paymentIntent.id;
+          clientSecret = piClientSecret;
+          paymentIntentId = piId;
           return { clientSecret, paymentIntentId };
         },
         { timeout: 30000 },
@@ -1071,12 +1083,20 @@ export class SponsorService {
         expedition_public_id: string | null;
       };
 
+      let alreadyConfirmed = false;
       await this.prisma.$transaction(
         async (tx) => {
-          // get a checkout (only if still pending — prevents double-completion race)
-          // Serializable isolation ensures concurrent transactions will fail rather than duplicate
-          const checkout = await tx.checkout.findFirstOrThrow({
-            where: { id: checkoutId, status: CheckoutStatus.PENDING },
+          // Atomic guard against double-completion: only proceed if the
+          // checkout is still pending AND hasn't been confirmed yet. The
+          // confirmed_at column doubles as a one-shot latch — once it is set,
+          // subsequent attempts (webhook retries, frontend race) hit this
+          // branch and short-circuit cleanly without throwing.
+          const checkout = await tx.checkout.findFirst({
+            where: {
+              id: checkoutId,
+              status: CheckoutStatus.PENDING,
+              confirmed_at: null,
+            },
             select: {
               id: true,
               transaction_type: true,
@@ -1092,6 +1112,16 @@ export class SponsorService {
               expedition_public_id: true,
             },
           });
+
+          if (!checkout) {
+            // Already completed by a concurrent webhook / API call. This is the
+            // expected idempotent branch — log once and exit without writing.
+            alreadyConfirmed = true;
+            this.logger.log(
+              `Checkout ${checkoutId} already confirmed; skipping duplicate completion`,
+            );
+            return;
+          }
 
           // Store checkout data for notification
           checkoutData = {
@@ -1201,6 +1231,10 @@ export class SponsorService {
         },
         { isolationLevel: 'Serializable' },
       );
+
+      // If the row was already confirmed by a concurrent run, do not fire
+      // notifications / emails again — the original completion already did.
+      if (alreadyConfirmed) return;
 
       // create a notification
       if (creatorId && userId && checkoutData) {
@@ -2461,6 +2495,18 @@ export class SponsorService {
         );
       }
 
+      // Stripe rejects refund requests on charges older than ~180 days. Enforce
+      // the window here with a clear error message rather than letting the
+      // refund call fail noisily downstream.
+      const REFUND_WINDOW_DAYS = 180;
+      const chargeAgeMs = Date.now() - (connectedCharge.created || 0) * 1000;
+      const refundWindowMs = REFUND_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+      if (chargeAgeMs > refundWindowMs) {
+        throw new ServiceBadRequestException(
+          `Refunds can only be issued within ${REFUND_WINDOW_DAYS} days of the original charge.`,
+        );
+      }
+
       // Get the source transfer to find the platform payment intent
       const sourceTransfer = connectedCharge.source_transfer;
       if (!sourceTransfer) {
@@ -2975,6 +3021,7 @@ export class SponsorService {
       const stripeCustomer = await this.stripeService.getOrCreateCustomer({
         email: user.email,
         data: { email: user.email, name: user.username },
+        userId: user.id,
       });
 
       // Try to find the default payment method via Stripe, fall back to most recent
@@ -3173,6 +3220,7 @@ export class SponsorService {
       const stripeCustomer = await this.stripeService.getOrCreateCustomer({
         email: user.email,
         data: { email: user.email, name: user.username },
+        userId: user.id,
       });
 
       return await this.executeQuickSponsor({

@@ -588,9 +588,9 @@ describe('StripeService', () => {
     });
   });
 
-  // ─── J7: onSubscriptionUpdated — pause_collection → skips ───
-  describe('onSubscriptionUpdated — J7: pause_collection skips sponsorship sync', () => {
-    it('should skip sponsorship status update', async () => {
+  // ─── J7: onSubscriptionUpdated — pause_collection mirrors to local 'paused' ───
+  describe('onSubscriptionUpdated — J7: pause_collection mirrors to paused', () => {
+    it('should mirror pause_collection to local paused status', async () => {
       prisma.explorerSubscription.findFirst.mockResolvedValue(null);
 
       await (service as any).onSubscriptionUpdated({
@@ -599,7 +599,12 @@ describe('StripeService', () => {
         pause_collection: { behavior: 'void' },
       });
 
-      expect(prisma.sponsorship.updateMany).not.toHaveBeenCalled();
+      // We now actively mirror Stripe's pause_collection → local 'paused'
+      // so dashboard-driven pauses don't desync the DB.
+      expect(prisma.sponsorship.updateMany).toHaveBeenCalledWith({
+        where: { stripe_subscription_id: 'sub_paused' },
+        data: { status: 'paused' },
+      });
     });
   });
 

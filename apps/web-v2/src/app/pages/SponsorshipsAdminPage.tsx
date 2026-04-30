@@ -1295,6 +1295,13 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                       </thead>
                       <tbody>
                         {stripePayments.map((payment) => {
+                          // Stripe rejects refunds on charges older than 180 days.
+                          // Hide the refund button past the window.
+                          const REFUND_WINDOW_DAYS = 180;
+                          const ageDays =
+                            (Date.now() - new Date(payment.created).getTime()) /
+                            (1000 * 60 * 60 * 24);
+                          const refundable = ageDays <= REFUND_WINDOW_DAYS;
                           return (
                           <React.Fragment key={payment.id}>
                           <tr className="border-t-2 border-[#b5bcc4] dark:border-[#616161]">
@@ -1337,13 +1344,20 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                             <td className="px-4 py-3">
                               {payment.refunded ? (
                                 <span className="text-xs text-[#616161] dark:text-[#b5bcc4]">—</span>
-                              ) : (
+                              ) : refundable ? (
                                 <button
                                   onClick={() => handleRefund(payment.id, payment.amount)}
                                   className="px-3 py-1 text-xs font-bold border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040]"
                                 >
                                   REFUND
                                 </button>
+                              ) : (
+                                <span
+                                  title="Refunds are only available within 180 days of the charge"
+                                  className="text-xs text-[#616161] dark:text-[#b5bcc4]"
+                                >
+                                  Past refund window
+                                </span>
                               )}
                             </td>
                             <td className="px-4 py-3 text-center">

@@ -72,7 +72,7 @@ export class PaymentService {
 
       if (!userId) throw new ServiceForbiddenException();
 
-      const result = await this.stripeService.createSetupIntent();
+      const result = await this.stripeService.createSetupIntent({ userId });
 
       return {
         clientSecret: result.secret,
@@ -113,6 +113,7 @@ export class PaymentService {
           .getOrCreateCustomer({
             email: user.email,
             data: { email: user.email, name: user.username },
+            userId,
           })
           .catch(() => null);
 
@@ -262,24 +263,17 @@ export class PaymentService {
       );
 
       // Step 2: After commit — Stripe attach + set default if first PM
-      // Get or create Stripe customer
+      // Get or create Stripe customer (cached lookup by userId, with backfill)
       const stripeCustomer = await this.stripeService.getOrCreateCustomer({
         email: user.email,
         data: {
           email: user.email,
           name: user.username,
         },
+        userId,
       });
       if (!stripeCustomer)
         throw new ServiceBadRequestException('customer not found');
-
-      // Save stripe customer ID to explorer if not already saved
-      if (!user.stripe_customer_id) {
-        await this.prisma.explorer.update({
-          where: { id: userId },
-          data: { stripe_customer_id: stripeCustomer.id },
-        });
-      }
 
       try {
         // Attach the stripe payment method to the stripe customer
@@ -355,24 +349,19 @@ export class PaymentService {
           throw new ServiceNotFoundException('payment method not found');
         });
 
-      // Get or create the Stripe customer (same as createPaymentMethod)
+      // Get or create the Stripe customer (cached lookup with backfill)
       const stripeCustomer = await this.stripeService.getOrCreateCustomer({
         email: paymentMethod.explorer.email,
         data: {
           email: paymentMethod.explorer.email,
           name: paymentMethod.explorer.username,
         },
+        userId,
       });
 
       if (!stripeCustomer) {
         throw new ServiceBadRequestException('stripe customer not found');
       }
-
-      // Save stripe customer ID to explorer if not already saved
-      await this.prisma.explorer.update({
-        where: { id: userId },
-        data: { stripe_customer_id: stripeCustomer.id },
-      });
 
       // Update the default payment method in Stripe
       await this.stripeService.customers.update(stripeCustomer.id, {
@@ -496,9 +485,11 @@ export class PaymentService {
                   );
 
                 // Use Stripe's current_period_end which includes promo extensions
-                actualExpiry = new Date(
-                  stripeSubscription.current_period_end * 1000,
-                );
+                const periodEnd =
+                  this.stripeService.getSubscriptionCurrentPeriodEnd(
+                    stripeSubscription,
+                  );
+                actualExpiry = periodEnd ? new Date(periodEnd * 1000) : actualExpiry;
 
                 // Check for active discount/promo
                 if (
@@ -618,7 +609,11 @@ export class PaymentService {
             );
 
           // Use Stripe's current_period_end which includes promo extensions
-          actualExpiry = new Date(stripeSubscription.current_period_end * 1000);
+          const periodEnd =
+            this.stripeService.getSubscriptionCurrentPeriodEnd(
+              stripeSubscription,
+            );
+          actualExpiry = periodEnd ? new Date(periodEnd * 1000) : actualExpiry;
 
           // Check for active discount/promo
           if (
@@ -805,13 +800,14 @@ export class PaymentService {
         }
       }
 
-      // get the customer
+      // get the customer (cached by userId, with backfill)
       const customer = await this.stripeService.getOrCreateCustomer({
         email: user.email,
         data: {
           email: user.email,
           name: user.username,
         },
+        userId,
       });
 
       // Create checkout record first so we can use its ID in the idempotency key
@@ -869,11 +865,8 @@ export class PaymentService {
       }
 
       const invoice = stripeSubscription.latest_invoice as Stripe.Invoice;
-      const paymentIntent = invoice.payment_intent;
       const paymentIntentId =
-        typeof paymentIntent === 'string'
-          ? paymentIntent
-          : paymentIntent?.id || null;
+        this.stripeService.getInvoicePaymentIntentId(invoice);
 
       // Update checkout with Stripe IDs and add metadata
       const metadata = {
@@ -908,11 +901,9 @@ export class PaymentService {
 
       const subscriptionPlanId = plan.id;
       const subscriptionId = stripeSubscription.id;
-      const clientSecret = (
-        stripeSubscription.latest_invoice as {
-          confirmation_secret?: { client_secret: string };
-        }
-      )?.confirmation_secret?.client_secret;
+      const clientSecret = this.stripeService.getInvoiceClientSecret(
+        stripeSubscription.latest_invoice as Stripe.Invoice,
+      );
 
       const isFreeSubscription = !clientSecret;
 
@@ -1048,7 +1039,12 @@ export class PaymentService {
         });
 
         // create a subscription
-        const expiry = new Date(stripeSubscription.current_period_end * 1000);
+        const periodEnd = this.stripeService.getSubscriptionCurrentPeriodEnd(
+          stripeSubscription,
+        );
+        const expiry = periodEnd
+          ? new Date(periodEnd * 1000)
+          : dateformat().add(1, 'month').toDate();
 
         // Determine billing period from Stripe subscription interval
         const interval =
@@ -1163,8 +1159,10 @@ export class PaymentService {
             checkout.stripe_subscription_id,
           );
 
-        const nextBillingDate = new Date(
-          stripeSubscription.current_period_end * 1000,
+        const periodEndForEmail =
+          this.stripeService.getSubscriptionCurrentPeriodEnd(stripeSubscription);
+        const nextBillingDate = (
+          periodEndForEmail ? new Date(periodEndForEmail * 1000) : new Date()
         ).toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
@@ -1258,15 +1256,17 @@ export class PaymentService {
               stripeSub.status === 'active' ||
               stripeSub.status === 'trialing'
             ) {
+              const orphanedPeriodEnd =
+                this.stripeService.getSubscriptionCurrentPeriodEnd(stripeSub);
               return {
                 subscription: {
                   id: orphanedSub.public_id,
                   planSlug: 'explorer-pro',
                   billingPeriod: orphanedSub.period || 'month',
                   status: stripeSub.status,
-                  currentPeriodEnd: new Date(
-                    stripeSub.current_period_end * 1000,
-                  ).toISOString(),
+                  currentPeriodEnd: orphanedPeriodEnd
+                    ? new Date(orphanedPeriodEnd * 1000).toISOString()
+                    : null,
                   cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
                 },
               };
@@ -1291,9 +1291,11 @@ export class PaymentService {
             sub.stripe_subscription_id,
           );
           status = stripeSub.status;
-          currentPeriodEnd = new Date(
-            stripeSub.current_period_end * 1000,
-          ).toISOString();
+          const livePeriodEnd =
+            this.stripeService.getSubscriptionCurrentPeriodEnd(stripeSub);
+          currentPeriodEnd = livePeriodEnd
+            ? new Date(livePeriodEnd * 1000).toISOString()
+            : currentPeriodEnd;
           cancelAtPeriodEnd = stripeSub.cancel_at_period_end;
         } catch {
           // Stripe subscription may have been deleted — fall back to local data

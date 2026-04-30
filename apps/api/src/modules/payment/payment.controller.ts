@@ -10,6 +10,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 import { Public, Session } from '@/common/decorators';
 import { ParamPublicIdDto, ParamSlugDto } from '@/common/dto';
@@ -48,6 +49,10 @@ export class PaymentMethodController {
 
   @Post('setup-intent')
   @HttpCode(HttpStatus.CREATED)
+  @Throttle({
+    short: { limit: 10, ttl: 60_000 },
+    medium: { limit: 30, ttl: 600_000 },
+  })
   async createSetupIntent(@Session() session: ISession) {
     return await this.paymentService.createSetupIntent({ session });
   }

@@ -28,12 +28,16 @@ export const config = {
   },
 };
 
-const _parsedFee =
-  process.env.APPLICATION_FEE !== undefined
-    ? parseInt(process.env.APPLICATION_FEE, 10)
-    : 10;
+const _rawFee = process.env.APPLICATION_FEE;
+const _parsedFee = _rawFee !== undefined ? parseInt(_rawFee, 10) : 10;
+const _isFeeValid =
+  Number.isFinite(_parsedFee) && _parsedFee >= 1 && _parsedFee <= 100;
 
-export const APPLICATION_FEE =
-  Number.isFinite(_parsedFee) && _parsedFee >= 1 && _parsedFee <= 100
-    ? _parsedFee
-    : 10;
+if (_rawFee !== undefined && !_isFeeValid) {
+  // eslint-disable-next-line no-console
+  console.warn(
+    `[config] APPLICATION_FEE env value "${_rawFee}" is invalid (expected an integer 1-100). Falling back to 10.`,
+  );
+}
+
+export const APPLICATION_FEE = _isFeeValid ? _parsedFee : 10;
