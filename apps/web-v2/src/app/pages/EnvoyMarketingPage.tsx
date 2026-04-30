@@ -92,10 +92,6 @@ export function EnvoyMarketingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] shrink-0">&#9654;</span>
-                  <span><strong>Starlink Mini kit</strong> provided at the start of the program &mdash; yours to keep, so you can document from anywhere</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#ac6d46] shrink-0">&#9654;</span>
                   <span><strong>Explorer Pro subscription</strong> included for the duration of the program &mdash; no cost to you</span>
                 </li>
                 <li className="flex items-start gap-2">
@@ -163,8 +159,8 @@ export function EnvoyMarketingPage() {
               </div>
               <div className="border-2 border-[#ac6d46] p-4 text-center">
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-2 tracking-[0.1em]">TOTAL PROGRAM VALUE</div>
-                <div className="text-xl font-bold text-[#202020] dark:text-white">$900</div>
-                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">$600 stipend + $250 Starlink Mini + $50 Explorer Pro</div>
+                <div className="text-xl font-bold text-[#202020] dark:text-white">$650</div>
+                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">$600 stipend + $50 Explorer Pro</div>
               </div>
               <div className="border-2 border-[#ac6d46] p-4 text-center">
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-2 tracking-[0.1em]">ADDITIONAL EARNINGS</div>

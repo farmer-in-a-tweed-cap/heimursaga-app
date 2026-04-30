@@ -92,10 +92,6 @@ export function EnvoySailorsPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] shrink-0">&#9654;</span>
-                  <span><strong>Starlink Mini kit</strong> &mdash; yours to keep, for logging entries from offshore</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#4676ac] shrink-0">&#9654;</span>
                   <span><strong>Explorer Pro subscription</strong> included for the duration &mdash; full access to all features including nautical</span>
                 </li>
                 <li className="flex items-start gap-2">
@@ -255,8 +251,8 @@ export function EnvoySailorsPage() {
               </div>
               <div className="border-2 border-[#4676ac] p-4 text-center">
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-2 tracking-[0.1em]">TOTAL PROGRAM VALUE</div>
-                <div className="text-xl font-bold text-[#202020] dark:text-white">$900</div>
-                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">$600 stipend + $250 Starlink Mini + $50 Explorer Pro</div>
+                <div className="text-xl font-bold text-[#202020] dark:text-white">$650</div>
+                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">$600 stipend + $50 Explorer Pro</div>
               </div>
               <div className="border-2 border-[#4676ac] p-4 text-center">
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-2 tracking-[0.1em]">COMMUNITY EARNINGS</div>
