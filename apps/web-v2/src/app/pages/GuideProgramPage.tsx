@@ -219,13 +219,15 @@ export function GuideProgramPage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Complementary to Your GPS App</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Heimursaga is not a replacement for Gaia GPS, CalTopo, AllTrails, Garmin Connect, or
-                Komoot&mdash;it is designed to work alongside them. Guides plan routes in the GPS tool they
-                already trust, import the finished route into the blueprint builder, and publish it for
-                explorers to discover. Explorers can then export the route back out as a GPX file and load
-                it into their own GPS app for turn-by-turn field navigation. Heimursaga handles
-                publishing, discovery, storytelling, ratings, and tipping; your GPS app handles navigation
-                in the field.
+                Heimursaga is not a replacement for the navigation tools you already use&mdash;Gaia GPS,
+                CalTopo, AllTrails, Garmin Connect, or Komoot for land routes; Navionics, OpenCPN,
+                PredictWind, Aqua Map, Savvy Navvy, or your onboard chartplotter (Garmin, B&amp;G,
+                Raymarine, Furuno) for marine routes. It is designed to work alongside them. Guides plan
+                routes in the tool they already trust, import the finished route into the blueprint
+                builder, and publish it for explorers to discover. Explorers can then export the route
+                back out as a GPX file and load it into their own GPS app or chartplotter for turn-by-turn
+                field navigation. Heimursaga handles publishing, discovery, storytelling, ratings, and
+                tipping; your nav tool handles navigation in the field.
               </p>
             </div>
 
@@ -245,7 +247,8 @@ export function GuideProgramPage() {
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] mt-1">&bull;</span>
                   <span><strong>Compatible sources</strong>&mdash;Gaia GPS, CalTopo, AllTrails, Garmin
-                  Connect, Komoot, Strava, and any other tool that exports standard route files</span>
+                  Connect, Komoot, Strava (land), Navionics, OpenCPN, PredictWind, Aqua Map, Savvy Navvy
+                  (marine), and any other tool that exports standard route files</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] mt-1">&bull;</span>
@@ -281,7 +284,8 @@ export function GuideProgramPage() {
                 <li className="flex items-start gap-2">
                   <span className="text-[#598636] mt-1">&bull;</span>
                   <span><strong>Compatible destinations</strong>&mdash;Gaia GPS, CalTopo, AllTrails, Garmin
-                  Connect, Komoot, and most handheld GPS units</span>
+                  Connect, Komoot (land), Navionics, OpenCPN, PredictWind, Aqua Map, Savvy Navvy (marine),
+                  most handheld GPS units, and onboard chartplotters (Garmin, B&amp;G, Raymarine, Furuno)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#598636] mt-1">&bull;</span>

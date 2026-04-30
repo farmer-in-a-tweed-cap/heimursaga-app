@@ -59,7 +59,7 @@ export function EnvoyMarketingPage() {
           {/* Platform intro */}
           <div className="mb-6 avoid-break">
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-1.5 tracking-[0.06em]">ABOUT HEIMURSAGA</h3>
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
               Heimursaga is a journaling and sponsorship platform built for explorers, travelers, and adventurers.
               Explorers create expeditions, log journal entries with photos and locations along the way, and share
               their journeys with a community of followers. The platform supports financial sponsorships so that
@@ -71,7 +71,7 @@ export function EnvoyMarketingPage() {
           {/* What is the Envoy Program */}
           <div className="mb-6 avoid-break">
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-1.5 tracking-[0.06em]">WHAT IS THE ENVOY PROGRAM?</h3>
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
               The Envoy Program is Heimursaga&apos;s founding explorer initiative. We are selecting a small number of
               exceptional explorers to become the first active voices on the platform. Envoys receive a 12-month
               recurring sponsorship directly from Heimursaga and, in return, commit to using the platform as their
@@ -85,7 +85,7 @@ export function EnvoyMarketingPage() {
           <div className="grid grid-cols-2 gap-6 mb-6">
             <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] p-5 avoid-break">
               <h3 className="text-sm font-bold text-[#ac6d46] mb-3 tracking-[0.06em]">WHAT YOU RECEIVE</h3>
-              <ul className="space-y-2 text-xs text-[#202020] dark:text-[#e5e5e5]">
+              <ul className="space-y-2 text-sm text-[#202020] dark:text-[#e5e5e5]">
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] shrink-0">&#9654;</span>
                   <span><strong>$50/month recurring sponsorship</strong> for 12 months, paid through the platform&apos;s own sponsorship system</span>
@@ -110,7 +110,7 @@ export function EnvoyMarketingPage() {
             </div>
             <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] p-5 avoid-break">
               <h3 className="text-sm font-bold text-[#4676ac] mb-3 tracking-[0.06em]">WHAT WE EXPECT</h3>
-              <ul className="space-y-2 text-xs text-[#202020] dark:text-[#e5e5e5]">
+              <ul className="space-y-2 text-sm text-[#202020] dark:text-[#e5e5e5]">
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] shrink-0">&#9654;</span>
                   <span><strong>Heimursaga as your primary platform</strong> &mdash; expedition documentation, journal entries, and fundraising happen here first</span>
@@ -145,7 +145,7 @@ export function EnvoyMarketingPage() {
           {/* Compensation */}
           <div className="mb-8 avoid-break">
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-3 tracking-[0.06em]">SPONSORSHIP &amp; COMPENSATION</h3>
-            <p className="text-xs text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
+            <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
               Envoys receive their stipend as a recurring monthly sponsorship through Heimursaga&apos;s own
               sponsorship system &mdash; the same infrastructure available to all Explorer Pro accounts. This means
               your Envoy sponsorship appears on your expedition alongside any community sponsorships you receive,
@@ -173,14 +173,14 @@ export function EnvoyMarketingPage() {
           {/* Content requirements */}
           <div className="mb-8 avoid-break">
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-3 tracking-[0.06em]">CONTENT REQUIREMENTS</h3>
-            <p className="text-xs text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
+            <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
               The Envoy Program is a commitment to active, consistent use of Heimursaga. These are the minimum
               expectations &mdash; most Envoys will naturally exceed them.
             </p>
             <div className="grid grid-cols-2 gap-x-8 gap-y-4">
               <div className="border-l-3 pl-4" style={{ borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
                 <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">EXPEDITION CONTINUITY</div>
-                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+                <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                   At least one expedition must be active at all times during the program. You can run
                   multiple concurrent expeditions, plan future ones, and complete them on your own timeline &mdash;
                   but there should never be a gap where no expedition is live.
@@ -188,14 +188,14 @@ export function EnvoyMarketingPage() {
               </div>
               <div className="border-l-3 pl-4" style={{ borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
                 <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">JOURNAL FREQUENCY</div>
-                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+                <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                   Minimum 2 journal entries per week while on active expedition. Entries can be written
                   narrative with photos, video entries, or data logs &mdash; whatever fits the moment.
                 </p>
               </div>
               <div className="border-l-3 pl-4" style={{ borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
                 <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">PRIMARY PLATFORM</div>
-                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+                <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                   Heimursaga should be your first-publish destination for expedition content. You are free to
                   cross-post to other platforms, personal blogs, or social media &mdash; but Heimursaga is
                   where the full, detailed documentation lives. We don&apos;t ask for exclusivity, just primacy.
@@ -203,7 +203,7 @@ export function EnvoyMarketingPage() {
               </div>
               <div className="border-l-3 pl-4" style={{ borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
                 <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">FUNDRAISING</div>
-                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+                <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                   Use Heimursaga&apos;s sponsorship system as your primary fundraising channel. Direct supporters
                   to your expedition page for sponsorships. You are welcome to maintain other funding sources,
                   but Heimursaga should be presented as the primary way for your audience to contribute.
@@ -211,7 +211,7 @@ export function EnvoyMarketingPage() {
               </div>
               <div className="border-l-3 pl-4" style={{ borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
                 <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">PLATFORM IMPROVEMENT</div>
-                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+                <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                   Envoys are the platform&apos;s first real users in the field. We expect you to report bugs,
                   suggest features, and tell us candidly what&apos;s working and what isn&apos;t. Your feedback
                   directly shapes the product &mdash; this is a partnership, not a broadcast arrangement.
@@ -219,7 +219,7 @@ export function EnvoyMarketingPage() {
               </div>
               <div className="border-l-3 pl-4" style={{ borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
                 <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">CONTENT POLICY</div>
-                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+                <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                   All content must be authentic and human-created. No AI-generated text, images, or media.
                   This is a platform-wide policy, and Envoys are expected to lead by example.
                 </p>
@@ -230,7 +230,7 @@ export function EnvoyMarketingPage() {
           {/* What this is not */}
           <div className="border-l-4 border-[#616161] pl-4 avoid-break">
             <h3 className="text-xs font-bold text-[#202020] dark:text-white mb-1 tracking-[0.06em]">WHAT THIS IS NOT</h3>
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
               The Envoy Program is not an influencer deal, a brand partnership, or a content creation contract.
               We are not asking you to promote Heimursaga on social media, produce marketing content, or hit
               engagement metrics. We are sponsoring your expedition because we believe in what you&apos;re doing,
@@ -249,7 +249,7 @@ export function EnvoyMarketingPage() {
           {/* What you can do */}
           <div className="mb-8 avoid-break">
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-3 tracking-[0.06em]">WHAT YOU GET WITH EXPLORER PRO</h3>
-            <p className="text-xs text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
+            <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
               Your included Explorer Pro subscription unlocks the full platform. Here is what you can do:
             </p>
             <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs text-[#202020] dark:text-[#e5e5e5]">
@@ -268,20 +268,20 @@ export function EnvoyMarketingPage() {
           {/* Expedition builder highlight */}
           <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] p-5 mb-8 avoid-break">
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-2 tracking-[0.06em]">EXPEDITION BUILDER</h3>
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3">
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3">
               The expedition builder is a full-featured route planning tool with six route modes (walking, trail,
               cycling, driving, waterway, and straight line), per-leg mode switching, elevation-aware travel time
               calculation, satellite/vector map toggle, and along-route POI search. It includes a purpose-built
               waterway routing engine for paddle expeditions with obstacle detection (dams, locks, rapids).
             </p>
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3">
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3">
               For sailors: set your expedition type to Sail and the builder adds vessel profile fields (name, type,
               LOA, draft, crew size), configurable average speed for passage time estimates, and automatic
               straight-line routing for ocean waypoints. Toggle the OpenSeaMap nautical chart overlay on any map
               to see navigational aids, depth contours, and harbor markers. Live marine weather &mdash; wave height,
               swell, and ocean current data &mdash; is displayed on the expedition sidebar.
             </p>
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
               Routes are planned visually on the map and stored with full geometry, making your expedition page
               a complete, navigable record of where you went and what you experienced.
             </p>
@@ -290,7 +290,7 @@ export function EnvoyMarketingPage() {
           {/* Sponsorship system */}
           <div className="mb-8 avoid-break">
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-3 tracking-[0.06em]">SPONSORSHIP &amp; FUNDRAISING</h3>
-            <p className="text-xs text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
+            <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
               Heimursaga&apos;s sponsorship system is designed for expedition fundraising. Supporters can sponsor
               your expedition with one-time or recurring contributions. You set a funding goal, and progress is
               displayed publicly on your expedition page. Payouts are handled through Stripe Connect.
@@ -321,7 +321,7 @@ export function EnvoyMarketingPage() {
           {/* Who we're looking for */}
           <div className="mb-8 avoid-break">
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-3 tracking-[0.06em]">WHO WE&apos;RE LOOKING FOR</h3>
-            <p className="text-xs text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
+            <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
               We are selecting for explorers whose work and ambition align with what Heimursaga is building.
               The ideal Envoy is someone who is already planning or actively undertaking expeditions and
               needs a better platform to document and fund them.
@@ -358,7 +358,7 @@ export function EnvoyMarketingPage() {
                     {item.step}
                   </div>
                   <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">{item.title}</div>
-                  <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">{item.desc}</p>
+                  <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -367,7 +367,7 @@ export function EnvoyMarketingPage() {
           {/* After the program */}
           <div className="border-l-4 border-[#ac6d46] pl-4 mb-8 avoid-break">
             <h3 className="text-xs font-bold text-[#202020] dark:text-white mb-1 tracking-[0.06em]">AFTER THE 12 MONTHS</h3>
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
               When the program ends, everything you built is yours. Your profile, your expeditions, your journal
               entries, your followers, and any sponsorship relationships you established &mdash; all of it stays.
               Your Explorer Pro subscription continues at the standard rate, or you can downgrade to a free

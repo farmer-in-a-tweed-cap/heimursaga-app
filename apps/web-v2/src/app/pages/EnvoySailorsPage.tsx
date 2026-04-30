@@ -59,7 +59,7 @@ export function EnvoySailorsPage() {
           {/* Platform intro */}
           <div className="mb-6 avoid-break">
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-1.5 tracking-[0.06em]">ABOUT HEIMURSAGA</h3>
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
               Heimursaga is a journaling and sponsorship platform for explorers, travelers, and adventurers. Explorers
               create expeditions, log entries with photos, video, and locations, and raise funds from
               sponsors. The platform supports hikers, cyclists, drivers, paddlers, and sailors &mdash; with native
@@ -72,7 +72,7 @@ export function EnvoySailorsPage() {
           {/* What is the Envoy Program */}
           <div className="mb-6 avoid-break">
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-1.5 tracking-[0.06em]">WHAT IS THE ENVOY PROGRAM?</h3>
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
               The Envoy Program is Heimursaga&apos;s founding explorer initiative. We are selecting a small number of
               sailors to become early voices on the platform. Envoys receive a 12-month recurring sponsorship
               from Heimursaga and commit to using the platform as their primary tool for documenting voyages
@@ -85,7 +85,7 @@ export function EnvoySailorsPage() {
           <div className="grid grid-cols-2 gap-6 mb-6">
             <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] p-5 avoid-break">
               <h3 className="text-sm font-bold text-[#4676ac] mb-3 tracking-[0.06em]">WHAT YOU RECEIVE</h3>
-              <ul className="space-y-2 text-xs text-[#202020] dark:text-[#e5e5e5]">
+              <ul className="space-y-2 text-sm text-[#202020] dark:text-[#e5e5e5]">
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] shrink-0">&#9654;</span>
                   <span><strong>$50/month recurring sponsorship</strong> for 12 months, paid through the platform&apos;s sponsorship system</span>
@@ -110,7 +110,7 @@ export function EnvoySailorsPage() {
             </div>
             <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] p-5 avoid-break">
               <h3 className="text-sm font-bold text-[#ac6d46] mb-3 tracking-[0.06em]">WHAT WE EXPECT</h3>
-              <ul className="space-y-2 text-xs text-[#202020] dark:text-[#e5e5e5]">
+              <ul className="space-y-2 text-sm text-[#202020] dark:text-[#e5e5e5]">
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] shrink-0">&#9654;</span>
                   <span><strong>Heimursaga as your primary platform</strong> &mdash; voyage documentation and fundraising happen here first</span>
@@ -138,7 +138,7 @@ export function EnvoySailorsPage() {
             <h2 className="text-lg font-bold text-white tracking-[0.06em]">NAUTICAL CAPABILITIES</h2>
           </div>
 
-          <p className="text-xs text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-6">
+          <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-6">
             Heimursaga&apos;s nautical features are native, not bolted on. When you set an expedition type to Sail, the
             entire platform adapts &mdash; units, routing, weather, data logging, and display.
           </p>
@@ -147,63 +147,76 @@ export function EnvoySailorsPage() {
           <div className="grid grid-cols-2 gap-x-8 gap-y-4 mb-8">
             <div className="border-l-3 pl-4 avoid-break" style={{ borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
               <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">NAUTICAL UNITS</div>
-              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+              <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                 Distances in nautical miles, speeds and wind in knots. One preference toggle applies platform-wide.
               </p>
             </div>
 
             <div className="border-l-3 pl-4 avoid-break" style={{ borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
               <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">NAUTICAL CHART OVERLAY</div>
-              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+              <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                 OpenSeaMap overlay on any map &mdash; nav aids, depth contours, harbors, anchorages, and traffic separation schemes.
               </p>
             </div>
 
             <div className="border-l-3 pl-4 avoid-break" style={{ borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
               <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">VESSEL PROFILE</div>
-              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+              <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                 Name, type (monohull/catamaran/trimaran), LOA, draft, and crew size displayed on the expedition page.
               </p>
             </div>
 
             <div className="border-l-3 pl-4 avoid-break" style={{ borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
               <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">MARINE WEATHER</div>
-              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+              <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                 Live wave height, swell, period, and ocean current data on the expedition sidebar.
               </p>
             </div>
 
             <div className="border-l-3 pl-4 avoid-break" style={{ borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
               <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">PASSAGE PLANNING</div>
-              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+              <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                 Sail expeditions auto-select passage routing. Set your average speed to see per-leg and total passage time estimates.
               </p>
             </div>
 
             <div className="border-l-3 pl-4 avoid-break" style={{ borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
               <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">MARINE DATA LOGGING</div>
-              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+              <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                 Data log entries include wave height, sea state, water temp, tidal state, heading, current, and sail configuration.
               </p>
             </div>
 
             <div className="border-l-3 pl-4 avoid-break" style={{ borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
               <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">VIDEO ENTRIES</div>
-              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+              <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                 Embed YouTube or Vimeo episodes directly in your expedition timeline alongside written logs, photos, and data.
               </p>
             </div>
           </div>
 
+          {/* Works with your nav setup */}
+          <div className="mb-6 avoid-break">
+            <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-2 tracking-[0.06em]">WORKS WITH YOUR NAV STACK</h3>
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+              Heimursaga is not a navigation app and is not intended to replace what you already use at the
+              chart table. It&apos;s the sharing layer that sits in front of your nav stack. Plan and route
+              in Navionics, OpenCPN, PredictWind, Aqua Map, Savvy Navvy, or your onboard chartplotter
+              (Garmin, B&amp;G, Raymarine, Furuno), then import the GPX into Heimursaga. Your expedition
+              page becomes the place where the route, the logs, the photos, the video, and the fundraising
+              all live together, visible to anyone you want, no chartplotter login required.
+            </p>
+          </div>
+
           {/* Fundraising + Sponsor Perks */}
           <div className="mb-6 avoid-break">
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-2 tracking-[0.06em]">SPONSORSHIP &amp; PERKS</h3>
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3">
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3">
               Supporters back your expedition with one-time or recurring contributions. You set a funding
               goal, progress is displayed on your expedition page, and payouts flow through Stripe Connect.
               You keep 90% (10% platform fee + Stripe processing).
             </p>
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-4">
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-4">
               The key difference from Patreon: sponsorships are tied to a specific voyage, not to you as a
               creator. Sponsors follow your route on the map, read your logs, and see conditions. The
               documentation and the fundraising live in the same place.
@@ -265,35 +278,35 @@ export function EnvoySailorsPage() {
           {/* Content requirements */}
           <div className="mb-8 avoid-break">
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-3 tracking-[0.06em]">CONTENT EXPECTATIONS</h3>
-            <p className="text-xs text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
+            <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
               Sailing has its own rhythms &mdash; offshore passages, weather windows, limited connectivity. These
               minimums are designed with that in mind.
             </p>
             <div className="grid grid-cols-2 gap-x-8 gap-y-4">
               <div className="border-l-3 pl-4" style={{ borderLeftWidth: 3, borderLeftColor: '#ac6d46' }}>
                 <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">EXPEDITION CONTINUITY</div>
-                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+                <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                   At least one expedition active at all times. A multi-month cruise counts as one expedition.
                   Refit periods can be documented as separate expeditions.
                 </p>
               </div>
               <div className="border-l-3 pl-4" style={{ borderLeftWidth: 3, borderLeftColor: '#ac6d46' }}>
                 <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">LOG FREQUENCY</div>
-                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+                <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                   Minimum 2 entries per week while underway or in port. Batch entries when connectivity
                   allows during offshore passages. Data logs count.
                 </p>
               </div>
               <div className="border-l-3 pl-4" style={{ borderLeftWidth: 3, borderLeftColor: '#ac6d46' }}>
                 <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">PRIMARY PLATFORM</div>
-                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+                <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                   Heimursaga is where your full voyage documentation lives. Cross-post freely, but detailed
                   entries and structured data should publish here first. Primacy, not exclusivity.
                 </p>
               </div>
               <div className="border-l-3 pl-4" style={{ borderLeftWidth: 3, borderLeftColor: '#ac6d46' }}>
                 <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">FUNDRAISING</div>
-                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+                <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
                   Direct supporters to your Heimursaga expedition page for sponsorships. Other funding
                   channels are fine, but Heimursaga should be presented as the primary way to contribute.
                 </p>
@@ -304,7 +317,7 @@ export function EnvoySailorsPage() {
           {/* What this is not */}
           <div className="border-l-4 border-[#616161] pl-4 avoid-break">
             <h3 className="text-xs font-bold text-[#202020] dark:text-white mb-1 tracking-[0.06em]">WHAT THIS IS NOT</h3>
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
               Not an influencer deal or brand partnership. We are not asking you to produce marketing content
               or hit engagement metrics. We fund your sailing, you use our platform to document it.
             </p>
@@ -352,7 +365,7 @@ export function EnvoySailorsPage() {
                     {item.step}
                   </div>
                   <div className="text-xs font-bold text-[#202020] dark:text-white mb-1">{item.title}</div>
-                  <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">{item.desc}</p>
+                  <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -361,7 +374,7 @@ export function EnvoySailorsPage() {
           {/* After the program */}
           <div className="border-l-4 border-[#4676ac] pl-4 mb-8 avoid-break">
             <h3 className="text-xs font-bold text-[#202020] dark:text-white mb-1 tracking-[0.06em]">AFTER THE 12 MONTHS</h3>
-            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
               Everything you built is yours &mdash; profile, expeditions, entries, followers, sponsorship relationships.
               Explorer Pro continues at the standard rate, or you can downgrade to a free account and keep all content.
               No lock-in, no content forfeiture, no non-compete.
