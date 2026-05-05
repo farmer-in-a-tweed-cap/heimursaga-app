@@ -79,6 +79,13 @@ async function run() {
       // the same prefix the seeder used.
       title: `${archiveExp.expedition.explorer} - ${e.entryTitle}`,
       entryType: 'historical',
+      // Date can shift when a config's anchor moves to a more accurate
+      // start of a multi-day passage (e.g. Nansen's farthest-north push
+      // moving from Apr 7 to Apr 5). Push the latest archive date too.
+      date: archiveEntry.date,
+      // Coords + place can also shift if the archive entry was edited.
+      lat: archiveEntry.coordinates?.lat,
+      lon: archiveEntry.coordinates?.lng,
     });
   }
 
@@ -118,13 +125,15 @@ async function run() {
     const tag = `[${i + 1}/${plan.length}] "${p.entryTitle}"`;
     try {
       await api._ensureFreshToken();
-      await api._fetch('PUT', `/posts/${p.entryId}`, {
-        body: {
-          title: p.title,
-          content: p.content,
-          entryType: p.entryType,
-        },
-      });
+      const body = {
+        title: p.title,
+        content: p.content,
+        entryType: p.entryType,
+      };
+      if (p.date) body.date = p.date;
+      if (typeof p.lat === 'number') body.lat = p.lat;
+      if (typeof p.lon === 'number') body.lon = p.lon;
+      await api._fetch('PUT', `/posts/${p.entryId}`, { body });
       success++;
       console.log(`${tag} ✓`);
     } catch (err) {
