@@ -25,7 +25,7 @@ export function EditEntryPage() {
   const { entryId } = useParams<{ entryId: string }>();
   const router = useRouter();
   const pathname = usePathname();
-  const [entryType, setEntryType] = useState<'standard' | 'photo' | 'video' | 'data' | 'waypoint'>('standard');
+  const [entryType, setEntryType] = useState<'standard' | 'photo' | 'video' | 'data' | 'waypoint' | 'historical'>('standard');
   const [showMap, setShowMap] = useState(false);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);

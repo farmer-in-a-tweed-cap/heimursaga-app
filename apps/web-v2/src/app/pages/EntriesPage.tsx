@@ -187,6 +187,8 @@ export function EntriesPage() {
       result = result.filter(e => e.type === 'video');
     } else if (activeFilter === 'data') {
       result = result.filter(e => e.type === 'data');
+    } else if (activeFilter === 'historical') {
+      result = result.filter(e => e.type === 'historical');
     }
 
     // Apply search
@@ -278,6 +280,7 @@ export function EntriesPage() {
               { key: 'photo', label: 'PHOTO' },
               { key: 'video', label: 'VIDEO' },
               { key: 'data', label: 'DATA' },
+              { key: 'historical', label: 'HISTORICAL' },
             ].map(({ key, label }) => (
               <button
                 key={key}

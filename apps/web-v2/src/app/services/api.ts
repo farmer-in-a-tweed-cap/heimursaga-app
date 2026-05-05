@@ -1474,7 +1474,7 @@ export interface Entry {
     type?: string;
   }>;
   // New fields
-  entryType?: 'standard' | 'photo' | 'video' | 'data' | 'waypoint';
+  entryType?: 'standard' | 'photo' | 'video' | 'data' | 'waypoint' | 'historical';
   coverImage?: string;
   isMilestone?: boolean;
   visibility?: 'public' | 'off-grid' | 'private';
@@ -1512,7 +1512,7 @@ export interface EntryCreatePayload {
   isDraft?: boolean;
   commentsEnabled?: boolean;
   // New fields
-  entryType?: 'standard' | 'photo' | 'video' | 'data' | 'waypoint';
+  entryType?: 'standard' | 'photo' | 'video' | 'data' | 'waypoint' | 'historical';
   coverUploadId?: string;
   isMilestone?: boolean;
   visibility?: 'public' | 'off-grid' | 'private';

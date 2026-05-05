@@ -57,7 +57,7 @@ export function CurrentLocationSelector({
       'video': { label: 'VIDEO', color: 'bg-[#4676ac]' },
       'data': { label: 'DATA', color: 'bg-[#4676ac]' },
       'waypoint': { label: 'WAYPOINT', color: 'bg-[#b5bcc4]' },
-      'historical': { label: 'HISTORICAL', color: 'bg-[#616161]' },
+      'historical': { label: 'HISTORICAL', color: 'bg-[#202020]' },
     };
     return typeMap[type] || typeMap.standard;
   };

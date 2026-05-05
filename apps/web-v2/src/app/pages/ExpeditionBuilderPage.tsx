@@ -5572,6 +5572,7 @@ export function ExpeditionBuilderPage() {
                   <option>Adventure & Exploration</option>
                   <option>Environmental</option>
                   <option>Historical Documentation</option>
+                  <option>Historical Archive</option>
                   <option>Other</option>
                 </select>
                 <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">

@@ -477,7 +477,7 @@ export function JournalEntryPage() {
                   <span
                     className="px-2 py-1 text-white text-xs rounded-full"
                     style={{
-                      backgroundColor: entry.entryType === 'historical' ? '#616161'
+                      backgroundColor: entry.entryType === 'historical' ? '#202020'
                         : entry.entryType === 'photo' ? '#4676ac'
                         : entry.entryType === 'video' ? '#4676ac'
                         : entry.entryType === 'data' ? '#616161'
