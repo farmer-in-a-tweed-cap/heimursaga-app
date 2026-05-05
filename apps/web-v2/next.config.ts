@@ -53,7 +53,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://api.mapbox.com https://accounts.google.com/gsi/style",
               "img-src 'self' data: blob: https://*.amazonaws.com https://api.mapbox.com https://heimursaga.com https://api.dicebear.com https://www.facebook.com https://lh3.googleusercontent.com",
               "font-src 'self'",
-              "connect-src 'self' https://*.heimursaga.com https://api.stripe.com https://api.mapbox.com https://*.amazonaws.com https://events.mapbox.com https://us.i.posthog.com https://us-assets.i.posthog.com https://static.cloudflareinsights.com https://www.facebook.com https://accounts.google.com/gsi/",
+              "connect-src 'self' https://*.heimursaga.com https://api.stripe.com https://api.mapbox.com https://*.amazonaws.com https://events.mapbox.com https://us.i.posthog.com https://us-assets.i.posthog.com https://static.cloudflareinsights.com https://www.facebook.com https://accounts.google.com/gsi/ https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/",
               "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://accounts.google.com/gsi/",
               "worker-src 'self' blob:",
               "object-src 'none'",
