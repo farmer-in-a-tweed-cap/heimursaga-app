@@ -274,6 +274,7 @@ export function ExplorerProfilePage() {
     name: profile.username,
     fullName: profile.username, // API doesn't have display name
     accountType: (profile.isGuide ? 'expedition-guide' : profile.creator ? 'explorer-pro' : 'explorer') as 'expedition-guide' | 'explorer-pro' | 'explorer',
+    secondaryRole: profile.secondaryRole,
     journalName: profile.name || profile.username,
     tagline: '', // Not in API
     bio: profile.bio || '',
@@ -626,6 +627,11 @@ export function ExplorerProfilePage() {
                 <span className={`mt-1.5 md:mt-2 px-2 py-0.5 md:px-3 md:py-1 ${explorer.accountType === 'expedition-guide' ? 'bg-[#598636]' : 'bg-[#ac6d46]'} text-white text-[10px] md:text-xs font-bold rounded-full whitespace-nowrap`}>
                   {explorer.accountType === 'expedition-guide' ? 'EXPEDITION GUIDE' : explorer.accountType === 'explorer-pro' ? 'EXPLORER PRO' : 'EXPLORER'}
                 </span>
+                {explorer.secondaryRole && (
+                  <span className="mt-1 px-2 py-0.5 md:px-3 md:py-1 bg-[#b5bcc4] text-[#202020] text-[10px] md:text-xs font-bold rounded-full whitespace-nowrap">
+                    {explorer.secondaryRole.toUpperCase()}
+                  </span>
+                )}
               </div>
 
               <div className="flex-1 pt-0 md:pt-2 min-w-0">

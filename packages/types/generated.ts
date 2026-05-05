@@ -120,6 +120,7 @@ export interface IPasswordUpdatePayload {
 export interface IUserDetail {
   username: string;
   role?: string;
+  secondaryRole?: string;
   // name: string;
   picture: string;
   bio?: string;

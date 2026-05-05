@@ -16,6 +16,7 @@ model Explorer {
   password                    String
   google_id                   String?               @unique @db.VarChar(40)
   role                        String                @db.VarChar(10)
+  secondary_role              String?               @db.VarChar(40)
   is_premium                  Boolean?              @default(false)
   is_email_verified           Boolean?              @default(false)
   created_at                  DateTime?             @default(now())

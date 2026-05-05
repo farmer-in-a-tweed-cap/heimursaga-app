@@ -415,6 +415,7 @@ export class ExplorerService {
           username: true,
           email: true,
           role: true,
+          secondary_role: true,
           is_guide: true,
           is_stripe_account_connected: true,
           followers_count: true,
@@ -565,6 +566,7 @@ export class ExplorerService {
           : false,
         you: explorerId ? explorerId === explorer.id : false,
         creator: explorer.role === UserRole.CREATOR,
+        secondaryRole: explorer.secondary_role ?? undefined,
         isGuide: explorer.is_guide ?? false,
         // Contact info is only exposed on guide profiles — guides opt in
         // to being contacted about in-person guided expeditions.

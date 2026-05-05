@@ -440,6 +440,7 @@ export interface ExplorerProfile {
   bookmarked?: boolean;
   you?: boolean;
   creator?: boolean;
+  secondaryRole?: string;
   isGuide?: boolean;
   phoneNumber?: string;
   preferredContactMethod?: 'email' | 'phone' | 'message';
