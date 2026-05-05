@@ -50,9 +50,10 @@ export class ExpeditionController {
     @Query('context') context?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('sort') sort?: string,
   ) {
     return await this.expeditionService.getExpeditions({
-      query: { context, page, limit },
+      query: { context, page, limit, sort },
       session,
     });
   }

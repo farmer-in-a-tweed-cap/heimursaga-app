@@ -46,9 +46,10 @@ export class EntryController {
     @Query('context') context?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('sort') sort?: string,
   ) {
     return await this.entryService.getEntries({
-      query: { context, page, limit },
+      query: { context, page, limit, sort },
       session,
     });
   }

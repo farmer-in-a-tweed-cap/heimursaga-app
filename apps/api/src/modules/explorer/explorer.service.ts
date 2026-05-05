@@ -48,6 +48,23 @@ import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 import { UploadService } from '@/modules/upload';
 
+function resolveExplorerSort(
+  sort: string | undefined,
+): Prisma.ExplorerOrderByWithRelationInput[] {
+  switch (sort) {
+    case 'popular':
+      return [{ followers: { _count: 'desc' } }, { id: 'desc' }];
+    case 'recent':
+      // Recent activity — falls back to id when no entries exist. Real
+      // "last entry" sort would need a denormalized column; this is the
+      // best Prisma can express without raw SQL.
+      return [{ updated_at: 'desc' }, { id: 'desc' }];
+    case 'newest':
+    default:
+      return [{ id: 'desc' }];
+  }
+}
+
 @Injectable()
 export class ExplorerService {
   constructor(
@@ -71,6 +88,7 @@ export class ExplorerService {
     context?: string;
     page?: string;
     limit?: string;
+    sort?: string;
   }>): Promise<IUserGetAllResponse> {
     try {
       const { context } = query;
@@ -193,7 +211,7 @@ export class ExplorerService {
       const data = await this.prisma.explorer.findMany({
         where,
         select,
-        orderBy: [{ id: 'desc' }],
+        orderBy: resolveExplorerSort(query.sort),
         skip: (parsedPage - 1) * parsedLimit,
         take: parsedLimit,
       });

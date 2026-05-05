@@ -607,11 +607,12 @@ export const explorerApi = {
   /**
    * Get all explorers
    */
-  getAll: (params?: { page?: number; limit?: number; context?: string }) => {
+  getAll: (params?: { page?: number; limit?: number; context?: string; sort?: string }) => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set('page', String(params.page));
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.context) searchParams.set('context', params.context);
+    if (params?.sort) searchParams.set('sort', params.sort);
     const qs = searchParams.toString();
     return api.get<{ data: ExplorerListItem[]; results: number; page?: number; limit?: number; totalPages?: number }>(`/users${qs ? `?${qs}` : ''}`);
   },
@@ -1074,11 +1075,12 @@ export const expeditionApi = {
   /**
    * Get all expeditions
    */
-  getAll: (params?: { page?: number; limit?: number; context?: string }) => {
+  getAll: (params?: { page?: number; limit?: number; context?: string; sort?: string }) => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set('page', String(params.page));
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.context) searchParams.set('context', params.context);
+    if (params?.sort) searchParams.set('sort', params.sort);
     const qs = searchParams.toString();
     return api.get<{ data: Expedition[]; results: number; page?: number; limit?: number; totalPages?: number }>(`/trips${qs ? `?${qs}` : ''}`);
   },
@@ -1524,11 +1526,12 @@ export const entryApi = {
   /**
    * Get all entries
    */
-  getAll: (params?: { page?: number; limit?: number; context?: string }) => {
+  getAll: (params?: { page?: number; limit?: number; context?: string; sort?: string }) => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set('page', String(params.page));
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.context) searchParams.set('context', params.context);
+    if (params?.sort) searchParams.set('sort', params.sort);
     const qs = searchParams.toString();
     return api.get<{ data: Entry[]; results: number; page?: number; limit?: number; totalPages?: number }>(`/posts${qs ? `?${qs}` : ''}`);
   },

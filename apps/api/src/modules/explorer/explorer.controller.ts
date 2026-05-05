@@ -42,9 +42,10 @@ export class ExplorerController {
     @Query('context') context?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('sort') sort?: string,
   ) {
     return await this.explorerService.getExplorers({
-      query: { context, page, limit },
+      query: { context, page, limit, sort },
       session,
     });
   }

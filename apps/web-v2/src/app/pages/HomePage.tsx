@@ -299,9 +299,11 @@ export function HomePage() {
 
 
   // Transform global data
+  // Entries lead the feed — they're the freshest signal (API default sort is
+  // published_at desc) and answer "what new content is there to read?"
   const featuredExpeditions = expeditions.slice(0, 3).map(transformExpedition);
   const featuredExplorers = explorers.slice(0, 3).map(transformExplorer);
-  const recentEntries = entries.slice(0, 6).map(transformEntry);
+  const recentEntries = entries.slice(0, 12).map(transformEntry);
 
   // Transform following data
   const followingExpeditionCards = followingExpeditions.map(transformExpedition);
@@ -502,12 +504,22 @@ export function HomePage() {
               <ExplorerMap />
             </div>
 
-            {/* Featured Expeditions */}
+            {/* Recent Journal Entries — leads the feed: this is "what's new" */}
+            {recentEntries.length > 0 && (
+              <div className="mt-8">
+                <JournalGrid
+                  entries={recentEntries}
+                  onViewAll={() => router.push('/entries')}
+                />
+              </div>
+            )}
+
+            {/* Active Expeditions (sorted by recent activity via API default) */}
             {featuredExpeditions.length > 0 && (
               <div className="mt-8">
                 <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
                   <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
-                    <h2 className="text-sm font-bold dark:text-[#e5e5e5]">FEATURED EXPEDITIONS</h2>
+                    <h2 className="text-sm font-bold dark:text-[#e5e5e5]">ACTIVE EXPEDITIONS</h2>
                     <button
                       onClick={() => router.push('/expeditions')}
                       className="text-xs text-[#ac6d46] hover:text-[#8a5738] font-mono font-bold"
@@ -534,12 +546,12 @@ export function HomePage() {
               </div>
             )}
 
-            {/* Featured Explorers */}
+            {/* New Explorers */}
             {featuredExplorers.length > 0 && (
               <div className="mt-8">
                 <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
                   <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
-                    <h2 className="text-sm font-bold dark:text-[#e5e5e5]">FEATURED EXPLORERS</h2>
+                    <h2 className="text-sm font-bold dark:text-[#e5e5e5]">NEW EXPLORERS</h2>
                     <button
                       onClick={() => router.push('/explorers')}
                       className="text-xs text-[#ac6d46] hover:text-[#8a5738] font-mono font-bold"
@@ -565,16 +577,6 @@ export function HomePage() {
                     ))}
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* Recent Journal Entries */}
-            {recentEntries.length > 0 && (
-              <div className="mt-8">
-                <JournalGrid
-                  entries={recentEntries}
-                  onViewAll={() => router.push('/entries')}
-                />
               </div>
             )}
 

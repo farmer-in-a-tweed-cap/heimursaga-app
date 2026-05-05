@@ -4,7 +4,14 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { ExplorerCard } from '@/app/components/ExplorerCard';
+import { SortDropdown } from '@/app/components/SortDropdown';
 import { Users, Loader2 } from 'lucide-react';
+
+const EXPLORER_SORT_OPTIONS = [
+  { key: 'newest', label: 'NEWEST' },
+  { key: 'recent', label: 'RECENTLY ACTIVE' },
+  { key: 'popular', label: 'MOST FOLLOWED' },
+];
 import { explorerApi, type ExplorerListItem } from '@/app/services/api';
 import { useAuth } from '@/app/context/AuthContext';
 import { ExplorerCardSkeleton, SKELETON_COUNT } from '@/app/components/skeletons/CardSkeletons';
@@ -32,6 +39,7 @@ export function ExplorersPage() {
   // Filter & search state
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sort, setSort] = useState('newest');
 
   // Loading states for async actions
   const [followingInProgress, setFollowingInProgress] = useState<Set<string>>(new Set());
@@ -111,7 +119,7 @@ export function ExplorersPage() {
     setError(null);
     setPage(1);
     try {
-      const data = await explorerApi.getAll({ page: 1, limit: 20 });
+      const data = await explorerApi.getAll({ page: 1, limit: 20, sort });
       setApiExplorers(data.data || []);
       setTotalResults(data.results || 0);
       setHasMore((data.data || []).length < (data.results || 0));
@@ -129,7 +137,7 @@ export function ExplorersPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sort]);
 
   // Load more explorers
   const handleLoadMore = useCallback(async () => {
@@ -137,7 +145,7 @@ export function ExplorersPage() {
     setIsLoadingMore(true);
     const nextPage = page + 1;
     try {
-      const data = await explorerApi.getAll({ page: nextPage, limit: 20 });
+      const data = await explorerApi.getAll({ page: nextPage, limit: 20, sort });
       const newExplorers = data.data || [];
       setApiExplorers(prev => [...prev, ...newExplorers]);
       setPage(nextPage);
@@ -164,7 +172,7 @@ export function ExplorersPage() {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, hasMore, page, apiExplorers.length]);
+  }, [isLoadingMore, hasMore, page, apiExplorers.length, sort]);
 
   useEffect(() => {
     let cancelled = false;
@@ -172,8 +180,9 @@ export function ExplorersPage() {
     const load = async () => {
       setLoading(true);
       setError(null);
+      setPage(1);
       try {
-        const data = await explorerApi.getAll({ page: 1, limit: 20 });
+        const data = await explorerApi.getAll({ page: 1, limit: 20, sort });
         if (!cancelled) {
           setApiExplorers(data.data || []);
           setTotalResults(data.results || 0);
@@ -213,7 +222,7 @@ export function ExplorersPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [sort]);
 
   const isActive = (path: string) => {
     if (path === '/explorers') return pathname.startsWith('/explorer');
@@ -342,7 +351,7 @@ export function ExplorersPage() {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-1.5 md:gap-2 lg:gap-3 text-xs mt-4">
+          <div className="flex flex-wrap items-center gap-1.5 md:gap-2 lg:gap-3 text-xs mt-4">
             {[
               { key: 'all', label: 'ALL' },
               { key: 'active', label: 'ACTIVE NOW' },
@@ -361,6 +370,12 @@ export function ExplorersPage() {
                 {label}
               </button>
             ))}
+            <SortDropdown
+              value={sort}
+              options={EXPLORER_SORT_OPTIONS}
+              onChange={setSort}
+              className="ml-auto"
+            />
           </div>
         </div>
       </div>

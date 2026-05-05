@@ -4,7 +4,15 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { EntryCard } from '@/app/components/EntryCard';
+import { SortDropdown } from '@/app/components/SortDropdown';
 import { FileText, Loader2 } from 'lucide-react';
+
+const ENTRY_SORT_OPTIONS = [
+  { key: 'recent', label: 'RECENTLY PUBLISHED' },
+  { key: 'date', label: 'BY ENTRY DATE' },
+  { key: 'popular', label: 'MOST LIKED' },
+  { key: 'oldest', label: 'OLDEST FIRST' },
+];
 import { entryApi, type Entry } from '@/app/services/api';
 import { truncateExcerpt } from '@/app/utils/truncateExcerpt';
 import { useAuth } from '@/app/context/AuthContext';
@@ -31,6 +39,7 @@ export function EntriesPage() {
   // Filter & search state
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sort, setSort] = useState('recent');
 
   // Loading state for async actions
   const [bookmarkingInProgress, setBookmarkingInProgress] = useState<Set<string>>(new Set());
@@ -74,7 +83,7 @@ export function EntriesPage() {
     setError(null);
     setPage(1);
     try {
-      const data = await entryApi.getAll({ page: 1, limit: 20 });
+      const data = await entryApi.getAll({ page: 1, limit: 20, sort });
       setApiEntries(data.data || []);
       setTotalResults(data.results || 0);
       setHasMore((data.data || []).length < (data.results || 0));
@@ -83,7 +92,7 @@ export function EntriesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sort]);
 
   // Load more entries
   const handleLoadMore = useCallback(async () => {
@@ -91,7 +100,7 @@ export function EntriesPage() {
     setIsLoadingMore(true);
     const nextPage = page + 1;
     try {
-      const data = await entryApi.getAll({ page: nextPage, limit: 20 });
+      const data = await entryApi.getAll({ page: nextPage, limit: 20, sort });
       const newEntries = data.data || [];
       setApiEntries(prev => [...prev, ...newEntries]);
       setPage(nextPage);
@@ -107,7 +116,7 @@ export function EntriesPage() {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, hasMore, page, apiEntries.length]);
+  }, [isLoadingMore, hasMore, page, apiEntries.length, sort]);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,8 +124,9 @@ export function EntriesPage() {
     const load = async () => {
       setLoading(true);
       setError(null);
+      setPage(1);
       try {
-        const data = await entryApi.getAll({ page: 1, limit: 20 });
+        const data = await entryApi.getAll({ page: 1, limit: 20, sort });
         if (!cancelled) {
           setApiEntries(data.data || []);
           setTotalResults(data.results || 0);
@@ -147,7 +157,7 @@ export function EntriesPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [sort]);
 
   const isActive = (path: string) => {
     if (path === '/explorers') return pathname.startsWith('/explorer');
@@ -273,7 +283,7 @@ export function EntriesPage() {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-1.5 md:gap-2 lg:gap-3 text-xs mt-4">
+          <div className="flex flex-wrap items-center gap-1.5 md:gap-2 lg:gap-3 text-xs mt-4">
             {[
               { key: 'all', label: 'ALL' },
               { key: 'standard', label: 'STANDARD' },
@@ -294,6 +304,12 @@ export function EntriesPage() {
                 {label}
               </button>
             ))}
+            <SortDropdown
+              value={sort}
+              options={ENTRY_SORT_OPTIONS}
+              onChange={setSort}
+              className="ml-auto"
+            />
           </div>
         </div>
       </div>

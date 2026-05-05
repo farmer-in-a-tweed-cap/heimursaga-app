@@ -37,6 +37,28 @@ import { IUserNotificationCreatePayload } from '@/modules/notification';
 import { PrismaService } from '@/modules/prisma';
 import { UploadService } from '@/modules/upload/upload.service';
 
+function resolveEntrySort(
+  sort: string | undefined,
+): Prisma.EntryOrderByWithRelationInput[] {
+  // 'recent' is the public default — sorts by publish time so freshly
+  // published entries float, regardless of the in-world `date` field
+  // (which is backdatable and made old diary entries outrank live ones).
+  switch (sort) {
+    case 'oldest':
+      return [{ published_at: 'asc' }, { id: 'asc' }];
+    case 'popular':
+      return [{ likes_count: 'desc' }, { views_count: 'desc' }, { id: 'desc' }];
+    case 'date':
+      return [{ date: 'desc' }, { id: 'desc' }];
+    case 'recent':
+    default:
+      return [
+        { published_at: { sort: 'desc', nulls: 'last' } },
+        { id: 'desc' },
+      ];
+  }
+}
+
 /**
  * Whitelist-based sanitizer for entry metadata.
  * Strips unexpected keys and validates types per entry type.
@@ -271,9 +293,10 @@ export class EntryService {
     context?: string;
     page?: string;
     limit?: string;
+    sort?: string;
   }>): Promise<IEntryGetAllResponse> {
     try {
-      const { context } = query;
+      const { context, sort } = query;
       const { explorerId, explorerRole } = session;
 
       const parsedPage = Math.max(1, parseInt(query.page, 10) || 1);
@@ -450,7 +473,7 @@ export class EntryService {
         orderBy:
           context === 'following'
             ? [{ updated_at: 'desc' }]
-            : [{ date: 'desc' }],
+            : resolveEntrySort(sort),
       });
 
       // Filter out entries in early access window for non-qualifying viewers

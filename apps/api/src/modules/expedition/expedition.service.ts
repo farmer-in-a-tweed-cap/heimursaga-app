@@ -59,6 +59,22 @@ import {
   parseRouteFile,
 } from './route-import.util';
 
+function resolveExpeditionSort(
+  sort: string | undefined,
+): Prisma.ExpeditionOrderByWithRelationInput[] {
+  // 'recent' is the public default — surfaces actively-updated expeditions
+  // instead of letting stale completions sit at the top by creation order.
+  switch (sort) {
+    case 'newest':
+      return [{ id: 'desc' }];
+    case 'popular':
+      return [{ raised: 'desc' }, { id: 'desc' }];
+    case 'recent':
+    default:
+      return [{ updated_at: 'desc' }, { id: 'desc' }];
+  }
+}
+
 @Injectable()
 export class ExpeditionService {
   constructor(
@@ -256,9 +272,10 @@ export class ExpeditionService {
     context?: string;
     page?: string;
     limit?: string;
+    sort?: string;
   }>): Promise<IExpeditionGetAllResponse> {
     try {
-      const { context } = query;
+      const { context, sort } = query;
       const { explorerId, explorerRole } = session;
 
       const parsedPage = Math.max(1, parseInt(query.page, 10) || 1);
@@ -403,8 +420,7 @@ export class ExpeditionService {
         },
         skip: (parsedPage - 1) * parsedLimit,
         take: parsedLimit,
-        orderBy:
-          context === 'following' ? [{ updated_at: 'desc' }] : [{ id: 'desc' }],
+        orderBy: resolveExpeditionSort(sort),
       });
 
       // Get per-expedition sponsor counts and recurring stats

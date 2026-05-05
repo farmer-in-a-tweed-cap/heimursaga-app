@@ -4,7 +4,14 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { ExpeditionCard } from '@/app/components/ExpeditionCard';
+import { SortDropdown } from '@/app/components/SortDropdown';
 import { Compass, Loader2 } from 'lucide-react';
+
+const EXPEDITION_SORT_OPTIONS = [
+  { key: 'recent', label: 'RECENTLY UPDATED' },
+  { key: 'newest', label: 'NEWEST' },
+  { key: 'popular', label: 'MOST FUNDED' },
+];
 import { expeditionApi, explorerApi, type Expedition } from '@/app/services/api';
 import { calculateDaysElapsed } from '@/app/utils/dateFormat';
 import { useAuth } from '@/app/context/AuthContext';
@@ -33,6 +40,7 @@ export function ExpeditionsPage() {
   // Filter & search state
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sort, setSort] = useState('recent');
 
   // Loading state for async actions
   const [bookmarkingInProgress, setBookmarkingInProgress] = useState<Set<string>>(new Set());
@@ -102,7 +110,7 @@ export function ExpeditionsPage() {
     setError(null);
     setPage(1);
     try {
-      const data = await expeditionApi.getAll({ page: 1, limit: 20 });
+      const data = await expeditionApi.getAll({ page: 1, limit: 20, sort });
       setApiExpeditions(data.data || []);
       setTotalResults(data.results || 0);
       setHasMore((data.data || []).length < (data.results || 0));
@@ -111,7 +119,7 @@ export function ExpeditionsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sort]);
 
   // Load more expeditions
   const handleLoadMore = useCallback(async () => {
@@ -119,7 +127,7 @@ export function ExpeditionsPage() {
     setIsLoadingMore(true);
     const nextPage = page + 1;
     try {
-      const data = await expeditionApi.getAll({ page: nextPage, limit: 20 });
+      const data = await expeditionApi.getAll({ page: nextPage, limit: 20, sort });
       const newExpeditions = data.data || [];
       setApiExpeditions(prev => [...prev, ...newExpeditions]);
       setPage(nextPage);
@@ -135,7 +143,7 @@ export function ExpeditionsPage() {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, hasMore, page, apiExpeditions.length]);
+  }, [isLoadingMore, hasMore, page, apiExpeditions.length, sort]);
 
   useEffect(() => {
     let cancelled = false;
@@ -143,8 +151,9 @@ export function ExpeditionsPage() {
     const load = async () => {
       setLoading(true);
       setError(null);
+      setPage(1);
       try {
-        const data = await expeditionApi.getAll({ page: 1, limit: 20 });
+        const data = await expeditionApi.getAll({ page: 1, limit: 20, sort });
         if (!cancelled) {
           setApiExpeditions(data.data || []);
           setTotalResults(data.results || 0);
@@ -175,7 +184,7 @@ export function ExpeditionsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [sort]);
 
   const isActive = (path: string) => {
     if (path === '/explorers') return pathname.startsWith('/explorer');
@@ -329,7 +338,7 @@ export function ExpeditionsPage() {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-1.5 md:gap-2 lg:gap-3 text-xs mt-4">
+          <div className="flex flex-wrap items-center gap-1.5 md:gap-2 lg:gap-3 text-xs mt-4">
             {[
               { key: 'all', label: 'ALL' },
               { key: 'active', label: 'ACTIVE' },
@@ -359,6 +368,12 @@ export function ExpeditionsPage() {
             >
               BLUEPRINTS
             </button>
+            <SortDropdown
+              value={sort}
+              options={EXPEDITION_SORT_OPTIONS}
+              onChange={setSort}
+              className="ml-auto"
+            />
           </div>
         </div>
       </div>
