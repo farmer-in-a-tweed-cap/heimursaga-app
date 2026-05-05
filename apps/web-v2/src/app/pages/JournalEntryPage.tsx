@@ -336,7 +336,7 @@ export function JournalEntryPage() {
 
       location: api.place || 'Unknown location',
       coords: { lat, lng: lon },
-      entryType: (api.entryType || 'standard') as 'standard' | 'photo' | 'video' | 'data' | 'waypoint',
+      entryType: (api.entryType || 'standard') as 'standard' | 'photo' | 'video' | 'data' | 'waypoint' | 'historical',
       metadata: (api.metadata || undefined) as { [key: string]: string | number | boolean | null | undefined } | undefined,
 
       content: api.content || '',
@@ -477,13 +477,15 @@ export function JournalEntryPage() {
                   <span
                     className="px-2 py-1 text-white text-xs rounded-full"
                     style={{
-                      backgroundColor: entry.entryType === 'photo' ? '#4676ac'
+                      backgroundColor: entry.entryType === 'historical' ? '#616161'
+                        : entry.entryType === 'photo' ? '#4676ac'
                         : entry.entryType === 'video' ? '#4676ac'
                         : entry.entryType === 'data' ? '#616161'
                         : '#4676ac'
                     }}
                   >
-                    {entry.entryType === 'photo' ? 'PHOTO'
+                    {entry.entryType === 'historical' ? 'HISTORICAL'
+                      : entry.entryType === 'photo' ? 'PHOTO'
                       : entry.entryType === 'video' ? 'VIDEO'
                       : entry.entryType === 'data' ? 'DATA'
                       : 'STANDARD'}

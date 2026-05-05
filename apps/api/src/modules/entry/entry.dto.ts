@@ -128,7 +128,7 @@ export class EntryCreateDto implements IEntryCreatePayload {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  entryType?: 'standard' | 'photo' | 'video' | 'data' | 'waypoint';
+  entryType?: 'standard' | 'photo' | 'video' | 'data' | 'waypoint' | 'historical';
 
   @ApiProperty({ required: false })
   @IsString()
@@ -236,7 +236,7 @@ export class EntryUpdateDto implements IEntryUpdatePayload {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  entryType?: 'standard' | 'photo' | 'video' | 'data' | 'waypoint';
+  entryType?: 'standard' | 'photo' | 'video' | 'data' | 'waypoint' | 'historical';
 
   @ApiProperty({ required: false })
   @IsString()

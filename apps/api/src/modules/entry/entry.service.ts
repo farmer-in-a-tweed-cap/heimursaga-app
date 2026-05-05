@@ -1197,6 +1197,7 @@ export class EntryService {
         'video',
         'data',
         'waypoint',
+        'historical',
       ];
       if (entryType && !validEntryTypes.includes(entryType)) {
         throw new ServiceBadRequestException(
@@ -1489,6 +1490,7 @@ export class EntryService {
         'video',
         'data',
         'waypoint',
+        'historical',
       ];
       if (entryType && !validEntryTypes.includes(entryType)) {
         throw new ServiceBadRequestException(
