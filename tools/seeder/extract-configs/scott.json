@@ -1,0 +1,43 @@
+{
+  "name": "scott",
+  "expedition": "Scott's Last Expedition",
+  "_source": "Project Gutenberg #11579 — Scott's Last Expedition Volume I (Scott's own journal)",
+  "_format-note": "Gutenberg formats journal dates as `_Saturday, November_ 4` — month wrapped in italic underscores, day-of-week often included before the month and inside the underscores. Anchors target the closing-underscore pattern '<Month>_ <day>' which matches both the day-of-week and bare-date formats.",
+  "source": {
+    "urls": [
+      "https://www.gutenberg.org/cache/epub/11579/pg11579.txt",
+      "https://www.gutenberg.org/files/11579/11579-0.txt",
+      "https://www.gutenberg.org/ebooks/11579.txt.utf-8"
+    ],
+    "cache": "pg11579.txt"
+  },
+  "entries": [
+    {
+      "title": "Cape Evans, First Winter",
+      "date": "1911-04-23",
+      "anchors": ["April_\\s+23\\b", "_Sunday,\\s+April_\\s+23"]
+    },
+    {
+      "title": "The Start for the Pole",
+      "date": "1911-11-01",
+      "anchors": ["_November_\\s+1\\b", "Last\\s+night\\s+we\\s+heard\\s+that\\s+Jehu"]
+    },
+    {
+      "title": "The Beardmore Glacier",
+      "date": "1911-12-10",
+      "_note": "Anchored on December 10 (start of Chapter XVII, 'On the Beardmore Glacier' — Camp 32 on the glacier itself) rather than December 9 (Camp 31, last day on the Barrier). The buildPassage stops at chapter breaks so the Dec 9 entry alone is only ~470 words; Dec 10 captures the ascent narrative the archive description asks for.",
+      "anchors": ["_Sunday,\\s+December_\\s+10", "I\\s+was\\s+very\\s+anxious\\s+about\\s+getting\\s+our\\s+loads"]
+    },
+    {
+      "title": "We Have Reached the Pole",
+      "date": "1912-01-17",
+      "anchors": ["_Tuesday,\\s+January_\\s+17", "Camp\\s+69.*Pole", "shock\\s+of\\s+our\\s+discovery"]
+    },
+    {
+      "title": "The Last Entry",
+      "date": "1912-03-29",
+      "_note": "Anchors on the famous 'Message to the Public' (Scott's parting analysis of why the expedition failed and the appeal to his countrymen) rather than the brief 470-character journal entry of March 29. The Message is the substantive document and the more iconic one — written in the tent in Scott's last days.",
+      "anchors": ["Message\\s+to\\s+the\\s+Public", "causes\\s+of\\s+the\\s+disaster\\s+are\\s+not\\s+due"]
+    }
+  ]
+}

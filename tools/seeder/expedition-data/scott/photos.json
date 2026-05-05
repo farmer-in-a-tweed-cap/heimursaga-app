@@ -1,0 +1,77 @@
+[
+  {
+    "title": "Cape Evans, First Winter",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/d/d8/Capt._Scott%27s_winter_quarters_-_H.G.P._LCCN2009633368.jpg",
+        "caption": "Captain Scott's winter quarters at Cape Evans, Ross Island, 1911.",
+        "credit": "Herbert Ponting / Library of Congress"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/a/ab/Captain_Scott%27s_Birthday_Dinner%2C_6_June_1911.jpg",
+        "caption": "Captain Scott's birthday dinner at Cape Evans, 6 June 1911 — midwinter, the polar party gathered around the table.",
+        "credit": "Herbert Ponting"
+      }
+    ]
+  },
+  {
+    "title": "The Start for the Pole",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/1/13/William_Lashly_standing_by_a_Wolseley_motor_sleigh_during_the_British_Antarctic_Expedition_of_1911-1913%2C_November_1911.jpg",
+        "caption": "William Lashly with a Wolseley motor sledge during the southern journey, November 1911.",
+        "credit": "Herbert Ponting"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/8/8a/Tethered_ponies.jpg",
+        "caption": "Ponies tethered for the Terra Nova Expedition's southern journey.",
+        "credit": "Herbert Ponting"
+      }
+    ]
+  },
+  {
+    "title": "The Beardmore Glacier",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Man-hauling.jpg",
+        "caption": "Members of the Terra Nova Expedition man-hauling on the polar journey, 1911-1912.",
+        "credit": "Herbert Ponting / Terra Nova Expedition"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/d/dc/Sledging_in_a_High_Wind.jpg",
+        "caption": "Sledging in a high wind during the southern journey.",
+        "credit": "Herbert Ponting"
+      }
+    ]
+  },
+  {
+    "title": "We Have Reached the Pole",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/0/05/Amundsen%27s_tent_at_the_South_Pole.jpg",
+        "caption": "Amundsen's tent at the South Pole, photographed by Scott's polar party on their arrival, January 1912.",
+        "credit": "Henry Bowers / Terra Nova Expedition"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/3/30/Robert_F._Scott_at_Polheim.JPG",
+        "caption": "Captain Scott at Polheim, the Norwegian camp marking Amundsen's prior arrival at the South Pole.",
+        "credit": "Henry Bowers / Terra Nova Expedition"
+      }
+    ]
+  },
+  {
+    "title": "The Last Entry",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/4/49/Returning_from_the_pole_-_Terra_Nova_Expedition.jpg",
+        "caption": "Members of Scott's polar party returning from the South Pole, 1912.",
+        "credit": "Terra Nova Expedition"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/9/96/Robert_Falcon_Scott_by_Herbert_Ponting.jpg",
+        "caption": "Portrait of Captain Robert Falcon Scott by Herbert Ponting.",
+        "credit": "Herbert Ponting"
+      }
+    ]
+  }
+]
