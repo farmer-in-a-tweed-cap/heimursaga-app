@@ -1,0 +1,14 @@
+{
+  "name": "heimursaga-seeder",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Historical archive seeder for the explorersfromhistory account",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "validate": "DRY_RUN=true node seed.js",
+    "seed": "node seed.js"
+  }
+}

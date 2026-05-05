@@ -1,0 +1,77 @@
+[
+  {
+    "title": "Into the Weddell Sea",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/a/a6/Endurance_under_full_sail_Frank_Hurley_State_Library_NSW_a090012h.jpg",
+        "caption": "The Endurance under full sail on the voyage south, 1914.",
+        "credit": "Frank Hurley / State Library of NSW"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/5/59/The_impenetrable_icefield_which_prevented_us_from_reaching_the_land_%28showing_part_of_the_%27Endurance%27%29%2C_1915_-_photographed_by_Frank_Hurley_%283534651393%29.jpg",
+        "caption": "The impenetrable icefield that prevented Endurance from reaching the land, 1915.",
+        "credit": "Frank Hurley"
+      }
+    ]
+  },
+  {
+    "title": "The Ship in the Ice",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/7/74/The_%27Endurance%27_frozen_in_76-35_South%2C_1915_-_photographed_by_Frank_Hurley_%283534625867%29.jpg",
+        "caption": "The Endurance frozen in at 76°35′ South, 1915.",
+        "credit": "Frank Hurley"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/8/82/A_mid-winter_glow%2C_Weddell_Sea_%28showing_The_%27Endurance%27%29%2C_1915_-_by_Frank_Hurley_%283534618959%29.jpg",
+        "caption": "Mid-winter glow over the Weddell Sea with the Endurance beset, 1915.",
+        "credit": "Frank Hurley"
+      }
+    ]
+  },
+  {
+    "title": "Endurance Crushed",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/c/c0/Endurance_night_1915_SLNSW.jpg",
+        "caption": "Endurance trapped in the ice, photographed at night by flash, 1915. Hurley's most famous photograph.",
+        "credit": "Frank Hurley / State Library of NSW"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/3/3b/Endurance_Final_Sinking.jpg",
+        "caption": "The final wreck of the Endurance, October 1915.",
+        "credit": "Frank Hurley"
+      }
+    ]
+  },
+  {
+    "title": "Ocean Camp on the Ice",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/4/4a/A_seven-dog_sledge_team_on_the_ice_with_unidentified_Endurance_crew_member_%284793354178%29.jpg",
+        "caption": "A seven-dog sledge team on the ice with an Endurance crew member, 1915.",
+        "credit": "Frank Hurley"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/3/30/A_dog-sledge_at_rest%2C_with_Endurance_in_the_background_%284792719821%29.jpg",
+        "caption": "A dog-sledge at rest on the floe, with Endurance in the background.",
+        "credit": "Frank Hurley"
+      }
+    ]
+  },
+  {
+    "title": "The James Caird Sets Out",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/8/89/LaunchingTheJamesCaird2.jpg",
+        "caption": "The James Caird being launched from Elephant Island, 24 April 1916.",
+        "credit": "Frank Hurley"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/9/98/Elephant_Island_party_waving_goodbye_to_James_Caird_state_library_nsw_a423041h.jpg",
+        "caption": "The Elephant Island party waving goodbye to the James Caird, 24 April 1916.",
+        "credit": "Frank Hurley / State Library of NSW"
+      }
+    ]
+  }
+]
