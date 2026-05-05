@@ -79,6 +79,7 @@ async function run() {
       // the same prefix the seeder used.
       title: `${archiveExp.expedition.explorer} - ${e.entryTitle}`,
       entryType: 'historical',
+      editorialIntro: archiveEntry.editorialIntro || undefined,
     });
   }
 
@@ -118,13 +119,15 @@ async function run() {
     const tag = `[${i + 1}/${plan.length}] "${p.entryTitle}"`;
     try {
       await api._ensureFreshToken();
-      await api._fetch('PUT', `/posts/${p.entryId}`, {
-        body: {
-          title: p.title,
-          content: p.content,
-          entryType: p.entryType,
-        },
-      });
+      const updateBody = {
+        title: p.title,
+        content: p.content,
+        entryType: p.entryType,
+      };
+      if (p.editorialIntro) {
+        updateBody.metadata = { editorialIntro: p.editorialIntro };
+      }
+      await api._fetch('PUT', `/posts/${p.entryId}`, { body: updateBody });
       success++;
       console.log(`${tag} ✓`);
     } catch (err) {

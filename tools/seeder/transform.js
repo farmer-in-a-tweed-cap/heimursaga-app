@@ -69,7 +69,7 @@ function expeditionToPayload(exp) {
 }
 
 function entryToPayload(entry, expedition, expeditionId) {
-  return {
+  const payload = {
     title: formatTitle(expedition.explorer, entry.title),
     content: (entry.body || '').trim(),
     place: derivePlace(entry, expedition),
@@ -82,6 +82,13 @@ function entryToPayload(entry, expedition, expeditionId) {
     visibility: 'public',
     isDraft: false,
   };
+  // Editorial intro travels through entry.metadata so the entry detail page
+  // can render it above the verbatim public-domain body. Lives in metadata
+  // (existing JSONB) rather than its own column to avoid a schema change.
+  if (entry.editorialIntro && entry.editorialIntro.trim()) {
+    payload.metadata = { editorialIntro: entry.editorialIntro.trim() };
+  }
+  return payload;
 }
 
 module.exports = {

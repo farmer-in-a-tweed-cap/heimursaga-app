@@ -1,0 +1,51 @@
+{
+  "name": "endurance",
+  "expedition": "The Endurance Expedition",
+  "_source": "Project Gutenberg #5199 — South: The Story of Shackleton's Last Expedition 1914-1917",
+  "source": {
+    "urls": [
+      "https://www.gutenberg.org/cache/epub/5199/pg5199.txt",
+      "https://www.gutenberg.org/files/5199/5199-0.txt",
+      "https://www.gutenberg.org/ebooks/5199.txt.utf-8"
+    ],
+    "cache": "pg5199.txt"
+  },
+  "_anchors": "Per-entry anchor regexes (case-insensitive). The extractor finds the FIRST paragraph matching ANY anchor pattern (in order), starting from a cursor that monotonically advances. Strong patterns first; weaker fallbacks after. Test with extract.js and tune until each entry hits ~1100-1500 words.",
+  "entries": [
+    {
+      "title": "Into the Weddell Sea",
+      "date": "1914-12-07",
+      "anchors": ["December\\s+7\\b", "December\\s+7th\\b", "first\\s+pack\\b", "Sanders\\s+Island"]
+    },
+    {
+      "title": "The Ship in the Ice",
+      "date": "1915-01-19",
+      "anchors": ["January\\s+19\\b", "January\\s+18\\b", "finally\\s+beset", "firmly\\s+beset"]
+    },
+    {
+      "title": "Endurance Crushed",
+      "date": "1915-10-27",
+      "anchors": ["October\\s+27\\b", "Ship\\s+and\\s+stores\\s+have\\s+gone", "pressure[- ]?ridges"]
+    },
+    {
+      "title": "Ocean Camp on the Ice",
+      "date": "1915-11-02",
+      "anchors": ["We\\s+called\\s+this\\s+[\"\\u201c]?Ocean\\s+Camp", "established\\s+at\\s+Ocean\\s+Camp", "This\\s+floating\\s+lump\\s+of\\s+ice"]
+    },
+    {
+      "title": "The James Caird Sets Out",
+      "date": "1916-04-24",
+      "anchors": ["A\\s+boat\\s+journey\\s+in\\s+search\\s+of\\s+relief", "South\\s+Georgia\\s+was\\s+over\\s+800\\s+miles", "attempt\\s+(?:had\\s+to|must)\\s+be\\s+made"]
+    },
+    {
+      "title": "South Georgia at Last",
+      "date": "1916-05-10",
+      "anchors": ["May\\s+10\\b", "King\\s+Haakon\\s+Bay", "landed\\s+(?:on|at)\\s+South\\s+Georgia"]
+    },
+    {
+      "title": "Crossing South Georgia",
+      "date": "1916-05-19",
+      "anchors": ["May\\s+19\\b", "Stromness", "unmapped\\s+interior", "crossed\\s+the\\s+island"]
+    }
+  ]
+}
