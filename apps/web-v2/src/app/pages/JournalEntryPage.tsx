@@ -1479,7 +1479,7 @@ export function JournalEntryPage() {
               <div className="flex gap-2">
                 <Link
                   href={`/journal/${entry.explorerId}`}
-                  className="flex-1 py-2.5 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold whitespace-nowrap"
+                  className="flex-1 py-2.5 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold whitespace-nowrap flex items-center justify-center"
                 >
                   VIEW JOURNAL
                 </Link>
