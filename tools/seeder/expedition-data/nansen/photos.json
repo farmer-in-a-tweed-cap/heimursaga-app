@@ -1,0 +1,62 @@
+[
+  {
+    "title": "The Fram Enters the Ice",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/a/a7/No-nb_bldsa_3c054.jpg",
+        "caption": "The Fram beset in the Arctic pack ice during the 1893-96 polar drift.",
+        "credit": "Fram Expedition / National Library of Norway"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/d/d9/Fram_March_1894.jpg",
+        "caption": "Fram in the pack ice, March 1894 — six months into the deliberate trans-arctic drift.",
+        "credit": "Fram Expedition"
+      }
+    ]
+  },
+  {
+    "title": "The Polar Night",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/a/a3/Farthest_north_the_top_of_the_supper_table.jpg",
+        "caption": "The supper table on board Fram during the long Arctic winter.",
+        "credit": "From Nansen's Farthest North, 1897"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/2/24/No-nb_bldsa_q3c108.jpg",
+        "caption": "The Fram crew on the ice in a May 17th parade — Norway's constitution day, celebrated on the drifting floe.",
+        "credit": "Fram Expedition / National Library of Norway"
+      }
+    ]
+  },
+  {
+    "title": "Farthest North",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/9/9e/Nansen_Johansen_depart_14_March_1895.jpg",
+        "caption": "Nansen and Johansen departing the Fram on 14 March 1895 to attempt the Pole on foot.",
+        "credit": "Fram Expedition / National Library of Norway"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/f/fb/NansenFarthestNorth.jpg",
+        "caption": "Nansen's farthest north — 86°13′6″ N — reached on 7 April 1895, the most northerly point yet attained by humans.",
+        "credit": "Fram Expedition"
+      }
+    ]
+  },
+  {
+    "title": "Wintering in Franz Josef Land",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/6/60/Det_f%C3%B8rste_m%C3%B8tet_med_en_fremmed%2C_1896_-_The_first_meeting_with_a_stranger_%284583963700%29.jpg",
+        "caption": "The first meeting with a stranger — Nansen's chance encounter with Frederick Jackson at Cape Flora, June 1896, after fifteen months alone with Johansen on Franz Josef Land.",
+        "credit": "Fram Expedition / National Library of Norway"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/5/58/Portrett_av_Fridtjof_Nansen%2C_1896_%284583612654%29.jpg",
+        "caption": "Portrait of Fridtjof Nansen on his return from the Arctic, 1896.",
+        "credit": "National Library of Norway"
+      }
+    ]
+  }
+]

@@ -42,15 +42,15 @@ function loadConfig(name) {
   return JSON.parse(fs.readFileSync(file, 'utf-8'));
 }
 
-async function ensureSource(config) {
-  const cachePath = path.join(CACHE_DIR, config.source.cache);
+async function fetchOneSource(source) {
+  const cachePath = path.join(CACHE_DIR, source.cache);
   if (fs.existsSync(cachePath)) {
     console.log(`[extract] using cached ${cachePath}`);
     return fs.readFileSync(cachePath, 'utf-8');
   }
   fs.mkdirSync(CACHE_DIR, { recursive: true });
   let lastErr;
-  for (const url of config.source.urls) {
+  for (const url of source.urls) {
     try {
       console.log(`[extract] fetching ${url}`);
       const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
@@ -66,7 +66,21 @@ async function ensureSource(config) {
       lastErr = e.message;
     }
   }
-  throw new Error(`All source URLs failed: ${lastErr}`);
+  throw new Error(`All URLs failed for ${source.cache}: ${lastErr}`);
+}
+
+// Supports either { source: { urls, cache } } (single volume) or
+// { sources: [{ urls, cache }, ...] } (multi-volume — concatenated in order).
+async function ensureSource(config) {
+  const sources = config.sources || (config.source ? [config.source] : []);
+  if (sources.length === 0) throw new Error('config has no source(s)');
+  const texts = [];
+  for (const s of sources) {
+    texts.push(await fetchOneSource(s));
+  }
+  // Join with a separator that won't be confused for content. The frame
+  // stripper strips per-volume START/END markers from each piece before join.
+  return texts.map(stripGutenbergFrame).join('\n\n=== VOLUME BREAK ===\n\n');
 }
 
 function stripGutenbergFrame(text) {
@@ -177,8 +191,8 @@ async function main() {
   const outputFile = path.join(outputDir, 'entries.json');
 
   console.log(`[extract] expedition: "${config.expedition}"`);
-  const raw = await ensureSource(config);
-  const framed = stripGutenbergFrame(raw);
+  // ensureSource already strips Gutenberg frames per-volume when multi-source.
+  const framed = await ensureSource(config);
   const paras = paragraphs(framed);
   console.log(`[extract] ${paras.length} paragraphs after framing`);
 

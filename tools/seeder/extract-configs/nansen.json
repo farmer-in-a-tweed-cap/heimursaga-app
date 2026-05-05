@@ -1,0 +1,48 @@
+{
+  "name": "nansen",
+  "expedition": "The Fram Expedition — Arctic Drift",
+  "_source": "Project Gutenberg #30197 (Vol I) and #34120 (Vol II) — Fridtjof Nansen's 'Farthest North'",
+  "sources": [
+    {
+      "urls": [
+        "https://www.gutenberg.org/cache/epub/30197/pg30197.txt",
+        "https://www.gutenberg.org/files/30197/30197-0.txt"
+      ],
+      "cache": "pg30197.txt"
+    },
+    {
+      "urls": [
+        "https://www.gutenberg.org/cache/epub/34120/pg34120.txt",
+        "https://www.gutenberg.org/files/34120/34120-0.txt"
+      ],
+      "cache": "pg34120.txt"
+    }
+  ],
+  "entries": [
+    {
+      "title": "The Fram Enters the Ice",
+      "date": "1893-09-20",
+      "_volume": "I",
+      "_note": "Anchored on the Wednesday September 20 1893 entry — the moment Nansen realized the Fram was being beset for good. The Sept 25 'Frozen in faster and faster' entry is famously brief (a single 215-char paragraph followed by a chapter break), so it can't carry the entry on its own. Date shifted from Sept 25 to Sept 20 to align with body.",
+      "anchors": ["Wednesday,\\s+September\\s+20", "rough\\s+awakening\\s+from\\s+my\\s+dream"]
+    },
+    {
+      "title": "The Polar Night",
+      "date": "1893-11-15",
+      "_volume": "I",
+      "anchors": ["November\\s+15", "polar\\s+night", "winter\\s+night", "long\\s+darkness"]
+    },
+    {
+      "title": "Farthest North",
+      "date": "1895-04-07",
+      "_volume": "II",
+      "anchors": ["April\\s+7", "April\\s+8", "86°\\s*13", "farthest\\s+north", "could\\s+not\\s+go\\s+much\\s+farther"]
+    },
+    {
+      "title": "Wintering in Franz Josef Land",
+      "date": "1895-08-26",
+      "_volume": "II",
+      "anchors": ["August\\s+26", "Franz\\s+Josef\\s+Land", "stone\\s+hut", "winter\\s+hut"]
+    }
+  ]
+}

@@ -796,7 +796,7 @@ export function JournalEntryPage() {
               )}
               {entry.date && (
                 <p className="font-serif italic text-[15px] lg:text-base text-[#616161] dark:text-[#b5bcc4] mb-8" style={{ lineHeight: 1.85 }}>
-                  {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}
                   {entry.location && entry.location !== 'Unknown location' ? ` — ${entry.location}` : ''}
                 </p>
               )}
