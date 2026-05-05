@@ -1,0 +1,62 @@
+[
+  {
+    "title": "Framheim — The Winter Base",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/c/cd/Den_f%C3%B8rste_leirplassen_p%C3%A5_isen_ved_Hvalbukta%2C_januar_1911_%2812114854176%29.jpg",
+        "caption": "The first camp on the ice at the Bay of Whales, January 1911 — site of Framheim, Amundsen's winter base.",
+        "credit": "Roald Amundsen Expedition / National Archives of Norway"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/9/92/%22Fram%22_og_%22Terra_Nova%22_i_Hvalbukta%2C_februar_1911_%287675743846%29.jpg",
+        "caption": "Fram and Terra Nova together at the Bay of Whales, February 1911 — a brief encounter between the Norwegian and British polar expeditions.",
+        "credit": "Roald Amundsen Expedition / National Archives of Norway"
+      }
+    ]
+  },
+  {
+    "title": "The Start for the Pole",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/c/c4/Flickr_-_Riksarkivet_%28National_Archives_of_Norway%29_-_Oppstart.jpg",
+        "caption": "Departure of the polar party from Framheim, October 1911.",
+        "credit": "Roald Amundsen Expedition / National Archives of Norway"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Detail_of_the_sledge_dog_Amundsen.jpg",
+        "caption": "One of Amundsen's sledge dogs — fifty-two dogs hauled the four sledges south from Framheim.",
+        "credit": "Roald Amundsen Expedition"
+      }
+    ]
+  },
+  {
+    "title": "Through the Transantarctic Mountains",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/2/2f/A_camp_pitched_by_the_polar_party_at_the_foot_of_the_Axel_Heiberg_Glacier_LCCN2016652160.jpg",
+        "caption": "The polar party's camp at the foot of the Axel Heiberg Glacier, November 1911.",
+        "credit": "Roald Amundsen Expedition / Library of Congress"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/f/f1/Flickr_-_Riksarkivet_%28National_Archives_of_Norway%29_-_Farlig_isfall.jpg",
+        "caption": "Dangerous icefall — a hazardous section of the Axel Heiberg Glacier ascent.",
+        "credit": "Roald Amundsen Expedition / National Archives of Norway"
+      }
+    ]
+  },
+  {
+    "title": "At the South Pole",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/5/53/Roald_Amundsen_and_Helmer_Hanssen_make_observations_at_the_South_Pole%2C_1911_%286890566753%2C_restored_version%29.jpg",
+        "caption": "Amundsen and Helmer Hanssen taking observations at the South Pole, 14 December 1911.",
+        "credit": "Roald Amundsen Expedition / National Archives of Norway"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/f/fc/Olav_Bjaaland_med_hundespannet_sitt_p%C3%A5_Sydpolen%2C_14._desember_1911_%287635391426%29.jpg",
+        "caption": "Olav Bjaaland with his dog team at the South Pole, 14 December 1911.",
+        "credit": "Roald Amundsen Expedition / National Archives of Norway"
+      }
+    ]
+  }
+]

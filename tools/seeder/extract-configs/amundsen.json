@@ -1,0 +1,35 @@
+{
+  "name": "amundsen",
+  "expedition": "The South Pole Expedition",
+  "_source": "Project Gutenberg #4229 — Roald Amundsen's 'The South Pole', Volumes 1 and 2 (1912 English translation by A. G. Chater)",
+  "source": {
+    "urls": [
+      "https://www.gutenberg.org/cache/epub/4229/pg4229.txt",
+      "https://www.gutenberg.org/files/4229/4229-0.txt",
+      "https://www.gutenberg.org/ebooks/4229.txt.utf-8"
+    ],
+    "cache": "pg4229.txt"
+  },
+  "entries": [
+    {
+      "title": "Framheim — The Winter Base",
+      "date": "1911-04-11",
+      "anchors": ["A\\s+DAY\\s+AT\\s+FRAMHEIM", "April\\s+11", "winter\\s+at\\s+Framheim", "day\\s+at\\s+Framheim"]
+    },
+    {
+      "title": "The Start for the Pole",
+      "date": "1911-10-19",
+      "anchors": ["October\\s+19\\b", "start\\s+for\\s+the\\s+Pole", "starting\\s+for\\s+the\\s+Pole", "we\\s+left\\s+Framheim"]
+    },
+    {
+      "title": "Through the Transantarctic Mountains",
+      "date": "1911-11-17",
+      "anchors": ["Axel\\s+Heiberg\\s+Glacier", "November\\s+17", "Through\\s+the\\s+Mountains", "ascent\\s+of\\s+the\\s+glacier"]
+    },
+    {
+      "title": "At the South Pole",
+      "date": "1911-12-14",
+      "anchors": ["AT\\s+THE\\s+POLE", "December\\s+14\\b", "Polheim", "we\\s+have\\s+reached\\s+the\\s+South\\s+Pole", "we\\s+have\\s+reached\\s+the\\s+Pole"]
+    }
+  ]
+}
