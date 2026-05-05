@@ -71,16 +71,23 @@ async function fetchOneSource(source) {
 
 // Supports either { source: { urls, cache } } (single volume) or
 // { sources: [{ urls, cache }, ...] } (multi-volume — concatenated in order).
+// Returns { framed, volumeStarts } where volumeStarts[i] is the character
+// offset in `framed` where volume i begins (volumeStarts[0] === 0).
 async function ensureSource(config) {
   const sources = config.sources || (config.source ? [config.source] : []);
   if (sources.length === 0) throw new Error('config has no source(s)');
   const texts = [];
   for (const s of sources) {
-    texts.push(await fetchOneSource(s));
+    texts.push(stripGutenbergFrame(await fetchOneSource(s)));
   }
-  // Join with a separator that won't be confused for content. The frame
-  // stripper strips per-volume START/END markers from each piece before join.
-  return texts.map(stripGutenbergFrame).join('\n\n=== VOLUME BREAK ===\n\n');
+  const SEP = '\n\n=== VOLUME BREAK ===\n\n';
+  const volumeStarts = [];
+  let acc = '';
+  for (let i = 0; i < texts.length; i++) {
+    volumeStarts.push(acc.length);
+    acc += (i > 0 ? SEP : '') + texts[i];
+  }
+  return { framed: acc, volumeStarts };
 }
 
 function stripGutenbergFrame(text) {
@@ -119,7 +126,7 @@ function isChapterHeading(p) {
 }
 
 function cleanParagraph(p) {
-  return p
+  let cleaned = p
     .replace(/\[Pg \d+\]/g, '')
     .replace(/\[Footnote[^\]]*\]/g, '')
     .replace(/[¹²³⁴⁵⁶⁷⁸⁹⁰]/g, '')
@@ -127,6 +134,14 @@ function cleanParagraph(p) {
     .replace(/_/g, '')
     .replace(/\s+/g, ' ')
     .trim();
+  // Strip leading and trailing quote characters from each paragraph.
+  // Nansen's English edition (and similar period travel writing) wraps
+  // journal entries in `"`, opening at the start of a quoted day and
+  // closing at the end. When passages are excerpted these marks survive
+  // as orphaned opening/closing quotes — strip them. Smart and straight
+  // quotes both handled.
+  cleaned = cleaned.replace(/^["“”]+\s*/, '').replace(/\s*["“”]+$/, '');
+  return cleaned;
 }
 
 function paragraphs(text) {
@@ -191,16 +206,36 @@ async function main() {
   const outputFile = path.join(outputDir, 'entries.json');
 
   console.log(`[extract] expedition: "${config.expedition}"`);
-  // ensureSource already strips Gutenberg frames per-volume when multi-source.
-  const framed = await ensureSource(config);
+  // ensureSource strips Gutenberg frames per-volume; volumeStarts is char
+  // offsets so we can map to paragraph indices for per-volume scoping.
+  const { framed, volumeStarts } = await ensureSource(config);
   const paras = paragraphs(framed);
-  console.log(`[extract] ${paras.length} paragraphs after framing`);
+  console.log(`[extract] ${paras.length} paragraphs after framing (${volumeStarts.length} volume(s))`);
+
+  // Compute the paragraph index where each volume starts.
+  const volumeParaStarts = volumeStarts.map((charOffset) => {
+    if (charOffset === 0) return 0;
+    // Walk paragraphs counting char positions. We use the same split rule
+    // (\n\s*\n with paragraph trimming/joining) so this is approximate but
+    // good enough for cursor-anchoring; we only need to land in the right
+    // volume, not at an exact paragraph.
+    const before = framed.slice(0, charOffset);
+    const beforeParas = before.split(/\n\s*\n/).filter((p) => p.trim()).length;
+    return beforeParas;
+  });
 
   const results = [];
   let cursor = 0;
 
   for (const entry of config.entries || []) {
     const anchors = compileAnchors(entry.anchors);
+    // If entry specifies a volume (1-indexed), reset cursor to that volume's
+    // start (but never go backwards past where we already are — cursor is
+    // monotonic to enforce chronological ordering).
+    if (entry.volume && volumeParaStarts[entry.volume - 1] !== undefined) {
+      const volStart = volumeParaStarts[entry.volume - 1];
+      if (volStart > cursor) cursor = volStart;
+    }
     const idx = findAnchor(paras, anchors, cursor);
     if (idx === -1) {
       console.warn(`[warn] no anchor matched for "${entry.title}"`);

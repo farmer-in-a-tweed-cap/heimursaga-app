@@ -22,27 +22,29 @@
     {
       "title": "The Fram Enters the Ice",
       "date": "1893-09-20",
-      "_volume": "I",
+      "volume": 1,
       "_note": "Anchored on the Wednesday September 20 1893 entry — the moment Nansen realized the Fram was being beset for good. The Sept 25 'Frozen in faster and faster' entry is famously brief (a single 215-char paragraph followed by a chapter break), so it can't carry the entry on its own. Date shifted from Sept 25 to Sept 20 to align with body.",
       "anchors": ["Wednesday,\\s+September\\s+20", "rough\\s+awakening\\s+from\\s+my\\s+dream"]
     },
     {
       "title": "The Polar Night",
       "date": "1893-11-15",
-      "_volume": "I",
+      "volume": 1,
       "anchors": ["November\\s+15", "polar\\s+night", "winter\\s+night", "long\\s+darkness"]
     },
     {
       "title": "Farthest North",
-      "date": "1895-04-07",
-      "_volume": "II",
-      "anchors": ["April\\s+7", "April\\s+8", "86°\\s*13", "farthest\\s+north", "could\\s+not\\s+go\\s+much\\s+farther"]
+      "date": "1895-04-05",
+      "volume": 2,
+      "_note": "Anchored on 'Friday, April 5th' — start of the multi-day push and turnaround narrative culminating in the 86°13.6′ N record on April 8. Date shifted from 04-07 to 04-05 to match the body's opening date.",
+      "anchors": ["Friday,\\s+April\\s+5th", "Began\\s+our\\s+march\\s+at\\s+three\\s+yesterday\\s+morning"]
     },
     {
       "title": "Wintering in Franz Josef Land",
-      "date": "1895-08-26",
-      "_volume": "II",
-      "anchors": ["August\\s+26", "Franz\\s+Josef\\s+Land", "stone\\s+hut", "winter\\s+hut"]
+      "date": "1895-09-07",
+      "volume": 2,
+      "_note": "Anchored on 'September 7th, set to work to build our hut'. The archive originally placed this on August 26 but the actual hut construction began September 7 1895 — date updated to match.",
+      "anchors": ["September\\s+7th,\\s+set\\s+to\\s+work\\s+to\\s+build\\s+our\\s+hut", "build\\s+our\\s+hut"]
     }
   ]
 }
