@@ -1,15 +1,62 @@
 import type { Metadata } from 'next';
 import { getEntry } from '@/lib/server-api';
 import { JournalEntryPage } from '@/app/pages/JournalEntryPage';
+import {
+  buildEntryJsonLd,
+  jsonLdScript,
+  splitHistoricalTitle,
+} from '@/lib/seo-jsonld';
 
-export async function generateMetadata({ params }: { params: Promise<{ entryId: string }> }): Promise<Metadata> {
+function formatHistoricalDate(iso?: string): string | undefined {
+  if (!iso) return undefined;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return undefined;
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ entryId: string }>;
+}): Promise<Metadata> {
   const { entryId } = await params;
   const entry = await getEntry(entryId);
   if (!entry) return { title: 'Journal Entry | Heimursaga' };
 
-  const authorLabel = entry.authorUsername || 'an explorer';
-  const title = `${entry.title} — a journal entry by ${authorLabel} — Heimursaga`;
-  const description = entry.body?.replace(/[#*_~`>\[\]()!]/g, '').slice(0, 160) || 'Read this journal entry on Heimursaga.';
+  const isHistorical = entry.entryType === 'historical';
+  const editorialIntro =
+    typeof entry.metadata?.editorialIntro === 'string'
+      ? (entry.metadata.editorialIntro as string)
+      : undefined;
+
+  let title: string;
+  if (isHistorical) {
+    const { explorer, title: cleanTitle } = splitHistoricalTitle(entry.title);
+    const datePretty = formatHistoricalDate(entry.date || entry.publishedAt);
+    if (explorer && datePretty) {
+      title = `${cleanTitle}: ${explorer} on ${datePretty} — Heimursaga`;
+    } else if (explorer) {
+      title = `${cleanTitle}: ${explorer} — Heimursaga`;
+    } else {
+      title = `${cleanTitle} — Heimursaga`;
+    }
+  } else {
+    const authorLabel = entry.authorUsername || 'an explorer';
+    title = `${entry.title} — a journal entry by ${authorLabel} — Heimursaga`;
+  }
+
+  // Description: prefer editorial intro for historical entries (unique
+  // content), fall back to body excerpt with markdown chars stripped.
+  const description = (
+    editorialIntro ||
+    entry.body?.replace(/[#*_~`>\[\]()!]/g, '') ||
+    'Read this journal entry on Heimursaga.'
+  ).slice(0, 160);
+
   const images = entry.coverImage
     ? [entry.coverImage]
     : entry.authorPicture
@@ -35,6 +82,24 @@ export async function generateMetadata({ params }: { params: Promise<{ entryId: 
   };
 }
 
-export default function Page() {
-  return <JournalEntryPage />;
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ entryId: string }>;
+}) {
+  const { entryId } = await params;
+  const entry = await getEntry(entryId);
+  const ld = entry ? buildEntryJsonLd(entry) : null;
+
+  return (
+    <>
+      {ld && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(ld) }}
+        />
+      )}
+      <JournalEntryPage />
+    </>
+  );
 }
