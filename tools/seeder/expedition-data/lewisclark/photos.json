@@ -1,0 +1,67 @@
+[
+  {
+    "title": "Setting Out from Camp Dubois",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/Lewisandclark.JPG",
+        "caption": "Keelboat replica of the Corps of Discovery's vessel, of the type used to ascend the Missouri from Camp Dubois in May 1804.",
+        "credit": "Lewis & Clark State Park"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/8/8b/Lewis_and_Clark_Expedition_Maps_%281%29.jpg",
+        "caption": "Period map of the Lewis and Clark Expedition route — among the first systematic mappings of the American West.",
+        "credit": "Lewis & Clark Expedition / public domain"
+      }
+    ]
+  },
+  {
+    "title": "Fort Mandan — First Winter",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Russell_-_lewis-and-clark-meeting-the-mandan-indians-1897.jpg",
+        "caption": "Lewis and Clark Meeting the Mandan Indians, painting by Charles Marion Russell, 1897.",
+        "credit": "Charles Marion Russell"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/3/3f/LEWIS_AND_CLARK_MEETING_THE_MANDANS_%28LEWIS_AND_CLARK_EXPEDITION%29.jpg",
+        "caption": "Lewis and Clark meeting the Mandan people on the upper Missouri — the prelude to the winter at Fort Mandan, 1804-1805.",
+        "credit": "Public domain"
+      }
+    ]
+  },
+  {
+    "title": "The Rocky Mountains",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/5/5c/Russell_-_captain-lewis-meeting-the-shoshones-1903.jpg",
+        "caption": "Captain Lewis Meeting the Shoshones, painting by Charles Marion Russell, 1903 — Lewis at Lemhi Pass, the Continental Divide.",
+        "credit": "Charles Marion Russell"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/2/23/Russell_-_lewis-and-clark-reach-shoshone-camp-led-by-sacajawea-the-bird-woman-1918.jpg",
+        "caption": "Lewis and Clark Reach Shoshone Camp Led by Sacagawea — the Bird Woman, painting by Charles Marion Russell, 1918.",
+        "credit": "Charles Marion Russell"
+      }
+    ]
+  },
+  {
+    "title": "The Pacific at Last",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/8/8b/Lewis_and_Clark_Expedition_Maps_%281%29.jpg",
+        "caption": "Lewis and Clark expedition route — culminating at the Pacific Ocean, November 1805.",
+        "credit": "Lewis & Clark Expedition / public domain"
+      }
+    ]
+  },
+  {
+    "title": "Fort Clatsop — Pacific Winter",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/a/af/Lewis_and_Clark_National_Historical_Park_%28Fort_Clatsop_FOCL1525.jpg",
+        "caption": "Reconstruction of Fort Clatsop, the Corps of Discovery's Pacific winter quarters, near present-day Astoria, Oregon.",
+        "credit": "U.S. National Park Service"
+      }
+    ]
+  }
+]

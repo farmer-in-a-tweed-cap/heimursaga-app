@@ -129,6 +129,10 @@ function cleanParagraph(p) {
   let cleaned = p
     .replace(/\[Pg \d+\]/g, '')
     .replace(/\[Footnote[^\]]*\]/g, '')
+    // Strip Gutenberg editor attribution brackets like [Clark, November 20,
+    // 1804] that appear at the start of every paragraph in the Lewis &
+    // Clark journals. Pattern: [Word, ... date]  with no nested brackets.
+    .replace(/\[[A-Z][a-zA-Z]+,\s+[^\]]+,\s+\d{4}\]\s*/g, '')
     .replace(/[¹²³⁴⁵⁶⁷⁸⁹⁰]/g, '')
     // Strip Gutenberg's _word_ italic markers (ship names, book titles).
     .replace(/_/g, '')

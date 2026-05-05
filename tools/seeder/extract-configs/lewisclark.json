@@ -1,0 +1,42 @@
+{
+  "name": "lewisclark",
+  "expedition": "Corps of Discovery",
+  "_source": "Project Gutenberg #8419 — The Journals of Lewis and Clark, 1804-1806",
+  "source": {
+    "urls": [
+      "https://www.gutenberg.org/cache/epub/8419/pg8419.txt",
+      "https://www.gutenberg.org/files/8419/8419-0.txt"
+    ],
+    "cache": "pg8419.txt"
+  },
+  "entries": [
+    {
+      "title": "Setting Out from Camp Dubois",
+      "date": "1804-05-14",
+      "_note": "Anchored on 'Camp River a Dubois' (the actual departure phrase from Clark's May 14 1804 entry). Bare 'May 14' patterns were matching the file's Transcriber's Note at the top.",
+      "anchors": ["Camp\\s+River\\s+a\\s+Dubois", "Set\\s+out\\s+from\\s+Camp.*Dubois.*4\\s+oClock"]
+    },
+    {
+      "title": "Fort Mandan — First Winter",
+      "date": "1804-11-13",
+      "_note": "Anchored on November 13 1804 — the day the ice on the Missouri began to run and the party first moved into the winter quarters. Date updated from Nov 20 (the original archive guess) to Nov 13 to match the body's opening, which is also the historical 'start of winter' moment.",
+      "anchors": ["November\\s+13(?:th|,)?\\s+1804", "13th\\s+The\\s+Ice\\s+begin\\s+to\\s+run", "move\\s+into\\s+our\\s+hut"]
+    },
+    {
+      "title": "The Rocky Mountains",
+      "date": "1805-08-12",
+      "anchors": ["August\\s+12(?:th|,)?\\s+1805", "Lemhi\\s+Pass", "Continental\\s+Divide", "head\\s+spring\\s+of\\s+the\\s+Missouri"]
+    },
+    {
+      "title": "The Pacific at Last",
+      "date": "1805-11-15",
+      "anchors": ["November\\s+15(?:th|,)?\\s+1805", "Pacific\\s+Ocean.*sight", "Ocean\\s+in\\s+view", "Ocian\\s+in\\s+view", "great\\s+Pacific\\s+Ocean"]
+    },
+    {
+      "title": "Fort Clatsop — Pacific Winter",
+      "date": "1805-12-25",
+      "_note": "Anchored on Christmas Day 1805 — the most iconic dated entry from the Pacific winter. Broader 'Fort Clatsop' anchor removed because it hits Dec 8 entries from when they were still selecting the site.",
+      "anchors": ["December\\s+25(?:th|,)?\\s+1805", "Christmas\\s+Wednesday\\s+25th\\s+December\\s+1805"]
+    }
+  ]
+}
