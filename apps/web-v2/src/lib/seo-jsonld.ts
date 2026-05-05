@@ -38,6 +38,57 @@ function ensureProtocol(url?: string): string | undefined {
   return `https://${url}`;
 }
 
+function formatLongDate(iso?: string): string | undefined {
+  if (!iso) return undefined;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return undefined;
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+/**
+ * Mechanical, template-assembled description. No AI prose — pure
+ * concatenation of the page's structured fields. Used for meta description,
+ * og:description, and JSON-LD description.
+ *
+ * Format examples:
+ *   "Endurance Crushed — Ernest Shackleton on October 27, 1915 at Weddell Sea pack."
+ *   "Cape Evans, First Winter — a journal entry from explorersfromhistory."
+ */
+export function buildEntryDescription(
+  entry: import('./server-api').EntryMeta,
+  isHistorical: boolean,
+  explorer: string | undefined,
+  cleanTitle: string,
+): string {
+  if (isHistorical) {
+    const dateStr = formatLongDate(entry.date || entry.publishedAt);
+    const parts: string[] = [];
+    if (cleanTitle) parts.push(cleanTitle);
+    const subjectParts: string[] = [];
+    if (explorer) subjectParts.push(explorer);
+    if (dateStr) subjectParts.push(`on ${dateStr}`);
+    if (entry.place) subjectParts.push(`at ${entry.place}`);
+    const subject = subjectParts.join(' ');
+    if (subject) parts.push(subject);
+    let out = parts.filter(Boolean).join(' — ');
+    if (entry.expeditionTitle) {
+      const { title: expClean } = splitHistoricalTitle(entry.expeditionTitle);
+      if (expClean) out += `. From ${expClean}.`;
+    }
+    return out.slice(0, 300);
+  }
+  // Non-historical: use the body excerpt — that's user-authored content, not
+  // a problem for duplicate detection or our anti-AI content position.
+  return (entry.body || '')
+    .replace(/[#*_~`>\[\]()!]/g, '')
+    .slice(0, 300);
+}
+
 function imageObject(url: string, license?: string) {
   return {
     '@type': 'ImageObject',
@@ -62,12 +113,7 @@ export function buildEntryJsonLd(entry: EntryMeta): object | null {
     ? `${SITE_URL}/expedition/${entry.expeditionPublicId}`
     : undefined;
 
-  const description =
-    typeof entry.metadata?.editorialIntro === 'string' && entry.metadata.editorialIntro
-      ? (entry.metadata.editorialIntro as string).slice(0, 300)
-      : (entry.body || '')
-          .replace(/[#*_~`>\[\]()!]/g, '')
-          .slice(0, 300);
+  const description = buildEntryDescription(entry, isHistorical, explorer, cleanTitle);
 
   const imageUrls: string[] = [];
   if (entry.coverImage) imageUrls.push(entry.coverImage);

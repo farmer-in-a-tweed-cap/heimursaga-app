@@ -794,14 +794,6 @@ export function JournalEntryPage() {
               {entry.entryType === 'data' && (
                 <div className="text-xs font-bold mb-3 text-[#616161] dark:text-[#b5bcc4]">TECHNICAL NOTES</div>
               )}
-              {entry.entryType === 'historical' && typeof entry.metadata?.editorialIntro === 'string' && entry.metadata.editorialIntro && (
-                <div className="mb-6 pb-6 border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
-                  <div className="text-xs font-bold tracking-[0.14em] mb-3 text-[#616161] dark:text-[#b5bcc4]">EDITORIAL INTRODUCTION</div>
-                  <p className="font-serif italic text-[15px] lg:text-base text-[#202020] dark:text-[#e5e5e5]" style={{ lineHeight: 1.85 }}>
-                    {entry.metadata.editorialIntro as string}
-                  </p>
-                </div>
-              )}
               {entry.date && (
                 <p className="font-serif italic text-[15px] lg:text-base text-[#616161] dark:text-[#b5bcc4] mb-8" style={{ lineHeight: 1.85 }}>
                   {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}

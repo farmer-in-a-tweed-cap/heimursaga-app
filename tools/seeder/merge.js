@@ -52,21 +52,17 @@ if (!expeditionItem) {
 const dataDir = path.join(ROOT, 'expedition-data', name);
 const bodies = readJsonIfExists(path.join(dataDir, 'entries.json')) || [];
 const photosFile = readJsonIfExists(path.join(dataDir, 'photos.json')) || [];
-const introsFile = readJsonIfExists(path.join(dataDir, 'intros.json')) || { intros: {} };
 
 const bodyByTitle = new Map(bodies.map((b) => [b.title, b.body]));
 const photosByTitle = new Map(photosFile.map((p) => [p.title, p.photos || []]));
-const introByTitle = new Map(Object.entries(introsFile.intros || {}));
 
 let updatedBodies = 0;
 let updatedPhotos = 0;
-let updatedIntros = 0;
 let skipped = 0;
 
 for (const entry of expeditionItem.entries) {
   const newBody = bodyByTitle.get(entry.title);
   const newPhotos = photosByTitle.get(entry.title);
-  const newIntro = introByTitle.get(entry.title);
 
   if (newBody) {
     entry.body = newBody;
@@ -80,9 +76,10 @@ for (const entry of expeditionItem.entries) {
     updatedPhotos++;
   }
 
-  if (newIntro) {
-    entry.editorialIntro = newIntro;
-    updatedIntros++;
+  // Strip any leftover editorialIntro from prior runs. Heimursaga is an
+  // anti-AI content platform; editorial intros are not part of the model.
+  if (entry.editorialIntro !== undefined) {
+    delete entry.editorialIntro;
   }
 }
 
@@ -91,6 +88,5 @@ fs.writeFileSync(ARCHIVE, JSON.stringify(archive, null, 2) + '\n');
 console.log(`[merge] "${config.expedition}":`);
 console.log(`  bodies updated:  ${updatedBodies}`);
 console.log(`  photo lists:     ${updatedPhotos}`);
-console.log(`  editorial intros: ${updatedIntros}`);
 console.log(`  bodies skipped (no extracted text): ${skipped}`);
 console.log(`[merge] wrote ${ARCHIVE}`);

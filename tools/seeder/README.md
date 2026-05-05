@@ -61,7 +61,6 @@ tools/seeder/
     endurance/
       entries.json            ← extracted body text (output of extract.js)
       photos.json             ← curated period photo URLs per entry
-      intros.json             ← editorial intros per entry
     ...
 
   cache/                      ← downloaded source texts (gitignored)
@@ -203,36 +202,7 @@ Some entries have no photographic record (no camera survived, or
 pre-photography era) — leave their `photos` array empty or omit them
 entirely. The seeder posts text-only for those.
 
-### 6. Write editorial intros
-
-This is the SEO-critical step. The body is verbatim public-domain text
-that exists on dozens of other sites. The editorial intro is **unique**
-1-2 sentence content that frames the moment in the expedition arc — it
-de-duplicates the page for Google and gives the entry editorial value
-the source text doesn't have.
-
-Write `expedition-data/<name>/intros.json`:
-
-```json
-{
-  "_doc": "Editorial intros: 1-2 unique sentences framing each entry. Voice: neutral, factual, contextualizing — set the scene for the passage that follows.",
-  "intros": {
-    "Cape Evans, First Winter": "Five months after the Terra Nova landed at Cape Evans, the polar party settled into the long Antarctic winter. Scott's April 1911 entry records the routine that would carry the expedition through the dark months toward the depot-laying journeys of spring.",
-    "...": "..."
-  }
-}
-```
-
-Voice guidelines:
-- Neutral, factual, contextualizing — not literary, not promotional
-- Set the stakes ("twenty-eight months after leaving England…") or the
-  setting ("from Elephant Island the nearest help lay 800 miles away…")
-- Avoid quoting the entry body itself; the body follows
-- 1-3 sentences, ideally 50-120 words
-- Each intro should be unique on the open web — don't paraphrase
-  Wikipedia's lede
-
-### 7. Merge into archive.json
+### 6. Merge into archive.json
 
 ```sh
 node merge.js scott
@@ -252,7 +222,7 @@ node validate.js
 Should report `Ready to post: <N> entries across 16 expeditions` with
 zero errors.
 
-### 8. Run seed.js to post entries
+### 7. Run seed.js to post entries
 
 ```sh
 node seed.js
@@ -262,19 +232,18 @@ For each entry that has a real (non-PLACEHOLDER) body and isn't already
 in `seed-state.entries[]`:
 - Pre-uploads up to 2 photos via `/v1/upload`
 - POSTs `/v1/posts` with body, place, lat/lon, date, photos,
-  `entryType: 'historical'`, and editorial intro via `metadata`
+  `entryType: 'historical'`
 - Persists `entryId` + `uploadIds` to `seed-state.json` immediately
 
 Pace: 600ms between API calls + 11s pause every 18 calls (under
 all three default throttle buckets). 7s between photo uploads to stay
 under the 10/min upload throttle.
 
-### 9. Verify in the live UI
+### 8. Verify in the live UI
 
 Visit `https://heimursaga.com/expedition/<id>` and confirm:
 - Cover image renders
-- Each entry shows 0-2 photos, the editorial intro above the date, and
-  the verbatim Shackleton/Scott/etc. text below
+- Each entry shows 0-2 photos and the verbatim Shackleton/Scott/etc. text
 - Entry detail page shows the dark-gray (navbar-black) HISTORICAL badge
 - Entry detail page source includes `<script type="application/ld+json">`
   with Article + Person + Place + BreadcrumbList schemas
@@ -337,6 +306,12 @@ PostHog still logs `entry_created` analytics events
 
 ## SEO model — what makes the entries findable
 
+Heimursaga is an anti-AI content platform; the archive intentionally
+contains zero AI-generated prose. Body text is verbatim public-domain
+journal extracts; everything else is mechanically derived from
+structured fields. SEO leans on machine-readable structure rather than
+unique-prose tactics.
+
 - **JSON-LD on every entry detail page**: Article + Person + Place +
   ImageObject + BreadcrumbList. Person uses the historical figure's name
   (split from the prefixed title), not the platform username, so Google
@@ -347,12 +322,20 @@ PostHog still logs `entry_created` analytics events
 - **Historical title format**: `<Title>: <Explorer> on <Date> — Heimursaga`
   for entries with `entryType=historical`. Better long-tail matching for
   `<explorer> <date>` queries than the generic `entry by <username>` form.
-- **Editorial intro**: rendered above the verbatim body. The unique
-  content Google indexes — without it, pages risk being treated as
-  duplicates of Project Gutenberg.
+- **Templated meta description**: factual, mechanical concatenation —
+  `<Entry title> — <Explorer> on <Date> at <Place>. From <Expedition>.`
+  No prose, no AI generation, but unique per entry because it's
+  assembled from each entry's distinct structured fields.
 - **Cover photos served from `*.amazonaws.com`**: in the Next.js
   `remotePatterns` allow-list, so they actually render. Hotlinking
   Wikimedia would have failed silently in production.
+
+Notably absent: editorial intros, summary blurbs, paraphrased context,
+or any other content that an AI would have to write. The duplicate-content
+risk on the body itself (it appears verbatim on Project Gutenberg and
+elsewhere) is real but accepted. We compete on the unique angle —
+geo-tagged, illustrated, integrated with a living explorer platform —
+not on inventing wrapper prose.
 
 ---
 
@@ -383,7 +366,6 @@ PostHog still logs `entry_created` analytics events
 | `entry.date` | `date` | passthrough |
 | (derived) | `place` | first non-`approximate` segment of `coordinates_note`, fallback to `expedition.region` |
 | (parent) | `expeditionId` | publicId returned from `POST /v1/trips` |
-| `entry.editorialIntro` | `metadata.editorialIntro` | passthrough |
 | `entry.photos[]` | `uploads[]` | each downloaded, re-uploaded to S3, IDs collected |
 | `entry.photos[].caption` | `uploadCaptions[uploadId]` | per-photo |
 | `entry.photos[].credit` | `uploadCredits[uploadId]` | per-photo |
@@ -475,11 +457,10 @@ records via the UI or API, and re-run `seed.js`.
 5. Create `extract-configs/<name>.json` with `source.urls` and per-entry `anchors`
 6. `node extract.js <name>` → tune anchors until all entries are `✓`
 7. Curate `expedition-data/<name>/photos.json` (Wikimedia Commons API)
-8. Write `expedition-data/<name>/intros.json` (1-2 sentences each)
-9. `node merge.js <name>` → archive.json updated
-10. `node validate.js` → confirm no errors
-11. `node seed.js` → entries posted with photos + intros + historical type
-12. Visit the expedition page in the live UI to verify
+8. `node merge.js <name>` → archive.json updated
+9. `node validate.js` → confirm no errors
+10. `node seed.js` → entries posted with photos + historical type
+11. Visit the expedition page in the live UI to verify
 
-Estimated time per expedition: 30-60 minutes of editorial work
-(curation + intros + anchor tuning), 1-2 minutes of script runtime.
+Estimated time per expedition: 20-40 minutes of editorial work
+(photo curation + anchor tuning), 1-2 minutes of script runtime.

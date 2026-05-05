@@ -3,6 +3,7 @@ import { getEntry } from '@/lib/server-api';
 import { JournalEntryPage } from '@/app/pages/JournalEntryPage';
 import {
   buildEntryJsonLd,
+  buildEntryDescription,
   jsonLdScript,
   splitHistoricalTitle,
 } from '@/lib/seo-jsonld';
@@ -28,14 +29,10 @@ export async function generateMetadata({
   if (!entry) return { title: 'Journal Entry | Heimursaga' };
 
   const isHistorical = entry.entryType === 'historical';
-  const editorialIntro =
-    typeof entry.metadata?.editorialIntro === 'string'
-      ? (entry.metadata.editorialIntro as string)
-      : undefined;
+  const { explorer, title: cleanTitle } = splitHistoricalTitle(entry.title);
 
   let title: string;
   if (isHistorical) {
-    const { explorer, title: cleanTitle } = splitHistoricalTitle(entry.title);
     const datePretty = formatHistoricalDate(entry.date || entry.publishedAt);
     if (explorer && datePretty) {
       title = `${cleanTitle}: ${explorer} on ${datePretty} — Heimursaga`;
@@ -49,11 +46,11 @@ export async function generateMetadata({
     title = `${entry.title} — a journal entry by ${authorLabel} — Heimursaga`;
   }
 
-  // Description: prefer editorial intro for historical entries (unique
-  // content), fall back to body excerpt with markdown chars stripped.
+  // Description: mechanical template assembled from structured fields for
+  // historical entries (no AI-generated prose); body excerpt for live
+  // entries authored by users.
   const description = (
-    editorialIntro ||
-    entry.body?.replace(/[#*_~`>\[\]()!]/g, '') ||
+    buildEntryDescription(entry, isHistorical, explorer, cleanTitle) ||
     'Read this journal entry on Heimursaga.'
   ).slice(0, 160);
 
