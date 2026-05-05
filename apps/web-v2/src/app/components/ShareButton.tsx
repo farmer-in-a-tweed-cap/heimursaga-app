@@ -62,7 +62,7 @@ export function ShareButton({ className, label = 'SHARE', onShare, dropdownDirec
       </button>
 
       {menuOpen && (
-        <div className={`absolute left-0 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-lg z-50 min-w-[200px] max-w-[calc(100vw-2rem)] ${dropdownDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
+        <div className={`absolute right-0 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-lg z-50 min-w-[200px] max-w-[calc(100vw-2rem)] ${dropdownDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
           <div className="border-b-2 border-[#202020] dark:border-[#616161] p-2 bg-[#616161] text-white">
             <div className="text-xs font-bold font-mono">SHARE OPTIONS:</div>
           </div>
