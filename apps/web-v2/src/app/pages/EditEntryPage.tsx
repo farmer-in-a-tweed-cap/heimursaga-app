@@ -353,6 +353,7 @@ export function EditEntryPage() {
   const getWordCount = (): number => {
     switch (entryType) {
       case 'standard':
+      case 'historical':
         return countWords(standardContent);
       case 'photo':
         return countWords(photoContent);
@@ -691,6 +692,7 @@ export function EditEntryPage() {
                     {entryType === 'video' && 'VIDEO'}
                     {entryType === 'data' && 'DATA'}
                     {entryType === 'waypoint' && 'WAYPOINT'}
+                    {entryType === 'historical' && 'HISTORICAL'}
                   </span>
                 </div>
                 <span className="px-2 py-0.5 bg-[#616161] text-white text-xs font-bold">
@@ -822,8 +824,9 @@ export function EditEntryPage() {
               
 
 
-              {/* STANDARD ENTRY FIELDS */}
-              {entryType === 'standard' && (
+              {/* STANDARD ENTRY FIELDS — also used for historical archive entries,
+                  which are structurally identical (body text + photos). */}
+              {(entryType === 'standard' || entryType === 'historical') && (
                 <>
                   <div>
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
