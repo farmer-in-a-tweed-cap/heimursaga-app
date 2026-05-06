@@ -692,7 +692,10 @@ export class ExpeditionService {
             : undefined,
         },
         take,
-        orderBy: [{ id: 'desc' }],
+        // Mirror the explore/discover feed's `recent` sort: surface
+        // actively-updated expeditions instead of letting stale completions
+        // sit at the top by creation order.
+        orderBy: [{ updated_at: 'desc' }, { id: 'desc' }],
       });
 
       // Resolve current location references in batch

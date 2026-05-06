@@ -98,7 +98,11 @@ export function ExplorerProfilePage() {
   const [explorerBookmarkLoading, setExplorerBookmarkLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
-  const [expeditionsLimit, setExpeditionsLimit] = useState(5);
+  // Initial load shows 2; the API already returns expeditions ordered by
+  // `updated_at desc` (which Prisma's @updatedAt bumps whenever an entry is
+  // added/published/deleted via the entries_count increment), so the two
+  // most-recently-active expeditions surface first.
+  const [expeditionsLimit, setExpeditionsLimit] = useState(2);
   const [entriesLimit, setEntriesLimit] = useState(5);
   const [reportOpen, setReportOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);

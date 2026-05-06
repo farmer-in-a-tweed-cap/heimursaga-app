@@ -823,7 +823,13 @@ export class ExplorerService {
       const data = await this.prisma.entry.findMany({
         where,
         select,
-        orderBy: [{ id: 'desc' }],
+        // Mirror the explore/discover feed: surface freshly-published entries
+        // over creation order so backdated diary entries don't bury recent
+        // activity. `nulls: 'last'` keeps any unpublished edges out of the way.
+        orderBy: [
+          { published_at: { sort: 'desc', nulls: 'last' } },
+          { id: 'desc' },
+        ],
       });
 
       const response: IUserPostsQueryResponse = {
