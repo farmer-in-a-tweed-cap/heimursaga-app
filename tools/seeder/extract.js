@@ -78,7 +78,7 @@ async function ensureSource(config) {
   if (sources.length === 0) throw new Error('config has no source(s)');
   const texts = [];
   for (const s of sources) {
-    texts.push(stripGutenbergFrame(await fetchOneSource(s)));
+    texts.push(stripIllustrationMarkers(stripGutenbergFrame(await fetchOneSource(s))));
   }
   const SEP = '\n\n=== VOLUME BREAK ===\n\n';
   const volumeStarts = [];
@@ -88,6 +88,18 @@ async function ensureSource(config) {
     acc += (i > 0 ? SEP : '') + texts[i];
   }
   return { framed: acc, volumeStarts };
+}
+
+// Strip Gutenberg [Illustration: ...] alt-text blocks. These reference
+// figures from the original publication that aren't part of the
+// narrative prose. Blocks can span multiple lines (multi-paragraph
+// captions), so this runs on the raw source text before paragraph
+// splitting. Allows one level of bracket nesting — Shackleton's
+// SOUTH appears as `[Illustration: [Cave Cove on South Georgia]` with
+// an inner bracket pair. Replaces with two newlines to preserve
+// paragraph boundaries on either side.
+function stripIllustrationMarkers(text) {
+  return text.replace(/\[Illustration(?:[^\[\]]|\[[^\[\]]*\])*\]/g, '\n\n');
 }
 
 function stripGutenbergFrame(text) {
@@ -118,10 +130,37 @@ function isChapterHeading(p) {
   const t = p.trim();
   if (t.length === 0) return true;
   if (/^CHAPTER\b/i.test(t) && t.length < 80) return true;
-  if (t.length < 80 && /^[A-Z0-9 .,'":;\-—()&?!]+$/.test(t) && /[A-Z]/.test(t))
+  if (t.length < 80 && /^[A-Z0-9 .,'":;\-—()&?!]+$/.test(t) && /[A-Z]/.test(t)) {
+    // Letter-recipient lines ("TO HIS HIGHNESS ...", "TO THE EARL OF ...")
+    // also pass the all-caps test but they are quoted content embedded in
+    // the narrative, not real chapter breaks. Excluding them lets the
+    // passage continue past short letters.
+    if (/^TO\s+(HIS|HER|THE|MR\.|MRS\.|SIR|LORD|LADY|MAJESTY)\b/i.test(t)) return false;
     return true;
+  }
   if (/^\s*\[Pg \d+\]\s*$/.test(t)) return true;
   if (/^\s*\d+\s*$/.test(t)) return true;
+  return false;
+}
+
+// Detect astronomical / sextant observation tables and similar value
+// listings that Gutenberg's text formatting collapses into noisy
+// numeric runs after whitespace normalization. Mungo Park's journal
+// inserts these for latitude readings ("Mer. alt. of the Sun"); other
+// expedition journals do similar. Treated as chapter-break-equivalent
+// in buildPassage so emission stops cleanly before them.
+function isObservationTable(p) {
+  const t = p.trim();
+  if (t.length === 0 || t.length > 800) return false;
+  // Astro tables: degree symbol plus high digit-density.
+  if (/°/.test(t)) {
+    const tokens = t.split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return false;
+    const numericTokens = tokens.filter((tok) => /^[-+]?\d/.test(tok)).length;
+    if (numericTokens / tokens.length > 0.35) return true;
+  }
+  // Sextant blocks have repeated horizontal-rule separators between rows.
+  if ((t.match(/-{6,}/g) || []).length >= 3) return true;
   return false;
 }
 
@@ -160,28 +199,164 @@ function wordCount(s) {
   return s.trim().split(/\s+/).filter(Boolean).length;
 }
 
+// Detect editor-attribution bracket date like [Clark, October 22, 1804].
+// Returns the date string for grouping (or null). Used to dedupe sources
+// where multiple paragraphs cover the same date — e.g. the Lewis & Clark
+// journals include rough draft AND fair copy of each entry, plus parallel
+// Lewis/Clark accounts of the same day.
+function paragraphEditorDate(rawPara) {
+  const m = rawPara.match(/^\s*\[[A-Z][a-zA-Z]+,\s+([^\]]+,\s+\d{4})\]/);
+  return m ? m[1].trim() : null;
+}
+
+// Identify non-narrative orderly-book material — court martial records,
+// signatures, member lists, "References" topographic notes. The L&C
+// journals interleave these with the journal proper and they would
+// otherwise land in the body as noise. Some are bracketed
+// ([Clark, May 17, 1804] Orders St. Charles…), some aren't — strip the
+// editor bracket before checking the lead phrase.
+function isAdminFragment(rawPara) {
+  const t = rawPara.trim().replace(/^\[[A-Z][a-zA-Z]+,\s+[^\]]+\]\s*/, '');
+  return (
+    /^Refurences\b/i.test(t) ||
+    /^Orders\b/i.test(t) ||
+    /^The\s+Court\s+convened\b/i.test(t) ||
+    /^Detail\s+for\s+(?:Court|the)/i.test(t) ||
+    /^Signd\.?\s+\w/i.test(t) ||
+    /^Sgt\.\s+\w+\s+Prs?\.?$/i.test(t) ||
+    /^members?\s+(?:[A-Z]\.\s+\w|\w+\s+\w+\s+\w+)/i.test(t) ||
+    /^This\s+evening\s+the\s+Detail/i.test(t) ||
+    // Standalone signature/admin lines
+    /^Capt\.?\s+\w+\s+Comdg\.?$/i.test(t) ||
+    // Lewis & Clark sextant readings and numbered course-and-distance
+    // topographic notes — measurements, not journal narrative.
+    /^Took\s+equal\s+altit/i.test(t) ||
+    // Paragraphs that are dominated by numbered "(1) ... (2) ..." course
+    // notes (more than two of them and short overall — short admin form).
+    (t.length < 600 && (t.match(/\(\d+\)/g) || []).length >= 2)
+  );
+}
+
 function buildPassage(paras, startIdx) {
+  // Pass 1: chunk paragraphs into blocks. Each block begins with a
+  // bracketed [Editor, Date] paragraph and includes any subsequent
+  // unbracketed paragraphs (which are continuations of that day's entry).
+  // Paragraphs before the first bracket form a "leading" no-date block
+  // and pass through (relevant when an anchor lands mid-narrative or in
+  // a chapter-summary section).
+  const blocks = [];
+  let current = { date: null, paras: [] };
+  for (let i = startIdx; i < paras.length; i++) {
+    const raw = paras[i];
+    if (isAdminFragment(raw)) continue;
+    const date = paragraphEditorDate(raw);
+    const cleanedForCheck = cleanParagraph(raw);
+    const isChapter =
+      cleanedForCheck && isChapterHeading(cleanedForCheck);
+    // Astro/sextant tables are inset from the narrative and would
+    // otherwise emit as flattened numeric noise. Treat as chapter-
+    // break-equivalent: stop emission, don't span the table.
+    const isTable = isObservationTable(raw);
+
+    if (isChapter || isTable) {
+      // Chapter break ends the current block and emits a marker block
+      // that pass 3 uses to halt further emission. This keeps passages
+      // from spanning chapters even in sources that don't use the
+      // [Editor, Date] bracket convention (e.g. Scott, Amundsen).
+      if (current.paras.length > 0) blocks.push(current);
+      blocks.push({ date: null, paras: [], isChapterBreak: true });
+      current = { date: null, paras: [] };
+    } else if (date) {
+      if (current.paras.length > 0) blocks.push(current);
+      current = { date, paras: [raw] };
+    } else {
+      current.paras.push(raw);
+    }
+  }
+  if (current.paras.length > 0) blocks.push(current);
+
+  // Pass 2: pre-clean each block's paragraphs and measure surviving length.
+  // Dedup uses post-filter content size because picking by raw length is
+  // wrong when a block's bracket paragraph is itself a filtered short
+  // fragment (e.g. a stray sextant-reading line) and the substantive
+  // content lives entirely in the continuation paragraph(s).
+  for (const block of blocks) {
+    if (block.isChapterBreak) {
+      block._cleaned = [];
+      block._filteredLength = 0;
+      continue;
+    }
+    block._cleaned = block.paras.map(cleanParagraph).filter(Boolean);
+    block._filteredLength = block._cleaned.reduce(
+      (s, c) => s + c.length,
+      0,
+    );
+  }
+
+  // Dedupe by date, keeping the block with the most surviving content.
+  // No-date blocks pass through.
+  const byDate = new Map();
+  for (const block of blocks) {
+    if (!block.date) continue;
+    const prev = byDate.get(block.date);
+    if (!prev || block._filteredLength > prev._filteredLength) {
+      byDate.set(block.date, block);
+    }
+  }
+  const finalBlocks = blocks.filter(
+    (b) => !b.date || byDate.get(b.date) === b,
+  );
+
+  // Pass 3: emit pre-cleaned paragraphs, stopping at chapter break or
+  // word/char limits.
   const out = [];
   let totalWords = 0;
   let totalChars = 0;
-  for (let i = startIdx; i < paras.length; i++) {
-    const cleaned = cleanParagraph(paras[i]);
-    if (!cleaned) continue;
-    if (isChapterHeading(cleaned)) {
-      if (out.length > 0) break;
-      else continue;
+  let stop = false;
+  for (const block of finalBlocks) {
+    if (stop) break;
+    if (block.isChapterBreak) {
+      if (out.length > 0) {
+        stop = true;
+        break;
+      }
+      continue; // skip leading chapter break before any content
     }
-    const wc = wordCount(cleaned);
-    const newWords = totalWords + wc;
-    const newChars = totalChars + cleaned.length + (out.length ? 2 : 0);
-    if (out.length > 0 && (newWords > TARGET_WORDS_MAX || newChars > MAX_CHARS)) {
-      break;
+    for (const cleaned of block._cleaned) {
+      const wc = wordCount(cleaned);
+      const newWords = totalWords + wc;
+      const newChars = totalChars + cleaned.length + (out.length ? 2 : 0);
+      if (out.length > 0 && (newWords > TARGET_WORDS_MAX || newChars > MAX_CHARS)) {
+        stop = true;
+        break;
+      }
+      out.push(cleaned);
+      totalWords = newWords;
+      totalChars = newChars;
+      if (totalWords >= TARGET_WORDS_MIN && /[.!?]"?\s*$/.test(cleaned)) {
+        if (totalWords >= TARGET_WORDS_MAX - 100) {
+          stop = true;
+          break;
+        }
+      }
     }
-    out.push(cleaned);
-    totalWords = newWords;
-    totalChars = newChars;
-    if (totalWords >= TARGET_WORDS_MIN && /[.!?]"?\s*$/.test(cleaned)) {
-      if (totalWords >= TARGET_WORDS_MAX - 100) break;
+  }
+  // Trim dangling content from the tail. Some narrative paragraphs end
+  // with an introducer to a table the extractor has now skipped (e.g.
+  // "On the 2d of September, I observed the" — the table that followed
+  // was filtered as an observation table). Word/char limits can also
+  // cut mid-letter, leaving the body ending on a salutation fragment
+  // ("Your sincere friend,"). Walk paragraphs from the end, dropping any
+  // that contain no sentence-ending punctuation, then trim a partial
+  // dangling tail off the new last paragraph.
+  while (out.length > 0 && !/[.!?]/.test(out[out.length - 1])) {
+    out.pop();
+  }
+  if (out.length > 0) {
+    const last = out[out.length - 1];
+    if (!/[.!?]["”]?\s*$/.test(last)) {
+      const trimmed = last.replace(/[^.!?]*$/, '').trimEnd();
+      if (trimmed.length > 0) out[out.length - 1] = trimmed;
     }
   }
   return out.join('\n\n');

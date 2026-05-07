@@ -16,12 +16,19 @@ const MAX_PHOTOS_PER_ENTRY = 2;
 
 async function uploadEntryPhotos(api, entry, entryLabel) {
   if (!Array.isArray(entry.photos) || entry.photos.length === 0) {
-    return { uploads: [], uploadCaptions: {}, uploadCredits: {}, coverUploadId: undefined };
+    return {
+      uploads: [],
+      uploadCaptions: {},
+      uploadCredits: {},
+      coverUploadId: undefined,
+      photoSourceUrls: [],
+    };
   }
   const photos = entry.photos.slice(0, MAX_PHOTOS_PER_ENTRY);
   const uploads = [];
   const uploadCaptions = {};
   const uploadCredits = {};
+  const photoSourceUrls = [];
   for (let i = 0; i < photos.length; i++) {
     const p = photos[i];
     console.log(`${entryLabel} photo ${i + 1}/${photos.length} downloading…`);
@@ -29,6 +36,7 @@ async function uploadEntryPhotos(api, entry, entryLabel) {
     console.log(`${entryLabel} photo ${i + 1} uploading (${image.buffer.length} bytes)…`);
     const up = await uploadToS3(api, image);
     uploads.push(up.uploadId);
+    photoSourceUrls.push(p.url);
     if (p.caption) uploadCaptions[up.uploadId] = p.caption;
     if (p.credit) uploadCredits[up.uploadId] = p.credit;
     // Pace under upload throttle (10/min)
@@ -39,6 +47,7 @@ async function uploadEntryPhotos(api, entry, entryLabel) {
     uploadCaptions,
     uploadCredits,
     coverUploadId: uploads[0],
+    photoSourceUrls,
   };
 }
 
@@ -190,7 +199,13 @@ async function run() {
       try {
         basePayload = entryToPayload(entry, exp, expeditionId);
         const photoFields = await uploadEntryPhotos(api, entry, entryLabel);
-        const payload = { ...basePayload, ...photoFields };
+        // photoSourceUrls is tracked locally in seed-state.json so future
+        // PHOTOS=true update-entries runs can reuse uploadIds for unchanged
+        // URLs. The API DTO doesn't accept this field — strip it before
+        // sending the payload, otherwise the server returns 400 from the
+        // forbidNonWhitelisted validator.
+        const { photoSourceUrls, ...apiPhotoFields } = photoFields;
+        const payload = { ...basePayload, ...apiPhotoFields };
         counter.calls++;
         const res = await api.createEntry(payload);
         const entryId = res.id;
@@ -199,6 +214,7 @@ async function run() {
           entryTitle: entry.title,
           entryId,
           uploadIds: photoFields.uploads,
+          photoSourceUrls: photoFields.photoSourceUrls,
         });
         state.persist(seedState);
         stats.entriesPosted++;

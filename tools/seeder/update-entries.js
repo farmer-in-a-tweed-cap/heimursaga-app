@@ -5,13 +5,126 @@
 // Matches state.entries[] back to archive.json by (expeditionId, entryTitle).
 //
 // Usage:
-//   DRY_RUN=true node update-entries.js   # preview
-//   node update-entries.js                # live
+//   DRY_RUN=true node update-entries.js     # preview text/metadata changes
+//   node update-entries.js                  # live text/metadata sync
+//   PHOTOS=true node update-entries.js      # also sync photos (re-upload
+//                                           # changed URLs, refresh captions
+//                                           # and credits, replace media).
+//                                           # State tracks photoSourceUrls so
+//                                           # caption-only edits skip uploads.
+//
+//   ONLY="title1,title2" node …             # scope updates to entries whose
+//                                           # title matches any token as a
+//                                           # case-insensitive substring.
+//                                           # Use this on the first PHOTOS run
+//                                           # to avoid re-uploading every
+//                                           # entry's photos (state has no
+//                                           # URL history yet).
+//
+// Photo limit per non-Pro account is 2; the seeder slices to that. Pacing
+// between uploads matches seed.js (7s) to stay under the 10/min throttle.
 
 const fs = require('fs');
 const cfg = require('./config');
 const state = require('./state');
 const { ApiClient, sleep } = require('./api');
+const { downloadImage, uploadToS3 } = require('./media');
+
+const MAX_PHOTOS_PER_ENTRY = 2;
+const PHOTOS_ENABLED = process.env.PHOTOS === 'true';
+const PHOTO_UPLOAD_PACE_MS = 7000;
+
+const ONLY_TOKENS = (process.env.ONLY || '')
+  .split(',')
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
+
+function matchesOnlyFilter(entryTitle) {
+  if (ONLY_TOKENS.length === 0) return true;
+  const t = entryTitle.toLowerCase();
+  return ONLY_TOKENS.some((tok) => t.includes(tok));
+}
+
+// Build a photo sync plan by diffing archive.entry.photos against the
+// state's photoSourceUrls (parallel array to uploadIds). For each desired
+// photo we either reuse an existing uploadId (URL already uploaded) or
+// schedule a fresh upload. Existing uploadIds whose URL is no longer in
+// the desired set get dropped — the API removes them when the new
+// `uploads` list omits them.
+function planPhotoSync(archiveEntry, stateEntry) {
+  const desired = (archiveEntry.photos || []).slice(0, MAX_PHOTOS_PER_ENTRY);
+  const stateUrls = stateEntry.photoSourceUrls || [];
+  const stateIds = stateEntry.uploadIds || [];
+
+  // Map known URL → uploadId only when the parallel arrays are intact.
+  // Older state entries (pre-photoSourceUrls) won't match — every desired
+  // photo will need re-upload, and prior uploadIds get removed.
+  const knownByUrl = new Map();
+  if (stateUrls.length === stateIds.length) {
+    for (let i = 0; i < stateUrls.length; i++) {
+      knownByUrl.set(stateUrls[i], stateIds[i]);
+    }
+  }
+
+  const actions = desired.map((photo) => {
+    const existingId = knownByUrl.get(photo.url);
+    return existingId
+      ? { action: 'reuse', photo, uploadId: existingId }
+      : { action: 'upload', photo };
+  });
+
+  const desiredUrlSet = new Set(desired.map((p) => p.url));
+  const removedUploadIds = (stateUrls.length === stateIds.length)
+    ? stateIds.filter((_, i) => !desiredUrlSet.has(stateUrls[i]))
+    : stateIds; // unknown mapping — replace everything
+
+  return { actions, removedUploadIds };
+}
+
+// Execute the plan: upload any 'upload' actions, then return the payload
+// fields the PUT needs (uploads, uploadCaptions, uploadCredits,
+// coverUploadId). Side effect: stages the new photo state on plan._appliedPhotoState
+// so the caller can persist it after a successful PUT.
+async function applyPhotoSync(api, plan, tag) {
+  const photoPlan = plan._photoPlan || planPhotoSync(plan.archiveEntry, plan.stateEntry);
+
+  const uploadIds = [];
+  const uploadCaptions = {};
+  const uploadCredits = {};
+  const photoSourceUrls = [];
+
+  let uploadIndex = 0;
+  const uploadCount = photoPlan.actions.filter((a) => a.action === 'upload').length;
+
+  for (const a of photoPlan.actions) {
+    let uploadId;
+    if (a.action === 'reuse') {
+      uploadId = a.uploadId;
+    } else {
+      uploadIndex++;
+      console.log(`${tag} photo ${uploadIndex}/${uploadCount} downloading…`);
+      const image = await downloadImage(a.photo.url);
+      console.log(`${tag} photo ${uploadIndex} uploading (${image.buffer.length} bytes)…`);
+      const up = await uploadToS3(api, image);
+      uploadId = up.uploadId;
+      if (uploadIndex < uploadCount) await sleep(PHOTO_UPLOAD_PACE_MS);
+    }
+    uploadIds.push(uploadId);
+    photoSourceUrls.push(a.photo.url);
+    if (a.photo.caption) uploadCaptions[uploadId] = a.photo.caption;
+    if (a.photo.credit) uploadCredits[uploadId] = a.photo.credit;
+  }
+
+  plan._appliedPhotoState = { uploadIds, photoSourceUrls };
+
+  const payload = {
+    uploads: uploadIds,
+    uploadCaptions,
+    uploadCredits,
+  };
+  if (uploadIds.length > 0) payload.coverUploadId = uploadIds[0];
+  return payload;
+}
 
 function loadArchive() {
   return JSON.parse(fs.readFileSync(cfg.ARCHIVE_FILE, 'utf-8'));
@@ -71,7 +184,13 @@ async function run() {
       skipped.push({ ...e, reason: 'archive body is empty or PLACEHOLDER' });
       continue;
     }
+    if (!matchesOnlyFilter(e.entryTitle)) {
+      skipped.push({ ...e, reason: 'filtered out by ONLY' });
+      continue;
+    }
     plan.push({
+      stateEntry: e,
+      archiveEntry,
       entryId: e.entryId,
       entryTitle: e.entryTitle,
       content: archiveEntry.body.trim(),
@@ -90,9 +209,20 @@ async function run() {
   }
 
   console.log('=== UPDATE PLAN ===');
+  if (PHOTOS_ENABLED) console.log('  (PHOTOS=true — photos will be synced)');
   for (const p of plan) {
+    let suffix = '';
+    if (PHOTOS_ENABLED) {
+      const photoPlan = planPhotoSync(p.archiveEntry, p.stateEntry);
+      p._photoPlan = photoPlan;
+      const reuse = photoPlan.actions.filter((a) => a.action === 'reuse').length;
+      const upload = photoPlan.actions.filter((a) => a.action === 'upload').length;
+      const desired = photoPlan.actions.length;
+      const remove = photoPlan.removedUploadIds.length;
+      suffix = `, photos: ${desired} desired (${reuse} reuse, ${upload} new${remove ? `, ${remove} removed` : ''})`;
+    }
     console.log(
-      `  ${p.entryId}  "${p.entryTitle}"  → entryType=historical, content=${p.content.length} chars`,
+      `  ${p.entryId}  "${p.entryTitle}"  → entryType=historical, content=${p.content.length} chars${suffix}`,
     );
   }
   if (skipped.length) {
@@ -133,7 +263,21 @@ async function run() {
       if (p.date) body.date = p.date;
       if (typeof p.lat === 'number') body.lat = p.lat;
       if (typeof p.lon === 'number') body.lon = p.lon;
+
+      if (PHOTOS_ENABLED) {
+        const photoFields = await applyPhotoSync(api, p, tag);
+        Object.assign(body, photoFields);
+      }
+
       await api._fetch('PUT', `/posts/${p.entryId}`, { body });
+
+      // Persist updated photo state only after a successful PUT — otherwise
+      // a failed PUT followed by re-run would think the photo was synced.
+      if (PHOTOS_ENABLED && p._appliedPhotoState) {
+        Object.assign(p.stateEntry, p._appliedPhotoState);
+        state.persist(seedState);
+      }
+
       success++;
       console.log(`${tag} ✓`);
     } catch (err) {
