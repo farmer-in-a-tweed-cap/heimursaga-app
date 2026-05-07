@@ -1515,7 +1515,7 @@ export function JournalEntryPage() {
                 </div>
                 <Link
                   href={`/expedition/${entry.expeditionId}`}
-                  className="block w-full mt-4 py-2.5 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold whitespace-nowrap"
+                  className="flex w-full mt-4 min-h-[40px] items-center justify-center py-2.5 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold whitespace-nowrap"
                 >
                   VIEW EXPEDITION
                 </Link>
@@ -1551,14 +1551,14 @@ export function JournalEntryPage() {
               <div className="flex gap-2">
                 <Link
                   href={`/journal/${entry.explorerId}`}
-                  className="flex-1 py-2.5 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold whitespace-nowrap flex items-center justify-center"
+                  className="flex-1 min-h-[40px] py-2.5 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold whitespace-nowrap flex items-center justify-center"
                 >
                   VIEW JOURNAL
                 </Link>
                 <button
                   onClick={() => handleFollowExplorer(entry.explorerId)}
                   disabled={followLoading}
-                  className={`px-4 py-2.5 border-2 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:active:scale-100 text-xs font-bold whitespace-nowrap flex items-center gap-2 ${
+                  className={`px-4 min-h-[40px] py-2.5 border-2 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:active:scale-100 text-xs font-bold whitespace-nowrap flex items-center justify-center gap-2 ${
                     isFollowingExplorer
                       ? 'border-[#4676ac] bg-[#4676ac] text-white hover:bg-[#365a87] focus-visible:ring-[#4676ac]'
                       : 'border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#616161] hover:border-[#616161] hover:text-white focus-visible:ring-[#616161]'

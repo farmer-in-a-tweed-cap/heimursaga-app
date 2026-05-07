@@ -224,15 +224,17 @@ export interface PassportData {
 }
 
 /**
- * Get country info from code (for when API provides countryCode)
+ * Get country info from code (for when API provides countryCode).
+ * Returns null when the code isn't in our bounds list — the caller skips
+ * the entry, which keeps unknown-country entries from contributing a
+ * bogus "UN" continent stamp to the passport.
  */
 function getCountryInfo(code: string): { name: string; continent: string } | null {
   const countryData = COUNTRY_BOUNDS[code];
   if (countryData) {
     return { name: countryData.name, continent: countryData.continent };
   }
-  // Fallback for codes not in our bounds list
-  return { name: code, continent: 'UN' }; // Unknown continent
+  return null;
 }
 
 /**
