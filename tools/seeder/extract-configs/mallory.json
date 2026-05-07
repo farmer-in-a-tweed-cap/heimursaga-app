@@ -1,0 +1,31 @@
+{
+  "name": "mallory",
+  "expedition": "Mount Everest Reconnaissance",
+  "_source": "Project Gutenberg #39421 — Charles Howard-Bury, George Mallory, et al., 'Mount Everest, the Reconnaissance, 1921'",
+  "source": {
+    "urls": [
+      "https://www.gutenberg.org/cache/epub/39421/pg39421.txt",
+      "https://www.gutenberg.org/files/39421/39421-0.txt"
+    ],
+    "cache": "pg39421.txt"
+  },
+  "entries": [
+    {
+      "title": "First View of Everest",
+      "date": "1921-06-06",
+      "_note": "Date corrected from archive's 1921-06-13 to 1921-06-06 — Mallory's first view from Kampa Dzong was the morning after Dr. Kellas's death (June 5). The June 13 reference in archive was the second viewing from hills above Shiling, which the source treats as a follow-up observation rather than the iconic first view.",
+      "anchors": [
+        "prodigious\\s+white\\s+fang\\s+excrescent\\s+from\\s+the\\s+jaw\\s+of\\s+the\\s+world",
+        "It\\s+may\\s+seem\\s+an\\s+irony\\s+of\\s+fate\\s+that\\s+actually\\s+on\\s+the\\s+day"
+      ]
+    },
+    {
+      "title": "The North Col",
+      "date": "1921-09-24",
+      "anchors": [
+        "we\\s+were\\s+on\\s+the\\s+col\\s+shortly\\s+before",
+        "About\\s+500\\s+steps\\s+of\\s+very\\s+hard\\s+work\\s+covered"
+      ]
+    }
+  ]
+}

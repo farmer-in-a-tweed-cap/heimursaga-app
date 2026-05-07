@@ -1,0 +1,32 @@
+[
+  {
+    "title": "Up the Ogowé",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/f/f5/AFR_V3_D474_The_Ogoway_and_Zonengway.png",
+        "caption": "The Ogowé and Zonengway rivers. Plate from Élisée Reclus, The Earth and Its Inhabitants: Africa, 1892.",
+        "credit": "Élisée Reclus"
+      }
+    ]
+  },
+  {
+    "title": "Among the Fang",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/5/52/Fan_women_and_child%2C_banks_of_the_Ogoway.jpg",
+        "caption": "Fan women and child, banks of the Ogowé. From Élisée Reclus, The Earth and Its Inhabitants: Africa, 1892.",
+        "credit": "Élisée Reclus"
+      }
+    ]
+  },
+  {
+    "title": "Ascent of Mount Cameroon",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/f/fc/Gezicht_op_de_Berg_Kameroen_%28Mount_Cameroon%29_vanuit_Victoria_%28Kameroen%29%2C_RP-F-F01175-AD.jpg",
+        "caption": "Mount Cameroon viewed from Victoria, the town from which Kingsley began her ascent. Photograph c. 1899.",
+        "credit": "Rijksmuseum"
+      }
+    ]
+  }
+]

@@ -1,0 +1,33 @@
+{
+  "name": "mungo-park",
+  "expedition": "Second Niger Expedition",
+  "_source": "Project Gutenberg #8814 — Mungo Park, 'The Journal of a Mission to the Interior of Africa, in the Year 1805'",
+  "source": {
+    "urls": [
+      "https://www.gutenberg.org/cache/epub/8814/pg8814.txt",
+      "https://www.gutenberg.org/files/8814/8814-0.txt"
+    ],
+    "cache": "pg8814.txt"
+  },
+  "entries": [
+    {
+      "title": "Into the Interior",
+      "date": "1805-04-27",
+      "_note": "Park's literal departure from the coast — the morning of April 27, 1805. Date corrected from the archive's placeholder 1805-04-04 (Park hadn't even reached the Gambia by then) to the journal's actual departure entry from Kayee.",
+      "anchors": [
+        "April\\s+27th,?\\s+1805",
+        "took\\s+our\\s+departure\\s+from\\s+Kayee",
+        "Crescent.*Washington.*Ainsley"
+      ]
+    },
+    {
+      "title": "The Niger at Last",
+      "date": "1805-08-19",
+      "anchors": [
+        "once\\s+more\\s+saw\\s+the\\s+Niger",
+        "summit\\s+of\\s+the\\s+ridge\\s+which\\s+separates\\s+the\\s+Niger",
+        "thirty-four\\s+soldiers.*reached\\s+the\\s+Niger"
+      ]
+    }
+  ]
+}

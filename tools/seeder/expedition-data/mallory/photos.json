@@ -1,0 +1,22 @@
+[
+  {
+    "title": "First View of Everest",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/1/1c/Khamba_Dzong%2C_north_of_Everest%2C_1921.jpg",
+        "caption": "Khamba Dzong, Tibet, 1921 — the fort above which Mallory first saw Everest, 100 miles to the south-west.",
+        "credit": "1921 British Mount Everest Reconnaissance Expedition"
+      }
+    ]
+  },
+  {
+    "title": "The North Col",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/2/2c/Everest_North_Col_from_Lhakpa_La%2C_1921.jpg",
+        "caption": "The North Col (Chang La) and the north-east face of Everest, photographed from Lhakpa La, 1921.",
+        "credit": "Charles Howard-Bury"
+      }
+    ]
+  }
+]

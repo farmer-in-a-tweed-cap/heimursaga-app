@@ -1,0 +1,22 @@
+[
+  {
+    "title": "Chatham Island, Galapagos",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/8/85/Galapagos_Barn_Owl.jpg",
+        "caption": "Galapagos Barn Owl. Plate by Elizabeth Gould from The Zoology of the Voyage of HMS Beagle, 1838.",
+        "credit": "Elizabeth Gould"
+      }
+    ]
+  },
+  {
+    "title": "On the Variation of Species",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/8/82/Geospiza_magnirostris.jpg",
+        "caption": "Geospiza magnirostris, the Large Ground-finch — collected by Darwin on Chatham and Charles Islands. Lithograph from The Zoology of the Voyage of HMS Beagle, 1841.",
+        "credit": "John Gould"
+      }
+    ]
+  }
+]

@@ -1,0 +1,20 @@
+{
+  "name": "beagle-tierra",
+  "expedition": "Voyage of the Beagle — Tierra del Fuego and the Falklands",
+  "_source": "Project Gutenberg #944 — Charles Darwin's 'The Voyage of the Beagle'",
+  "source": {
+    "urls": [
+      "https://www.gutenberg.org/cache/epub/944/pg944.txt",
+      "https://www.gutenberg.org/files/944/944-0.txt"
+    ],
+    "cache": "pg944.txt"
+  },
+  "entries": [
+    {
+      "title": "Tierra del Fuego",
+      "date": "1832-12-17",
+      "_note": "Anchored on Darwin's first encounter with the Fuegians — the most-cited passage from this leg of the voyage. Date adjusted from the archive's 1833-12-17 to Darwin's actual first landing in December 1832.",
+      "anchors": ["DECEMBER\\s+17th,?\\s+1832", "our\\s+first\\s+arrival\\s+in\\s+Tierra\\s+del\\s+Fuego", "Bay\\s+of\\s+Good\\s+Success"]
+    }
+  ]
+}

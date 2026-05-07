@@ -1,0 +1,54 @@
+{
+  "name": "livingstone",
+  "expedition": "Last Journals — Search for the Nile Source",
+  "_source": "Project Gutenberg #16672 (Vol I) + #17024 (Vol II) — David Livingstone, 'The Last Journals of David Livingstone in Central Africa'",
+  "sources": [
+    {
+      "urls": [
+        "https://www.gutenberg.org/cache/epub/16672/pg16672.txt",
+        "https://www.gutenberg.org/files/16672/16672-0.txt"
+      ],
+      "cache": "pg16672.txt"
+    },
+    {
+      "urls": [
+        "https://www.gutenberg.org/cache/epub/17024/pg17024.txt",
+        "https://www.gutenberg.org/files/17024/17024-0.txt"
+      ],
+      "cache": "pg17024.txt"
+    }
+  ],
+  "entries": [
+    {
+      "title": "Arrival at Zanzibar",
+      "date": "1866-01-28",
+      "volume": 1,
+      "anchors": [
+        "passage\\s+of\\s+twenty-three\\s+days\\s+from\\s+Bombay",
+        "ZANZIBAR,\\s+28th\\s+January,?\\s+1866",
+        "arrived\\s+at\\s+this\\s+island\\s+in\\s+the.*Thule"
+      ]
+    },
+    {
+      "title": "Lake Tanganyika",
+      "date": "1869-02-14",
+      "volume": 2,
+      "anchors": [
+        "14th\\s+February,?\\s+1869.*Arrived\\s+at\\s+Tanganyika",
+        "Arrived\\s+at\\s+Tanganyika.*Parra\\s+is\\s+the\\s+name",
+        "14th\\s+February,?\\s+1869"
+      ]
+    },
+    {
+      "title": "Found by Stanley",
+      "date": "1871-10-28",
+      "volume": 2,
+      "_note": "Date corrected from archive's 1871-11-10 to 1871-10-28 — Livingstone's own journal records the meeting on October 28 (parenthetical date in the entry). November 10 was originally given by Stanley in his published account but Livingstone's journal disagrees.",
+      "anchors": [
+        "Susi\\s+came\\s+running\\s+at\\s+the\\s+top",
+        "American\\s+flag\\s+at\\s+the\\s+head\\s+of\\s+a\\s+caravan",
+        "Henry\\s+Moreland\\s+Stanley"
+      ]
+    }
+  ]
+}

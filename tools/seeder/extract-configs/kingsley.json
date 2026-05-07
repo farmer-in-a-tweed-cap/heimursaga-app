@@ -1,0 +1,39 @@
+{
+  "name": "kingsley",
+  "expedition": "Second Journey to West Africa",
+  "_source": "Project Gutenberg #5891 — Mary H. Kingsley, 'Travels in West Africa' (1897)",
+  "source": {
+    "urls": [
+      "https://www.gutenberg.org/cache/epub/5891/pg5891.txt",
+      "https://www.gutenberg.org/files/5891/5891-0.txt"
+    ],
+    "cache": "pg5891.txt"
+  },
+  "entries": [
+    {
+      "title": "Up the Ogowé",
+      "date": "1895-06-05",
+      "anchors": [
+        "June\\s+5th,?\\s+1895\\.--Off\\s+on\\s+Move",
+        "Off\\s+on\\s+Move\\s+at\\s+9\\.30"
+      ]
+    },
+    {
+      "title": "Among the Fang",
+      "date": "1895-07-22",
+      "_note": "Kingsley's book uses 'Fans' (her spelling), modern usage 'Fang'. Anchor date matches her journal entry leaving Kangwe to travel through Fang country.",
+      "anchors": [
+        "July\\s+22nd,?\\s+1895\\.--Left\\s+Kangwe",
+        "voyager\\s+goes\\s+for\\s+bush\\s+again"
+      ]
+    },
+    {
+      "title": "Ascent of Mount Cameroon",
+      "date": "1895-09-23",
+      "anchors": [
+        "September\\s+23rd\\.--Morning\\s+gloriously\\s+fine",
+        "Rout\\s+the\\s+boys\\s+out"
+      ]
+    }
+  ]
+}

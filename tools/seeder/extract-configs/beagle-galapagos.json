@@ -1,0 +1,24 @@
+{
+  "name": "beagle-galapagos",
+  "expedition": "Voyage of the Beagle — Galapagos Islands",
+  "_source": "Project Gutenberg #944 — Charles Darwin's 'The Voyage of the Beagle'",
+  "source": {
+    "urls": [
+      "https://www.gutenberg.org/cache/epub/944/pg944.txt",
+      "https://www.gutenberg.org/files/944/944-0.txt"
+    ],
+    "cache": "pg944.txt"
+  },
+  "entries": [
+    {
+      "title": "Chatham Island, Galapagos",
+      "date": "1835-09-17",
+      "anchors": ["archipelago\\s+consists\\s+of\\s+ten\\s+principal\\s+islands", "landed\\s+on\\s+Chatham\\s+Island,\\s+which,\\s+like", "SEPTEMBER\\s+15th\\.--This\\s+archipelago"]
+    },
+    {
+      "title": "On the Variation of Species",
+      "date": "1835-10-08",
+      "anchors": ["different\\s+islands.*tenanted", "James\\s+Island.*Galapagos", "October\\s+8", "varieties\\s+confined\\s+to\\s+separate\\s+islands", "stamped\\s+with\\s+the\\s+marks\\s+of\\s+a\\s+peculiar"]
+    }
+  ]
+}

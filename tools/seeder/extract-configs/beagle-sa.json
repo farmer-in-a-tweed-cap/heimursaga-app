@@ -1,0 +1,24 @@
+{
+  "name": "beagle-sa",
+  "expedition": "Voyage of the Beagle — South American Coast",
+  "_source": "Project Gutenberg #944 — Charles Darwin's 'The Voyage of the Beagle'",
+  "source": {
+    "urls": [
+      "https://www.gutenberg.org/cache/epub/944/pg944.txt",
+      "https://www.gutenberg.org/files/944/944-0.txt"
+    ],
+    "cache": "pg944.txt"
+  },
+  "entries": [
+    {
+      "title": "Arrival at Bahia, Brazil",
+      "date": "1832-02-28",
+      "anchors": ["Bahia,\\s+or\\s+San\\s+Salvador", "February\\s+29th", "delight\\s+of\\s+a\\s+naturalist", "Brazilian\\s+forest"]
+    },
+    {
+      "title": "The Pampas",
+      "date": "1833-08-11",
+      "anchors": ["Bahia\\s+Blanca", "August\\s+11", "ride.*Bahia\\s+Blanca.*Buenos\\s+Ayres", "vast\\s+plain\\s+of\\s+the\\s+Pampas", "rode.*Pampas"]
+    }
+  ]
+}

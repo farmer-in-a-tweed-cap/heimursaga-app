@@ -1,0 +1,29 @@
+{
+  "name": "peary",
+  "expedition": "North Pole Expedition",
+  "_source": "Project Gutenberg #18975 — Robert E. Peary, 'The North Pole: Its Discovery in 1909 under the Auspices of the Peary Arctic Club'",
+  "source": {
+    "urls": [
+      "https://www.gutenberg.org/cache/epub/18975/pg18975.txt",
+      "https://www.gutenberg.org/files/18975/18975-0.txt"
+    ],
+    "cache": "pg18975.txt"
+  },
+  "entries": [
+    {
+      "title": "Cape Columbia — Last Land",
+      "date": "1909-03-01",
+      "anchors": [
+        "When\\s+I\\s+awoke\\s+before\\s+light\\s+on\\s+the\\s+morning\\s+of\\s+March\\s+1st"
+      ]
+    },
+    {
+      "title": "The Pole",
+      "date": "1909-04-06",
+      "anchors": [
+        "last\\s+march\\s+northward\\s+ended\\s+at\\s+ten\\s+o'clock\\s+on\\s+the\\s+forenoon\\s+of\\s+April",
+        "Pole\\s+at\\s+last\\.\\s+The\\s+prize\\s+of\\s+three\\s+centuries"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+[
+  {
+    "title": "Arrival at Bahia, Brazil",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/a/a8/San_Salvador%2C_1835%2C_by_Rugendas_%28detail%29.jpg",
+        "caption": "Salvador da Bahia, c. 1835.",
+        "credit": "Johann Moritz Rugendas"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/4/45/Johann_Moritz_Rugendas_-_%C3%81rvore_gigantesca_na_selva_tropical_brasileira%2C_1830.jpg",
+        "caption": "Giant tree in the Brazilian tropical forest, 1830.",
+        "credit": "Johann Moritz Rugendas"
+      }
+    ]
+  },
+  {
+    "title": "The Pampas",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/6/66/Gauchos_resting_in_the_pampas_by_Rugendas.jpg",
+        "caption": "Gauchos resting on the pampas, 1846.",
+        "credit": "Johann Moritz Rugendas"
+      }
+    ]
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "title": "Tierra del Fuego",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/Fuegians_-_Narrative_of_the_Surveying_Voyages_of_HMS_Adventure_and_Beagle_%281839%29%2C_opposite_41_-_BL.jpg",
+        "caption": "Six portraits of Tierra del Fuego natives. From FitzRoy's Narrative of the Surveying Voyages of HMS Adventure and Beagle, 1839.",
+        "credit": "Robert FitzRoy / British Library"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Plate_showing_Mount_Sarmiento_from_the_Narrative....._Wellcome_L0076875.jpg/1920px-Plate_showing_Mount_Sarmiento_from_the_Narrative....._Wellcome_L0076875.jpg",
+        "caption": "Mount Sarmiento, Tierra del Fuego. Engraved by Thomas Landseer after a sketch by Conrad Martens, from FitzRoy's Narrative of the Beagle voyage, 1839.",
+        "credit": "Robert FitzRoy / Wellcome Collection"
+      }
+    ]
+  }
+]

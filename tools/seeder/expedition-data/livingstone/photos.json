@@ -1,0 +1,32 @@
+[
+  {
+    "title": "Arrival at Zanzibar",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/6/6c/Zanzibar_mid_19th_century.png",
+        "caption": "Harbour of Zanzibar, mid-19th century.",
+        "credit": "Unknown 19th century artist"
+      }
+    ]
+  },
+  {
+    "title": "Lake Tanganyika",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/d/d0/The_Last_Journals_of_David_Livingstone%2C_in_central_Africa_%281875%29_%2814776408424%29.jpg",
+        "caption": "Village on Lake Liemba (Lake Tanganyika). Plate from The Last Journals of David Livingstone, in Central Africa, 1875.",
+        "credit": "John Murray, London (1875)"
+      }
+    ]
+  },
+  {
+    "title": "Found by Stanley",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/3/3a/Stanley_meets_Livingstone%29_-_H.H_LCCN2008678860.jpg",
+        "caption": "Stanley meets Livingstone — wood engraving, 1872, the year after the encounter at Ujiji.",
+        "credit": "Library of Congress"
+      }
+    ]
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "title": "Into the Interior",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Mungo_Park%27s_mancheroute_von_Plesanta_bis_an_den_Gambia..._zusammengetragen..._-_von_J._Rennell_-_btv1b8469058q.jpg",
+        "caption": "Manuscript route map from Pisania across the Gambia, by James Rennell, 1795.",
+        "credit": "James Rennell / Bibliothèque nationale de France"
+      }
+    ]
+  },
+  {
+    "title": "The Niger at Last",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/9/9d/Carte_du_S%C3%A9n%C3%A9gal_et_du_cours_du_Niger_jusqu%27%C3%A0_Tombouctou%2C_avec_les_voyages_de_Mungo_Park_en_1795_et_1796._1_-_3_330_000_env_-_btv1b530329526.jpg",
+        "caption": "Map of the Senegal and Niger rivers to Timbuktu, showing Park's 1795 route. Paris, 1796.",
+        "credit": "Bibliothèque nationale de France"
+      }
+    ]
+  }
+]
