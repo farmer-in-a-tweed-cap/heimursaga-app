@@ -380,6 +380,10 @@ export function JournalEntryPage() {
       // Early access
       earlyAccess: api.earlyAccess || false,
       embargoLiftsAt: api.embargoLiftsAt || undefined,
+
+      // Sibling navigation (only present for expedition entries with neighbors)
+      prevEntry: api.prevEntry,
+      nextEntry: api.nextEntry,
     };
   };
 
@@ -1000,6 +1004,74 @@ export function JournalEntryPage() {
                   </a>
                 </div>
           </div>
+
+          {/* Sequential Entry Pager — only for expedition entries with siblings.
+              `prevEntry`/`nextEntry` are computed server-side from the same
+              date+route ordering as `entryNumber`, so navigation stays in sync
+              with the "Entry #X of Y" label in the sidebar. */}
+          {entry.expeditionId &&
+            entry.expeditionTotalEntries > 1 &&
+            (entry.prevEntry || entry.nextEntry) && (
+              <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] grid grid-cols-2 sm:grid-cols-[1fr_auto_1fr]">
+                {/* PREV */}
+                {entry.prevEntry ? (
+                  <Link
+                    href={`/entry/${entry.prevEntry.id}`}
+                    className="group p-4 border-r-2 border-[#202020] dark:border-[#616161] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
+                  >
+                    <div className="text-xs font-bold font-mono text-[#616161] dark:text-[#b5bcc4] group-hover:text-[#ac6d46] mb-1">
+                      ← PREV ENTRY
+                    </div>
+                    <div className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] line-clamp-2 group-hover:text-[#ac6d46]">
+                      {entry.prevEntry.title}
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="p-4 border-r-2 border-[#202020] dark:border-[#616161] opacity-40">
+                    <div className="text-xs font-bold font-mono text-[#616161] dark:text-[#b5bcc4] mb-1">
+                      ← PREV ENTRY
+                    </div>
+                    <div className="text-sm font-mono text-[#616161] dark:text-[#b5bcc4]">
+                      First entry
+                    </div>
+                  </div>
+                )}
+
+                {/* COUNTER (desktop only — collapses on mobile to keep prev/next side-by-side) */}
+                <div className="hidden sm:flex flex-col items-center justify-center px-6 border-r-2 border-[#202020] dark:border-[#616161] bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                  <div className="text-xs font-bold font-mono text-[#616161] dark:text-[#b5bcc4] whitespace-nowrap">
+                    ENTRY
+                  </div>
+                  <div className="text-lg font-bold text-[#4676ac] whitespace-nowrap">
+                    #{entry.entryNumber} <span className="text-[#616161] dark:text-[#b5bcc4]">of</span> {entry.expeditionTotalEntries}
+                  </div>
+                </div>
+
+                {/* NEXT */}
+                {entry.nextEntry ? (
+                  <Link
+                    href={`/entry/${entry.nextEntry.id}`}
+                    className="group p-4 text-right hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
+                  >
+                    <div className="text-xs font-bold font-mono text-[#616161] dark:text-[#b5bcc4] group-hover:text-[#ac6d46] mb-1">
+                      NEXT ENTRY →
+                    </div>
+                    <div className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] line-clamp-2 group-hover:text-[#ac6d46]">
+                      {entry.nextEntry.title}
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="p-4 text-right opacity-40">
+                    <div className="text-xs font-bold font-mono text-[#616161] dark:text-[#b5bcc4] mb-1">
+                      NEXT ENTRY →
+                    </div>
+                    <div className="text-sm font-mono text-[#616161] dark:text-[#b5bcc4]">
+                      Last entry
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
           {/* Entry Notes Section */}
           {entry.commentsEnabled && (

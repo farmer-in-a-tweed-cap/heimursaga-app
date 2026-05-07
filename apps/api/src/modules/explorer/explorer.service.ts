@@ -89,9 +89,10 @@ export class ExplorerService {
     page?: string;
     limit?: string;
     sort?: string;
+    filter?: string;
   }>): Promise<IUserGetAllResponse> {
     try {
-      const { context } = query;
+      const { context, filter } = query;
       const { explorerId, explorerRole } = session;
 
       const parsedPage = Math.max(1, parseInt(query.page, 10) || 1);
@@ -111,6 +112,33 @@ export class ExplorerService {
           { is_guide: true, entries_count: { gt: 0 } },
         ],
       };
+
+      // Quick-filter (mirrors /explorers filter buttons).
+      // - 'active': has at least one non-blueprint expedition currently active.
+      // - 'pro': role === CREATOR (displayed as "Explorer Pro").
+      // - 'guide': is_guide flag set; the existing top-level OR already
+      //   requires entries_count > 0 for guides, so the guide filter
+      //   surfaces only journaling guides.
+      switch (filter) {
+        case 'active':
+          where = {
+            ...where,
+            expeditions: {
+              some: {
+                status: 'active',
+                deleted_at: null,
+                is_blueprint: { not: true },
+              },
+            },
+          };
+          break;
+        case 'pro':
+          where = { ...where, role: UserRole.CREATOR };
+          break;
+        case 'guide':
+          where = { ...where, is_guide: true };
+          break;
+      }
 
       // Filter to followed explorers
       if (context === 'following') {

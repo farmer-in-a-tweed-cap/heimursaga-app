@@ -77,13 +77,18 @@ export function EntriesPage() {
     }
   };
 
+  // The quick-filter (`activeFilter`) is now applied server-side so it
+  // works across the full result set instead of the paginated window.
+  // 'all' clears the param.
+  const entryTypeParam = activeFilter === 'all' ? undefined : activeFilter;
+
   // Fetch entries from API
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     setPage(1);
     try {
-      const data = await entryApi.getAll({ page: 1, limit: 20, sort });
+      const data = await entryApi.getAll({ page: 1, limit: 20, sort, entryType: entryTypeParam });
       setApiEntries(data.data || []);
       setTotalResults(data.results || 0);
       setHasMore((data.data || []).length < (data.results || 0));
@@ -92,7 +97,7 @@ export function EntriesPage() {
     } finally {
       setLoading(false);
     }
-  }, [sort]);
+  }, [sort, entryTypeParam]);
 
   // Load more entries
   const handleLoadMore = useCallback(async () => {
@@ -100,7 +105,7 @@ export function EntriesPage() {
     setIsLoadingMore(true);
     const nextPage = page + 1;
     try {
-      const data = await entryApi.getAll({ page: nextPage, limit: 20, sort });
+      const data = await entryApi.getAll({ page: nextPage, limit: 20, sort, entryType: entryTypeParam });
       const newEntries = data.data || [];
       setApiEntries(prev => [...prev, ...newEntries]);
       setPage(nextPage);
@@ -116,7 +121,7 @@ export function EntriesPage() {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, hasMore, page, apiEntries.length, sort]);
+  }, [isLoadingMore, hasMore, page, apiEntries.length, sort, entryTypeParam]);
 
   useEffect(() => {
     let cancelled = false;
@@ -126,7 +131,7 @@ export function EntriesPage() {
       setError(null);
       setPage(1);
       try {
-        const data = await entryApi.getAll({ page: 1, limit: 20, sort });
+        const data = await entryApi.getAll({ page: 1, limit: 20, sort, entryType: entryTypeParam });
         if (!cancelled) {
           setApiEntries(data.data || []);
           setTotalResults(data.results || 0);
@@ -157,7 +162,7 @@ export function EntriesPage() {
     return () => {
       cancelled = true;
     };
-  }, [sort]);
+  }, [sort, entryTypeParam]);
 
   const isActive = (path: string) => {
     if (path === '/explorers') return pathname.startsWith('/explorer');
@@ -184,24 +189,10 @@ export function EntriesPage() {
     coverImageUrl: entry.coverImage,
   })), [apiEntries]);
 
-  // Apply filters and search
+  // entryType filter is applied server-side (see entryTypeParam above);
+  // search remains client-side over the loaded window.
   const filteredEntries = useMemo(() => {
     let result = transformedEntries;
-
-    // Apply filter
-    if (activeFilter === 'standard') {
-      result = result.filter(e => e.type === 'standard');
-    } else if (activeFilter === 'photo') {
-      result = result.filter(e => e.type === 'photo');
-    } else if (activeFilter === 'video') {
-      result = result.filter(e => e.type === 'video');
-    } else if (activeFilter === 'data') {
-      result = result.filter(e => e.type === 'data');
-    } else if (activeFilter === 'historical') {
-      result = result.filter(e => e.type === 'historical');
-    }
-
-    // Apply search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(e =>
@@ -211,9 +202,8 @@ export function EntriesPage() {
         e.location.toLowerCase().includes(q)
       );
     }
-
     return result;
-  }, [transformedEntries, activeFilter, searchQuery]);
+  }, [transformedEntries, searchQuery]);
 
   const entries = filteredEntries;
 

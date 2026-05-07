@@ -608,12 +608,13 @@ export const explorerApi = {
   /**
    * Get all explorers
    */
-  getAll: (params?: { page?: number; limit?: number; context?: string; sort?: string }) => {
+  getAll: (params?: { page?: number; limit?: number; context?: string; sort?: string; filter?: string }) => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set('page', String(params.page));
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.context) searchParams.set('context', params.context);
     if (params?.sort) searchParams.set('sort', params.sort);
+    if (params?.filter) searchParams.set('filter', params.filter);
     const qs = searchParams.toString();
     return api.get<{ data: ExplorerListItem[]; results: number; page?: number; limit?: number; totalPages?: number }>(`/users${qs ? `?${qs}` : ''}`);
   },
@@ -1076,12 +1077,13 @@ export const expeditionApi = {
   /**
    * Get all expeditions
    */
-  getAll: (params?: { page?: number; limit?: number; context?: string; sort?: string }) => {
+  getAll: (params?: { page?: number; limit?: number; context?: string; sort?: string; filter?: string }) => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set('page', String(params.page));
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.context) searchParams.set('context', params.context);
     if (params?.sort) searchParams.set('sort', params.sort);
+    if (params?.filter) searchParams.set('filter', params.filter);
     const qs = searchParams.toString();
     return api.get<{ data: Expedition[]; results: number; page?: number; limit?: number; totalPages?: number }>(`/trips${qs ? `?${qs}` : ''}`);
   },
@@ -1486,6 +1488,9 @@ export interface Entry {
   entryNumber?: number;
   // Day of the expedition when this entry was written
   expeditionDay?: number;
+  // Previous/next entry in the same expedition (for sequential nav)
+  prevEntry?: { id: string; title: string };
+  nextEntry?: { id: string; title: string };
   // Quick sponsor stats
   quickSponsorsCount?: number;
   quickSponsorsTotal?: number;
@@ -1527,12 +1532,13 @@ export const entryApi = {
   /**
    * Get all entries
    */
-  getAll: (params?: { page?: number; limit?: number; context?: string; sort?: string }) => {
+  getAll: (params?: { page?: number; limit?: number; context?: string; sort?: string; entryType?: string }) => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set('page', String(params.page));
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.context) searchParams.set('context', params.context);
     if (params?.sort) searchParams.set('sort', params.sort);
+    if (params?.entryType) searchParams.set('entryType', params.entryType);
     const qs = searchParams.toString();
     return api.get<{ data: Entry[]; results: number; page?: number; limit?: number; totalPages?: number }>(`/posts${qs ? `?${qs}` : ''}`);
   },

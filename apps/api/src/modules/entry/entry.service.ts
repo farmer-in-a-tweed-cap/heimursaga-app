@@ -294,9 +294,10 @@ export class EntryService {
     page?: string;
     limit?: string;
     sort?: string;
+    entryType?: string;
   }>): Promise<IEntryGetAllResponse> {
     try {
-      const { context, sort } = query;
+      const { context, sort, entryType } = query;
       const { explorerId, explorerRole } = session;
 
       const parsedPage = Math.max(1, parseInt(query.page, 10) || 1);
@@ -363,6 +364,36 @@ export class EntryService {
         ],
       } as Prisma.EntryWhereInput;
       where = { ...where, ...publicExpeditionFilter };
+
+      // Quick-filter by entry type. Legacy rows have a NULL `entry_type`
+      // and are treated as 'standard' on the way out, so the standard
+      // filter must also match nulls; everything else is an exact match.
+      // Standard's null-or-equals condition goes through `AND` to avoid
+      // clobbering the visibility `OR` already set by publicExpeditionFilter.
+      const allowedEntryTypes = new Set([
+        'standard',
+        'photo',
+        'video',
+        'data',
+        'historical',
+      ]);
+      if (entryType && allowedEntryTypes.has(entryType)) {
+        if (entryType === 'standard') {
+          where = {
+            ...where,
+            AND: [
+              ...(Array.isArray(where.AND)
+                ? where.AND
+                : where.AND
+                  ? [where.AND]
+                  : []),
+              { OR: [{ entry_type: 'standard' }, { entry_type: null }] },
+            ],
+          };
+        } else {
+          where = { ...where, entry_type: entryType };
+        }
+      }
 
       // Filter to entries from followed explorers
       if (context === 'following') {
@@ -832,6 +863,8 @@ export class EntryService {
       // Calculate entry number within expedition (if entry belongs to one)
       // Sorted by date asc, with waypoint route position as tiebreaker for same-date entries
       let entryNumber: number | undefined;
+      let prevEntry: { id: string; title: string } | undefined;
+      let nextEntry: { id: string; title: string } | undefined;
       if (entry.expedition_id && entry.date) {
         // Get all published entries in this expedition with their waypoint sequence
         const siblingEntries = await this.prisma.entry.findMany({
@@ -842,6 +875,8 @@ export class EntryService {
           },
           select: {
             id: true,
+            public_id: true,
+            title: true,
             date: true,
             waypoint_id: true,
             created_at: true,
@@ -885,7 +920,20 @@ export class EntryService {
           return ca - cb;
         });
 
-        entryNumber = siblingEntries.findIndex((e) => e.id === entry.id) + 1;
+        const idx = siblingEntries.findIndex((e) => e.id === entry.id);
+        entryNumber = idx + 1;
+
+        // Build prev/next pointers from the same sorted list. Drafts and
+        // soft-deleted entries are already filtered out by the `where`
+        // above, so neighbors are always publicly-navigable.
+        if (idx > 0) {
+          const prev = siblingEntries[idx - 1];
+          prevEntry = { id: prev.public_id, title: prev.title };
+        }
+        if (idx >= 0 && idx < siblingEntries.length - 1) {
+          const next = siblingEntries[idx + 1];
+          nextEntry = { id: next.public_id, title: next.title };
+        }
       }
 
       // Calculate expedition day (days since expedition start when entry was written)
@@ -1030,6 +1078,8 @@ export class EntryService {
         updatedAt: entry.updated_at,
         entryNumber,
         expeditionDay,
+        prevEntry,
+        nextEntry,
         quickSponsorsCount: entry.quick_sponsors_count || 0,
         quickSponsorsTotal: entry.quick_sponsors_total || 0,
         // Early access

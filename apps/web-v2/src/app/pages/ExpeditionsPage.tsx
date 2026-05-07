@@ -104,13 +104,17 @@ export function ExpeditionsPage() {
     }
   };
 
+  // The quick-filter is now applied server-side so it works across the
+  // full result set instead of the paginated window. 'all' clears the param.
+  const filterParam = activeFilter === 'all' ? undefined : activeFilter;
+
   // Fetch expeditions from API
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     setPage(1);
     try {
-      const data = await expeditionApi.getAll({ page: 1, limit: 20, sort });
+      const data = await expeditionApi.getAll({ page: 1, limit: 20, sort, filter: filterParam });
       setApiExpeditions(data.data || []);
       setTotalResults(data.results || 0);
       setHasMore((data.data || []).length < (data.results || 0));
@@ -119,7 +123,7 @@ export function ExpeditionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [sort]);
+  }, [sort, filterParam]);
 
   // Load more expeditions
   const handleLoadMore = useCallback(async () => {
@@ -127,7 +131,7 @@ export function ExpeditionsPage() {
     setIsLoadingMore(true);
     const nextPage = page + 1;
     try {
-      const data = await expeditionApi.getAll({ page: nextPage, limit: 20, sort });
+      const data = await expeditionApi.getAll({ page: nextPage, limit: 20, sort, filter: filterParam });
       const newExpeditions = data.data || [];
       setApiExpeditions(prev => [...prev, ...newExpeditions]);
       setPage(nextPage);
@@ -143,7 +147,7 @@ export function ExpeditionsPage() {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, hasMore, page, apiExpeditions.length, sort]);
+  }, [isLoadingMore, hasMore, page, apiExpeditions.length, sort, filterParam]);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,7 +157,7 @@ export function ExpeditionsPage() {
       setError(null);
       setPage(1);
       try {
-        const data = await expeditionApi.getAll({ page: 1, limit: 20, sort });
+        const data = await expeditionApi.getAll({ page: 1, limit: 20, sort, filter: filterParam });
         if (!cancelled) {
           setApiExpeditions(data.data || []);
           setTotalResults(data.results || 0);
@@ -184,7 +188,7 @@ export function ExpeditionsPage() {
     return () => {
       cancelled = true;
     };
-  }, [sort]);
+  }, [sort, filterParam]);
 
   const isActive = (path: string) => {
     if (path === '/explorers') return pathname.startsWith('/explorer');
@@ -237,24 +241,13 @@ export function ExpeditionsPage() {
       .map(w => ({ lat: w.lat!, lng: w.lon! })),
   })), [apiExpeditions]);
 
-  // Apply filters and search
+  // Quick-filter is applied server-side (see filterParam above); search
+  // remains client-side over the loaded window. Note: the server-side
+  // 'sponsored' filter does not exclude fully-funded expeditions
+  // (Prisma can't compare two columns without raw SQL), so a fully-funded
+  // expedition will still appear when this filter is active.
   const filteredExpeditions = useMemo(() => {
     let result = transformedExpeditions;
-
-    // Apply filter
-    if (activeFilter === 'active') {
-      result = result.filter(e => e.status === 'active');
-    } else if (activeFilter === 'planned') {
-      result = result.filter(e => e.status === 'planned');
-    } else if (activeFilter === 'completed') {
-      result = result.filter(e => e.status === 'completed');
-    } else if (activeFilter === 'sponsored') {
-      result = result.filter(e => e.sponsorshipsEnabled && e.explorerIsPro && e.stripeConnected && e.raised < e.goal);
-    } else if (activeFilter === 'blueprints') {
-      result = result.filter(e => e.isBlueprint);
-    }
-
-    // Apply search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(e =>
@@ -266,9 +259,8 @@ export function ExpeditionsPage() {
         e.region.toLowerCase().includes(q)
       );
     }
-
     return result;
-  }, [transformedExpeditions, activeFilter, searchQuery]);
+  }, [transformedExpeditions, searchQuery]);
 
   const expeditions = filteredExpeditions;
 

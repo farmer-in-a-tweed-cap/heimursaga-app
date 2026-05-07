@@ -273,9 +273,10 @@ export class ExpeditionService {
     page?: string;
     limit?: string;
     sort?: string;
+    filter?: string;
   }>): Promise<IExpeditionGetAllResponse> {
     try {
-      const { context, sort } = query;
+      const { context, sort, filter } = query;
       const { explorerId, explorerRole } = session;
 
       const parsedPage = Math.max(1, parseInt(query.page, 10) || 1);
@@ -318,6 +319,38 @@ export class ExpeditionService {
               visibility: 'public',
             };
         }
+      }
+
+      // Quick-filter (mirrors the client-side filter buttons on /expeditions).
+      // - status filters: exact match on `status` (overrides the default
+      //   `notIn: ['cancelled','draft']`, but the requested status is always
+      //   stricter so no leakage).
+      // - blueprints: matches the dedicated column.
+      // - sponsored: surfaces expeditions accepting sponsorship. We cannot
+      //   compare `raised < goal` in Prisma without raw SQL, so fully-funded
+      //   expeditions stay in the pool — minor deviation from the old
+      //   client-side filter, which excluded them.
+      switch (filter) {
+        case 'active':
+        case 'planned':
+        case 'completed':
+          where = { ...where, status: filter };
+          break;
+        case 'blueprints':
+          where = { ...where, is_blueprint: true };
+          break;
+        case 'sponsored':
+          where = {
+            ...where,
+            goal: { gt: 0 },
+            author: {
+              ...(typeof where.author === 'object' && where.author !== null
+                ? (where.author as Prisma.ExplorerWhereInput)
+                : {}),
+              is_stripe_account_connected: true,
+            },
+          };
+          break;
       }
 
       // Filter to expeditions from followed explorers

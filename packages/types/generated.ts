@@ -388,6 +388,10 @@ export interface IPostDetail {
   entryNumber?: number;
   // Day of the expedition when this entry was written (calculated from entry date - expedition start date)
   expeditionDay?: number;
+  // Previous/next entry in the same expedition, in canonical sequence order.
+  // Absent at the first/last entry, or when the entry has no expedition.
+  prevEntry?: { id: string; title: string };
+  nextEntry?: { id: string; title: string };
   // Quick sponsor stats
   quickSponsorsCount?: number;
   quickSponsorsTotal?: number;

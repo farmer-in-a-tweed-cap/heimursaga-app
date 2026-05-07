@@ -113,13 +113,17 @@ export function ExplorersPage() {
     }
   };
 
+  // The quick-filter is now applied server-side so it works across the
+  // full result set instead of the paginated window. 'all' clears the param.
+  const filterParam = activeFilter === 'all' ? undefined : activeFilter;
+
   // Fetch explorers from API
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     setPage(1);
     try {
-      const data = await explorerApi.getAll({ page: 1, limit: 20, sort });
+      const data = await explorerApi.getAll({ page: 1, limit: 20, sort, filter: filterParam });
       setApiExplorers(data.data || []);
       setTotalResults(data.results || 0);
       setHasMore((data.data || []).length < (data.results || 0));
@@ -137,7 +141,7 @@ export function ExplorersPage() {
     } finally {
       setLoading(false);
     }
-  }, [sort]);
+  }, [sort, filterParam]);
 
   // Load more explorers
   const handleLoadMore = useCallback(async () => {
@@ -145,7 +149,7 @@ export function ExplorersPage() {
     setIsLoadingMore(true);
     const nextPage = page + 1;
     try {
-      const data = await explorerApi.getAll({ page: nextPage, limit: 20, sort });
+      const data = await explorerApi.getAll({ page: nextPage, limit: 20, sort, filter: filterParam });
       const newExplorers = data.data || [];
       setApiExplorers(prev => [...prev, ...newExplorers]);
       setPage(nextPage);
@@ -172,7 +176,7 @@ export function ExplorersPage() {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, hasMore, page, apiExplorers.length, sort]);
+  }, [isLoadingMore, hasMore, page, apiExplorers.length, sort, filterParam]);
 
   useEffect(() => {
     let cancelled = false;
@@ -182,7 +186,7 @@ export function ExplorersPage() {
       setError(null);
       setPage(1);
       try {
-        const data = await explorerApi.getAll({ page: 1, limit: 20, sort });
+        const data = await explorerApi.getAll({ page: 1, limit: 20, sort, filter: filterParam });
         if (!cancelled) {
           setApiExplorers(data.data || []);
           setTotalResults(data.results || 0);
@@ -222,7 +226,7 @@ export function ExplorersPage() {
     return () => {
       cancelled = true;
     };
-  }, [sort]);
+  }, [sort, filterParam]);
 
   const isActive = (path: string) => {
     if (path === '/explorers') return pathname.startsWith('/explorer');
@@ -255,20 +259,10 @@ export function ExplorersPage() {
     locationLives: exp.locationLives || '',
   })), [apiExplorers]);
 
-  // Apply filters and search
+  // Quick-filter is applied server-side (see filterParam above); search
+  // remains client-side over the loaded window.
   const filteredExplorers = useMemo(() => {
     let result = transformedExplorers;
-
-    // Apply filter
-    if (activeFilter === 'active') {
-      result = result.filter(e => e.recentExpeditions.some(exp => exp.status === 'active'));
-    } else if (activeFilter === 'pro') {
-      result = result.filter(e => e.creator === true);
-    } else if (activeFilter === 'guide') {
-      result = result.filter(e => e.accountType === 'expedition-guide');
-    }
-
-    // Apply search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(e =>
@@ -279,9 +273,8 @@ export function ExplorersPage() {
         e.locationLives.toLowerCase().includes(q)
       );
     }
-
     return result;
-  }, [transformedExplorers, activeFilter, searchQuery]);
+  }, [transformedExplorers, searchQuery]);
 
   const explorers = filteredExplorers;
 
