@@ -222,7 +222,7 @@ export function EditEntryPage() {
         setStandardContent(entry.content || '');
         setLocationName(entry.place || '');
 
-        if (entry.lat && entry.lon) {
+        if (entry.lat != null && entry.lon != null) {
           setCoordinates({ lat: entry.lat, lng: entry.lon });
         }
 
