@@ -1,5 +1,6 @@
 import { MapPin, User } from "lucide-react";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
+import { formatDate } from "@/app/utils/dateFormat";
 
 interface Waypoint {
   id: string;
@@ -37,6 +38,13 @@ interface ExpeditionCardPortraitProps {
   journalEntries: number;
   fundingPercentage: number;
   backers: number;
+  // When the expedition has no funding goal or hasn't received any
+  // contributions, the funding/backers stats collapse to start/end dates
+  // so the bottom of the card stays useful instead of showing 0%/0.
+  fundingEnabled?: boolean;
+  raised?: number;
+  startDate?: string;
+  endDate?: string | null;
   onClick?: () => void;
 }
 
@@ -56,8 +64,13 @@ export function ExpeditionCardPortrait({
   journalEntries,
   fundingPercentage,
   backers,
+  fundingEnabled,
+  raised,
+  startDate,
+  endDate,
   onClick,
 }: ExpeditionCardPortraitProps) {
+  const showFundingStats = fundingEnabled && (raised ?? 0) > 0;
   // Helper to get current location from waypoints/entries
   const getCurrentLocation = () => {
     if (currentLocationSource && currentLocationId) {
@@ -130,21 +143,36 @@ export function ExpeditionCardPortrait({
       <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] px-3 py-3">
         <div className="grid grid-cols-2 gap-2 font-mono text-xs">
           <div>
-            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Days Elapsed</div>
+            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">{status === 'completed' ? 'Duration' : 'Days Elapsed'}</div>
             <div className="font-bold text-xs dark:text-[#e5e5e5]">{daysElapsed}</div>
           </div>
           <div>
             <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Entries</div>
             <div className="font-bold text-xs dark:text-[#e5e5e5]">{journalEntries}</div>
           </div>
-          <div>
-            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Funding</div>
-            <div className="font-bold text-xs text-[#ac6d46]">{fundingPercentage}%</div>
-          </div>
-          <div>
-            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Backers</div>
-            <div className="font-bold text-xs dark:text-[#e5e5e5]">{backers}</div>
-          </div>
+          {showFundingStats ? (
+            <>
+              <div>
+                <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Funding</div>
+                <div className="font-bold text-xs text-[#ac6d46]">{fundingPercentage}%</div>
+              </div>
+              <div>
+                <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Sponsors</div>
+                <div className="font-bold text-xs dark:text-[#e5e5e5]">{backers}</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Start</div>
+                <div className="font-bold text-xs dark:text-[#e5e5e5]">{startDate ? (formatDate(startDate) || startDate) : 'TBD'}</div>
+              </div>
+              <div>
+                <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">End</div>
+                <div className="font-bold text-xs dark:text-[#e5e5e5]">{endDate ? (formatDate(endDate) || endDate) : 'Ongoing'}</div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

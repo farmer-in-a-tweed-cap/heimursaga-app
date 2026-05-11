@@ -7,6 +7,8 @@ import { ExplorerExpeditionsMap } from '@/app/components/ExplorerExpeditionsMap'
 import { InteractionButtons } from '@/app/components/InteractionButtons';
 import { ShareButton } from '@/app/components/ShareButton';
 import { ExpeditionCard } from '@/app/components/ExpeditionCard';
+import { ExpeditionCardPortrait } from '@/app/components/ExpeditionCardPortrait';
+import { EntryCardPortrait } from '@/app/components/EntryCardPortrait';
 import { EntryCard } from '@/app/components/EntryCard';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -16,7 +18,7 @@ import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { CoverPhotoFallback } from '@/app/components/CoverPhotoFallback';
 import { getExplorerStatus, getCurrentExpeditionInfo } from '@/app/components/ExplorerStatusBadge';
 import { useAuth } from '@/app/context/AuthContext';
-import { calculateDaysElapsed } from '@/app/utils/dateFormat';
+import { calculateDaysElapsed, formatDate } from '@/app/utils/dateFormat';
 import { truncateExcerpt } from '@/app/utils/truncateExcerpt';
 import { explorerApi, entryApi, expeditionApi, type ExplorerProfile, type ExplorerEntry, type ExplorerExpedition, type ExplorerFollower } from '@/app/services/api';
 import { useExplorerPageData } from '@/app/hooks/queries';
@@ -271,6 +273,28 @@ export function ExplorerProfilePage() {
   // Calculate passport data from entries (countries, continents, achievements)
   const passportData = calculatePassport(entries, expeditions, profile);
 
+  // When a profile has more than two expeditions we switch to the compact
+  // portrait card variant and bump the initial visible count from 2 to 6
+  // so the smaller cards fill out the grid (3 cols × 2 rows on desktop)
+  // rather than leaving most of the row empty. `Math.max` preserves any
+  // additional reveals the viewer has triggered via LOAD MORE.
+  const totalBlueprintCount = expeditions.filter(e => e.isBlueprint).length;
+  const totalNonBlueprintCount = expeditions.filter(e => !e.isBlueprint).length;
+  const compactExpeditionTrigger =
+    (profile.isGuide ? totalBlueprintCount : totalNonBlueprintCount) > 2;
+  const effectiveExpeditionsLimit = compactExpeditionTrigger
+    ? Math.max(expeditionsLimit, 6)
+    : expeditionsLimit;
+
+  // Same idea for journal entries: once a profile has more than 6 entries,
+  // swap the entry list for the compact portrait variant and seed the
+  // initial visible count at 9 (3×3 grid on desktop) so the smaller cards
+  // fill the section instead of leaving rows half-empty.
+  const compactEntryTrigger = entries.length > 6;
+  const effectiveEntriesLimit = compactEntryTrigger
+    ? Math.max(entriesLimit, 9)
+    : entriesLimit;
+
   // Build explorer object from API data + fallbacks for missing fields
   const explorer = {
     // Core data from API
@@ -394,7 +418,7 @@ export function ExplorerProfilePage() {
       })),
 
     // Recent expeditions (active + completed + planned only, paginated)
-    recentExpeditions: expeditions.filter(e => e.status !== 'cancelled' && e.status !== 'draft').slice(0, expeditionsLimit).map(e => ({
+    recentExpeditions: expeditions.filter(e => e.status !== 'cancelled' && e.status !== 'draft').slice(0, effectiveExpeditionsLimit).map(e => ({
         id: (e as any).id || e.publicId,
         title: e.title,
         description: e.description || '',
@@ -429,14 +453,14 @@ export function ExplorerProfilePage() {
       .map(e => ({
         id: (e as any).id || e.publicId,
         title: e.title,
-        completedDate: e.endDate || '',
-        duration: 0,
+        completedDate: e.endDate ? (formatDate(e.endDate) || e.endDate) : '',
+        duration: calculateDaysElapsed(e.startDate, e.endDate, 'completed'),
         totalRaised: e.raised || 0,
         entries: e.entriesCount || 0,
       })),
 
     // Entries from API (paginated)
-    recentEntries: entries.slice(0, entriesLimit).map(e => ({
+    recentEntries: entries.slice(0, effectiveEntriesLimit).map(e => ({
       id: e.id || e.publicId || '',
       title: e.title,
       expedition: e.expedition?.title || '',
@@ -446,6 +470,7 @@ export function ExplorerProfilePage() {
       excerpt: truncateExcerpt(e.content || ''),
       mediaCount: (e as any).mediaCount || 0,
       wordCount: (e as any).wordCount || 0,
+      views: (e as any).viewsCount || 0,
       type: (e as any).entryType || 'standard',
       location: e.place || '',
       coverImageUrl: (e as any).coverImage,
@@ -508,6 +533,17 @@ export function ExplorerProfilePage() {
   // blueprints — so the blueprints section is skipped entirely.
   const recentBlueprints = explorer.recentExpeditions.filter(e => e.isBlueprint);
   const recentJournalExpeditions = explorer.recentExpeditions.filter(e => !e.isBlueprint);
+
+  // Once a profile has more than two expeditions we switch the cards to the
+  // compact portrait variant so the section can show more at a glance
+  // without scrolling — the full card is heavy and disproportionate when
+  // there's a sizable backlog. The trigger uses the section-relevant total
+  // count (blueprints for guide profiles, expeditions otherwise) rather
+  // than the on-screen count, which is capped to 2 on first load.
+  const useCompactExpeditionCards =
+    (profile.isGuide
+      ? explorer.stats.totalBlueprints
+      : explorer.stats.totalExpeditions) > 2;
   const guideHasJournalContent =
     profile.isGuide &&
     (recentJournalExpeditions.length > 0 || explorer.recentEntries.length > 0);
@@ -1029,83 +1065,30 @@ export function ExplorerProfilePage() {
             <h3 className="text-xs md:text-sm font-bold mb-3 md:mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
               {profile.isGuide ? 'EXPEDITION BLUEPRINTS' : 'RECENT EXPEDITIONS'}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div className={`grid grid-cols-1 ${useCompactExpeditionCards ? 'sm:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'} gap-4 md:gap-6`}>
               {(profile.isGuide ? recentBlueprints : explorer.recentExpeditions).length > 0 ? (
                 (profile.isGuide ? recentBlueprints : explorer.recentExpeditions).map((expedition) => (
-                  <ExpeditionCard
-                    key={expedition.id}
-                    id={expedition.id}
-                    title={expedition.title}
-                    explorer={explorer.name}
-                    description={expedition.description || ''}
-                    imageUrl={expedition.coverImage || ''}
-                    location={expedition.currentLocation || ''}
-                    region={expedition.region}
-                    locationName={expedition.locationName}
-                    coordinates=""
-                    startDate={expedition.startDate}
-                    endDate={expedition.endDate || null}
-                    journalEntries={expedition.entriesCount}
-                    fundingGoal={expedition.goal}
-                    fundingCurrent={expedition.raised}
-                    fundingPercentage={expedition.goal > 0 ? (expedition.raised / expedition.goal) * 100 : 0}
-                    backers={expedition.sponsorsCount}
-                    distance={expedition.totalDistanceKm || 0}
-                    status={expedition.status}
-                    visibility={expedition.visibility as 'public' | 'off-grid' | 'private'}
-                    terrain=""
-                    averageSpeed={0}
-                    onViewJournal={() => router.push(`/expedition/${expedition.id}`)}
-                    onSupport={() => router.push(`/sponsor/${expedition.id}`)}
-                    sponsorshipsEnabled={expedition.goal > 0}
-                    explorerIsPro={profile.creator}
-                    stripeConnected={profile.stripeAccountConnected}
-                    isBookmarked={bookmarkedExpeditions.has(expedition.id)}
-                    onBookmark={() => handleBookmarkExpedition(expedition.id)}
-                    isBlueprint={expedition.isBlueprint}
-                    mode={expedition.mode}
-                    adoptionsCount={expedition.adoptionsCount ?? 0}
-                    averageRating={expedition.averageRating}
-                    ratingsCount={expedition.ratingsCount ?? 0}
-                    elevationMinM={expedition.elevationMinM}
-                    elevationMaxM={expedition.elevationMaxM}
-                    estimatedDurationH={expedition.estimatedDurationH}
-                    waypointsCount={expedition.waypointsCount ?? 0}
-                    waypointCoords={(expedition.waypoints || [])
-                      .filter((w: any) => w.lat != null && w.lon != null)
-                      .map((w: any) => ({ lat: w.lat, lng: w.lon }))}
-                    onAdopt={() => handleAdoptBlueprint(expedition.id)}
-                  />
-                ))
-              ) : (
-                <div className="col-span-2 text-center py-8 text-[#616161] dark:text-[#b5bcc4]">
-                  {profile.isGuide ? 'No blueprints published yet' : 'No expeditions yet'}
-                </div>
-              )}
-            </div>
-            {(profile.isGuide
-              ? recentBlueprints.length < explorer.stats.totalBlueprints
-              : explorer.recentExpeditions.length < explorer.stats.totalExpeditions) && (
-              <button
-                onClick={() => setExpeditionsLimit(prev => prev + 5)}
-                className="w-full mt-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm"
-              >
-                {profile.isGuide ? 'LOAD MORE BLUEPRINTS' : 'LOAD MORE EXPEDITIONS'}
-              </button>
-            )}
-          </div>
-
-          {/* Journal Expeditions — guide profiles only, shown when the guide
-              has any non-blueprint expeditions or is the owner (so their own
-              empty-state nudges them toward journaling). */}
-          {profile.isGuide && (recentJournalExpeditions.length > 0 || isOwnProfile) && (
-            <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4 md:p-6">
-              <h3 className="text-xs md:text-sm font-bold mb-3 md:mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-                JOURNAL EXPEDITIONS
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                {recentJournalExpeditions.length > 0 ? (
-                  recentJournalExpeditions.map((expedition) => (
+                  useCompactExpeditionCards ? (
+                    <ExpeditionCardPortrait
+                      key={expedition.id}
+                      id={expedition.id}
+                      title={expedition.title}
+                      explorerUsername={explorer.id}
+                      imageUrl={expedition.coverImage || ''}
+                      region={expedition.region}
+                      locationName={expedition.locationName}
+                      status={expedition.status}
+                      daysElapsed={expedition.daysActive ?? 0}
+                      journalEntries={expedition.entriesCount}
+                      fundingPercentage={expedition.goal > 0 ? Math.round((expedition.raised / expedition.goal) * 100) : 0}
+                      backers={expedition.sponsorsCount}
+                      fundingEnabled={expedition.goal > 0}
+                      raised={expedition.raised}
+                      startDate={expedition.startDate}
+                      endDate={expedition.endDate}
+                      onClick={() => router.push(`/expedition/${expedition.id}`)}
+                    />
+                  ) : (
                     <ExpeditionCard
                       key={expedition.id}
                       id={expedition.id}
@@ -1150,9 +1133,102 @@ export function ExplorerProfilePage() {
                         .map((w: any) => ({ lat: w.lat, lng: w.lon }))}
                       onAdopt={() => handleAdoptBlueprint(expedition.id)}
                     />
+                  )
+                ))
+              ) : (
+                <div className={`${useCompactExpeditionCards ? 'sm:col-span-2 lg:col-span-3' : 'md:col-span-2'} text-center py-8 text-[#616161] dark:text-[#b5bcc4]`}>
+                  {profile.isGuide ? 'No blueprints published yet' : 'No expeditions yet'}
+                </div>
+              )}
+            </div>
+            {(profile.isGuide
+              ? recentBlueprints.length < explorer.stats.totalBlueprints
+              : explorer.recentExpeditions.length < explorer.stats.totalExpeditions) && (
+              <button
+                onClick={() => setExpeditionsLimit(prev => prev + 5)}
+                className="w-full mt-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm"
+              >
+                {profile.isGuide ? 'LOAD MORE BLUEPRINTS' : 'LOAD MORE EXPEDITIONS'}
+              </button>
+            )}
+          </div>
+
+          {/* Journal Expeditions — guide profiles only, shown when the guide
+              has any non-blueprint expeditions or is the owner (so their own
+              empty-state nudges them toward journaling). */}
+          {profile.isGuide && (recentJournalExpeditions.length > 0 || isOwnProfile) && (
+            <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4 md:p-6">
+              <h3 className="text-xs md:text-sm font-bold mb-3 md:mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
+                JOURNAL EXPEDITIONS
+              </h3>
+              <div className={`grid grid-cols-1 ${useCompactExpeditionCards ? 'sm:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'} gap-4 md:gap-6`}>
+                {recentJournalExpeditions.length > 0 ? (
+                  recentJournalExpeditions.map((expedition) => (
+                    useCompactExpeditionCards ? (
+                      <ExpeditionCardPortrait
+                        key={expedition.id}
+                        id={expedition.id}
+                        title={expedition.title}
+                        explorerUsername={explorer.id}
+                        imageUrl={expedition.coverImage || ''}
+                        region={expedition.region}
+                        locationName={expedition.locationName}
+                        status={expedition.status}
+                        daysElapsed={expedition.daysActive ?? 0}
+                        journalEntries={expedition.entriesCount}
+                        fundingPercentage={expedition.goal > 0 ? (expedition.raised / expedition.goal) * 100 : 0}
+                        backers={expedition.sponsorsCount}
+                        onClick={() => router.push(`/expedition/${expedition.id}`)}
+                      />
+                    ) : (
+                      <ExpeditionCard
+                        key={expedition.id}
+                        id={expedition.id}
+                        title={expedition.title}
+                        explorer={explorer.name}
+                        description={expedition.description || ''}
+                        imageUrl={expedition.coverImage || ''}
+                        location={expedition.currentLocation || ''}
+                        region={expedition.region}
+                        locationName={expedition.locationName}
+                        coordinates=""
+                        startDate={expedition.startDate}
+                        endDate={expedition.endDate || null}
+                        journalEntries={expedition.entriesCount}
+                        fundingGoal={expedition.goal}
+                        fundingCurrent={expedition.raised}
+                        fundingPercentage={expedition.goal > 0 ? (expedition.raised / expedition.goal) * 100 : 0}
+                        backers={expedition.sponsorsCount}
+                        distance={expedition.totalDistanceKm || 0}
+                        status={expedition.status}
+                        visibility={expedition.visibility as 'public' | 'off-grid' | 'private'}
+                        terrain=""
+                        averageSpeed={0}
+                        onViewJournal={() => router.push(`/expedition/${expedition.id}`)}
+                        onSupport={() => router.push(`/sponsor/${expedition.id}`)}
+                        sponsorshipsEnabled={expedition.goal > 0}
+                        explorerIsPro={profile.creator}
+                        stripeConnected={profile.stripeAccountConnected}
+                        isBookmarked={bookmarkedExpeditions.has(expedition.id)}
+                        onBookmark={() => handleBookmarkExpedition(expedition.id)}
+                        isBlueprint={expedition.isBlueprint}
+                        mode={expedition.mode}
+                        adoptionsCount={expedition.adoptionsCount ?? 0}
+                        averageRating={expedition.averageRating}
+                        ratingsCount={expedition.ratingsCount ?? 0}
+                        elevationMinM={expedition.elevationMinM}
+                        elevationMaxM={expedition.elevationMaxM}
+                        estimatedDurationH={expedition.estimatedDurationH}
+                        waypointsCount={expedition.waypointsCount ?? 0}
+                        waypointCoords={(expedition.waypoints || [])
+                          .filter((w: any) => w.lat != null && w.lon != null)
+                          .map((w: any) => ({ lat: w.lat, lng: w.lon }))}
+                        onAdopt={() => handleAdoptBlueprint(expedition.id)}
+                      />
+                    )
                   ))
                 ) : (
-                  <div className="col-span-2 text-center py-8 text-[#616161] dark:text-[#b5bcc4]">
+                  <div className={`${useCompactExpeditionCards ? 'sm:col-span-2 lg:col-span-3' : 'md:col-span-2'} text-center py-8 text-[#616161] dark:text-[#b5bcc4]`}>
                     No journal expeditions yet{isOwnProfile ? ' — log your first entry to start one' : ''}
                   </div>
                 )}
@@ -1176,31 +1252,49 @@ export function ExplorerProfilePage() {
             <h3 className="text-xs md:text-sm font-bold mb-3 md:mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
               RECENT JOURNAL ENTRIES
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div className={`grid grid-cols-1 ${compactEntryTrigger ? 'sm:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'} gap-4 md:gap-6`}>
               {explorer.recentEntries.length > 0 ? (
                 explorer.recentEntries.map((entry) => (
-                  <EntryCard
-                    key={entry.id}
-                    id={entry.id}
-                    title={entry.title}
-                    explorerUsername={explorer.id}
-                    expeditionName={entry.expedition}
-                    location={entry.location || ''}
-                    date={entry.date}
-                    excerpt={entry.excerpt}
-                    mediaCount={entry.mediaCount}
-                    views={0}
-                    wordCount={entry.wordCount || 0}
-                    type={entry.type}
-                    coverImageUrl={entry.coverImageUrl}
-                    onReadEntry={() => router.push(`/entry/${entry.id}`)}
-                    onViewExpedition={() => entry.expeditionId && router.push(`/expedition/${entry.expeditionId}`)}
-                    isBookmarked={bookmarkedEntries.has(entry.id)}
-                    onBookmark={() => handleBookmarkEntry(entry.id)}
-                  />
+                  compactEntryTrigger ? (
+                    <EntryCardPortrait
+                      key={entry.id}
+                      id={entry.id}
+                      title={entry.title}
+                      explorerUsername={explorer.id}
+                      expeditionName={entry.expedition}
+                      location={entry.location || ''}
+                      date={entry.date}
+                      excerpt={entry.excerpt}
+                      views={entry.views}
+                      wordCount={entry.wordCount || 0}
+                      mediaCount={entry.mediaCount}
+                      type={entry.type}
+                      onClick={() => router.push(`/entry/${entry.id}`)}
+                    />
+                  ) : (
+                    <EntryCard
+                      key={entry.id}
+                      id={entry.id}
+                      title={entry.title}
+                      explorerUsername={explorer.id}
+                      expeditionName={entry.expedition}
+                      location={entry.location || ''}
+                      date={entry.date}
+                      excerpt={entry.excerpt}
+                      mediaCount={entry.mediaCount}
+                      views={0}
+                      wordCount={entry.wordCount || 0}
+                      type={entry.type}
+                      coverImageUrl={entry.coverImageUrl}
+                      onReadEntry={() => router.push(`/entry/${entry.id}`)}
+                      onViewExpedition={() => entry.expeditionId && router.push(`/expedition/${entry.expeditionId}`)}
+                      isBookmarked={bookmarkedEntries.has(entry.id)}
+                      onBookmark={() => handleBookmarkEntry(entry.id)}
+                    />
+                  )
                 ))
               ) : (
-                <div className="col-span-2 text-center py-8 text-[#616161] dark:text-[#b5bcc4]">
+                <div className={`${compactEntryTrigger ? 'sm:col-span-2 lg:col-span-3' : 'md:col-span-2'} text-center py-8 text-[#616161] dark:text-[#b5bcc4]`}>
                   No entries yet
                 </div>
               )}
@@ -1526,15 +1620,21 @@ export function ExplorerProfilePage() {
               </h3>
               <div className="space-y-2">
                 {explorer.completedExpeditions.map((expedition) => (
-                  <div key={expedition.id} className="text-xs border border-[#b5bcc4] dark:border-[#3a3a3a] p-2">
+                  <Link
+                    key={expedition.id}
+                    href={`/expedition/${expedition.id}`}
+                    className="block text-xs border border-[#b5bcc4] dark:border-[#3a3a3a] p-2 hover:border-[#ac6d46] dark:hover:border-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
+                  >
                     <div className="font-serif font-bold mb-1 dark:text-[#e5e5e5]">{expedition.title}</div>
                     <div className="text-[#616161] dark:text-[#b5bcc4] font-mono space-y-1">
                       <div>Completed: {expedition.completedDate}</div>
                       <div>Duration: {expedition.duration} days</div>
                       <div>Entries: {expedition.entries}</div>
-                      <div className="text-[#ac6d46]">Raised: ${expedition.totalRaised.toLocaleString()}</div>
+                      {expedition.totalRaised > 0 && (
+                        <div className="text-[#ac6d46]">Raised: ${expedition.totalRaised.toLocaleString()}</div>
+                      )}
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>

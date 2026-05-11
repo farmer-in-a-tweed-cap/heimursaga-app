@@ -794,6 +794,8 @@ export class ExplorerService {
         created_at: true,
         likes_count: true,
         bookmarks_count: true,
+        views_count: true,
+        entry_type: true,
         // Count media items
         _count: {
           select: {
@@ -880,6 +882,8 @@ export class ExplorerService {
             likes_count,
             bookmarks,
             bookmarks_count,
+            views_count,
+            entry_type,
             _count,
             cover_upload,
             media,
@@ -916,6 +920,15 @@ export class ExplorerService {
               mediaCount: _count?.media || 0,
               wordCount,
               coverImage,
+              viewsCount: views_count || 0,
+              entryType: (entry_type || undefined) as
+                | 'standard'
+                | 'photo'
+                | 'video'
+                | 'data'
+                | 'waypoint'
+                | 'historical'
+                | undefined,
               waypoint: waypoint
                 ? {
                     id: waypoint.id,
