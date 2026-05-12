@@ -349,21 +349,37 @@ export function ContentTabs({
               return ROUTE_MODE_STYLES[mode] || ROUTE_MODE_STYLES.straight;
             };
 
+            // Entries-only expeditions have no waypoint segments, so the
+            // wpIdx-based `isNewLeg` check below would never fire and the
+            // route tab would lose its leg-mode indicators. For that case
+            // we treat every pair of consecutive entries as its own leg,
+            // using the expedition's overall routeMode as the leg style
+            // and the haversine between coords as the distance.
+            const entriesOnlyRoute = waypoints.length === 0;
+            const overallLegStyle = ROUTE_MODE_STYLES[routeMode || 'straight'] || ROUTE_MODE_STYLES.straight;
+
             return (
               <div>
                 {routeItems.length > 0 ? routeItems.map((item, i) => {
                   const prev = i > 0 ? routeItems[i - 1] : null;
-                  const isNewLeg = prev && prev.wpIdx !== item.wpIdx
-                    && prev.wpIdx < waypoints.length && item.wpIdx <= waypoints.length;
+                  const isNewLeg = entriesOnlyRoute
+                    ? !!prev
+                    : prev && prev.wpIdx !== item.wpIdx
+                      && prev.wpIdx < waypoints.length && item.wpIdx <= waypoints.length;
 
                   // Sum distances for legs between previous and current waypoint positions
                   let legDist = 0;
                   let legStyle = ROUTE_MODE_STYLES.straight;
                   if (isNewLeg) {
-                    const from = prev!.wpIdx;
-                    const to = Math.min(item.wpIdx, waypoints.length - 1);
-                    for (let l = from; l < to; l++) legDist += legDistances[l] || 0;
-                    legStyle = getLegStyle(from);
+                    if (entriesOnlyRoute && prev && prev.kind === 'entry' && item.kind === 'entry') {
+                      legDist = haversine(prev.entry.coords, item.entry.coords);
+                      legStyle = overallLegStyle;
+                    } else {
+                      const from = prev!.wpIdx;
+                      const to = Math.min(item.wpIdx, waypoints.length - 1);
+                      for (let l = from; l < to; l++) legDist += legDistances[l] || 0;
+                      legStyle = getLegStyle(from);
+                    }
                   }
 
                   return (
@@ -383,8 +399,10 @@ export function ContentTabs({
                           <div style={{ color: legStyle.color, opacity: 0.6 }} className="text-[10px] leading-none -mt-0.5">▼</div>
                         </div>
                       )}
-                      {/* Same-waypoint spacing */}
-                      {prev && prev.wpIdx === item.wpIdx && <div className="h-3" />}
+                      {/* Same-waypoint spacing — skip when we just rendered a leg
+                          connector above (entries-only mode draws a leg between
+                          every pair, so the connector replaces the gap). */}
+                      {prev && prev.wpIdx === item.wpIdx && !isNewLeg && <div className="h-3" />}
                       {/* Card */}
                       {item.kind === 'entry' ? (
                         <EntryCardLandscape
