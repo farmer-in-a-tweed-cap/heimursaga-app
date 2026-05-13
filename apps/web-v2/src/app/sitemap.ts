@@ -25,10 +25,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/legal/privacy`, changeFrequency: 'yearly', priority: 0.2 },
   ];
 
-  // Fetch dynamic pages from API
+  // Fetch dynamic pages from API. No inner fetch cache — the outer
+  // `revalidate` already throttles regeneration to once an hour, and
+  // double-caching held us on a stale pre-slug response across deploys.
   try {
     const baseUrl = API_URL.replace('/v1', '');
-    const res = await fetch(`${baseUrl}/v1/sitemap`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${baseUrl}/v1/sitemap`, { cache: 'no-store' });
     if (!res.ok) return staticPages;
 
     const data = await res.json();
