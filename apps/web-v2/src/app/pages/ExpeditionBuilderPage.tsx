@@ -1993,10 +1993,15 @@ export function ExpeditionBuilderPage() {
           setTags(expedition.tags.join(', '));
         }
 
-        // Load estimated duration
+        // Load estimated duration. Mark as manually edited so the auto-calc
+        // effect doesn't immediately overwrite the saved value with a
+        // Naismith straight-line estimate on mount — the loaded value
+        // represents the user's prior choice (and routed durations aren't
+        // persisted, so cumulativeTravelTime is 0 at load time). RECALCULATE
+        // clears this flag to refresh.
         if (expedition.estimatedDurationH) {
           setEstimatedDurationH(String(expedition.estimatedDurationH));
-          setDurationAutoFilled(true);
+          setDurationManuallyEdited(true);
         }
 
         // Load mode
@@ -2215,7 +2220,7 @@ export function ExpeditionBuilderPage() {
     }
     if (draft.estimatedDurationH) {
       setEstimatedDurationH(String(draft.estimatedDurationH));
-      setDurationAutoFilled(true);
+      setDurationManuallyEdited(true);
     }
     if (draft.countryCode) setCountryCode(draft.countryCode);
     if (draft.countryName) setCountryName(draft.countryName);
