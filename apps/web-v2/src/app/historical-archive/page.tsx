@@ -155,42 +155,56 @@ function EntryTimelineRow({ e }: { e: IHistoricalArchiveEntry }) {
   return (
     <Link
       href={entryHref(e)}
-      className="group block border-b border-[#b5bcc4] dark:border-[#3a3a3a] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-colors"
+      className="group block h-full hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-colors"
     >
-      <div className="px-4 md:px-6 py-3 md:py-4 grid grid-cols-1 md:grid-cols-[140px_1fr] gap-1 md:gap-6">
-        {dateIso ? (
-          <time
-            dateTime={dateIso}
-            className="text-[10px] font-mono text-[#616161] dark:text-[#b5bcc4] tracking-wider md:pt-1"
-          >
-            {dateLabel?.toUpperCase()}
-          </time>
-        ) : (
-          <div className="text-[10px] font-mono text-[#616161] dark:text-[#b5bcc4] tracking-wider md:pt-1">
-            {dateLabel?.toUpperCase()}
-          </div>
-        )}
-        <div className="min-w-0">
-          <div className="text-[10px] font-mono font-bold text-[#ac6d46] tracking-wider mb-1">
-            {e.explorer.toUpperCase() || 'EXPLORER'}
-          </div>
-          <h3 className="font-serif font-bold text-base md:text-base text-[#202020] dark:text-[#e5e5e5] group-hover:text-[#ac6d46] leading-snug mb-1">
-            {e.cleanTitle}
-          </h3>
-          {e.place && (
-            <div className="text-[11px] md:text-xs text-[#616161] dark:text-[#b5bcc4] font-mono mb-1.5 truncate">
-              {e.place}
-            </div>
+      <div className="px-4 md:px-6 py-2.5 md:py-3 min-w-0">
+        <div className="flex items-baseline gap-2 mb-1">
+          {dateIso ? (
+            <time
+              dateTime={dateIso}
+              className="text-[10px] font-mono text-[#616161] dark:text-[#b5bcc4] tracking-wider shrink-0"
+            >
+              {dateLabel?.toUpperCase()}
+            </time>
+          ) : (
+            <span className="text-[10px] font-mono text-[#616161] dark:text-[#b5bcc4] tracking-wider shrink-0">
+              {dateLabel?.toUpperCase()}
+            </span>
           )}
-          {e.excerpt && (
-            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] font-serif leading-relaxed line-clamp-2">
-              {e.excerpt}
-            </p>
+          {e.explorer && (
+            <span className="text-[10px] font-mono font-bold text-[#ac6d46] tracking-wider truncate">
+              · {e.explorer.toUpperCase()}
+            </span>
           )}
         </div>
+        <h4 className="font-serif font-bold text-sm md:text-base text-[#202020] dark:text-[#e5e5e5] group-hover:text-[#ac6d46] leading-snug">
+          {e.cleanTitle}
+        </h4>
+        {e.place && (
+          <div className="text-[11px] text-[#616161] dark:text-[#b5bcc4] font-mono truncate mt-0.5">
+            {e.place}
+          </div>
+        )}
       </div>
     </Link>
   );
+}
+
+function bucketByDecade(
+  entries: IHistoricalArchiveEntry[],
+): { decade: number; entries: IHistoricalArchiveEntry[] }[] {
+  const buckets = new Map<number, IHistoricalArchiveEntry[]>();
+  for (const e of entries) {
+    const year = e.date ? new Date(e.date).getUTCFullYear() : null;
+    if (year == null || !Number.isFinite(year)) continue;
+    const decade = Math.floor(year / 10) * 10;
+    const bucket = buckets.get(decade);
+    if (bucket) bucket.push(e);
+    else buckets.set(decade, [e]);
+  }
+  return [...buckets.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([decade, list]) => ({ decade, entries: list }));
 }
 
 function SectionHeader({ label, count }: { label: string; count?: number }) {
@@ -493,8 +507,35 @@ export default async function HistoricalArchivePage() {
         <section className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
           <SectionHeader label="CHRONOLOGICAL TIMELINE" count={entries.length} />
           <div>
-            {entries.map((e) => (
-              <EntryTimelineRow key={e.publicId} e={e} />
+            {bucketByDecade(entries).map(({ decade, entries: list }) => (
+              <div key={decade}>
+                <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] px-4 md:px-6 py-2 border-b border-[#b5bcc4] dark:border-[#3a3a3a] flex items-baseline justify-between gap-3">
+                  <h3 className="text-xs md:text-sm font-bold tracking-[0.14em] text-[#202020] dark:text-[#e5e5e5]">
+                    {decade}s
+                  </h3>
+                  <span className="text-[10px] font-mono text-[#616161] dark:text-[#b5bcc4] tracking-wider whitespace-nowrap">
+                    {list.length} {list.length === 1 ? 'ENTRY' : 'ENTRIES'}
+                  </span>
+                </div>
+                <ul className="grid grid-cols-1 md:grid-cols-2">
+                  {list.map((e, i) => (
+                    <li
+                      key={e.publicId}
+                      className={`border-b border-[#b5bcc4] dark:border-[#3a3a3a] ${
+                        // Vertical divider between columns on desktop only.
+                        // Apply to every odd-indexed entry except the last
+                        // odd one in a list whose total count is odd (it
+                        // would orphan the divider into an empty column).
+                        i % 2 === 0 && i < list.length - 1
+                          ? 'md:border-r md:border-r-[#b5bcc4] md:dark:border-r-[#3a3a3a]'
+                          : ''
+                      }`}
+                    >
+                      <EntryTimelineRow e={e} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
           </div>
         </section>
