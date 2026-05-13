@@ -19,16 +19,24 @@ export class AppService {
 
   async generateSitemap(): Promise<ISitemapGetResponse> {
     try {
-      // entries (published, not deleted, not off-grid)
+      // entries (published, not draft, not deleted, not off-grid; parent
+      // expedition must also be live — not cancelled, drafted, or deleted).
       const posts = await this.prisma.entry.findMany({
         where: {
           public: true,
+          is_draft: false,
           public_id: { not: null },
           deleted_at: null,
           NOT: { visibility: 'off-grid' },
           OR: [
             { expedition_id: null },
-            { expedition: { visibility: 'public' } },
+            {
+              expedition: {
+                visibility: 'public',
+                deleted_at: null,
+                status: { notIn: ['cancelled', 'draft'] },
+              },
+            },
           ],
         },
         select: {
@@ -38,11 +46,12 @@ export class AppService {
         },
       });
 
-      // expeditions (public, not deleted)
+      // expeditions (public, not deleted, not cancelled or drafted).
       const expeditions = await this.prisma.expedition.findMany({
         where: {
           visibility: 'public',
           deleted_at: null,
+          status: { notIn: ['cancelled', 'draft'] },
         },
         select: {
           public_id: true,
