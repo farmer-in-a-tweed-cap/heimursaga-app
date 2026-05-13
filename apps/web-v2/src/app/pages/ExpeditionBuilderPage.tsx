@@ -5516,10 +5516,12 @@ export function ExpeditionBuilderPage() {
               flags, so once a guide types an override it stays sticky. */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 pb-6 border-b-2 border-[#b5bcc4] dark:border-[#616161]">
             <div>
-              <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
-                STARTING LOCATION
-                {(locationManuallyEdited || locationAutoFilled) && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">{locationManuallyEdited ? '(manually set)' : '(auto-detected)'}</span>}
-              </label>
+              <div className="flex items-center justify-between mb-2 min-h-[26px]">
+                <label className="block text-xs font-medium dark:text-[#e5e5e5]">
+                  STARTING LOCATION
+                  {(locationManuallyEdited || locationAutoFilled) && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">{locationManuallyEdited ? '(manually set)' : '(auto-detected)'}</span>}
+                </label>
+              </div>
               <input
                 type="text"
                 value={locationName}
@@ -5535,7 +5537,7 @@ export function ExpeditionBuilderPage() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-2 min-h-[26px]">
                 <label className="block text-xs font-medium dark:text-[#e5e5e5]">
                   TRAVEL TIME (HOURS)
                   {(durationManuallyEdited || durationAutoFilled) && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">{durationManuallyEdited ? '(manually set)' : '(auto-calculated)'}</span>}
