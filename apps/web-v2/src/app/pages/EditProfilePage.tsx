@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { Camera, Shield, Home, Navigation, Info, Loader2, Image as ImageIcon, Phone, Mail, MessageSquare } from 'lucide-react';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
+import { CoverPhotoCropper } from '@/app/components/CoverPhotoCropper';
 // import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { LocationAutocompleteInput } from '@/app/components/LocationAutocompleteInput';
 import {
@@ -76,6 +77,7 @@ export function EditProfilePage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [coverPhotoFile, setCoverPhotoFile] = useState<File | null>(null);
   const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(null);
+  const [coverCropSource, setCoverCropSource] = useState<File | null>(null);
 
   // Fetch profile settings on mount
   useEffect(() => {
@@ -176,22 +178,34 @@ export function EditProfilePage() {
 
   const handleCoverPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Reset input so picking the same file again still fires change.
+    e.target.value = '';
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         toast.error('Please select an image file');
         return;
       }
-      // Validate file size (max 25MB)
       if (file.size > 25 * 1024 * 1024) {
         toast.error('Cover photo must be less than 25MB');
         return;
       }
-      setCoverPhotoFile(file);
-      setCoverPhotoPreview(URL.createObjectURL(file));
-      setIsDirty(true);
-      setSaveStatus('idle');
+      setCoverCropSource(file);
     }
+  };
+
+  const handleCoverCropConfirm = (cropped: File) => {
+    setCoverPhotoFile(cropped);
+    setCoverPhotoPreview((prev) => {
+      if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(cropped);
+    });
+    setCoverCropSource(null);
+    setIsDirty(true);
+    setSaveStatus('idle');
+  };
+
+  const handleCoverCropCancel = () => {
+    setCoverCropSource(null);
   };
 
   const removeAvatar = () => {
@@ -485,44 +499,58 @@ export function EditProfilePage() {
                   PROFILE COVER PHOTO
                 </label>
 
-                {/* Current Cover Photo or Preview */}
+                {/* Current Cover Photo or Preview (4:1 banner) */}
                 <div className="mb-3">
-                  <div className="w-full h-48 border-2 border-[#202020] dark:border-[#616161] bg-[#f5f5f5] dark:bg-[#2a2a2a] flex items-center justify-center overflow-hidden relative">
-                    {coverPhotoPreview ? (
-                      <NextImage src={coverPhotoPreview} alt="Cover photo preview" className="object-cover" fill />
-                    ) : (
-                      <div className="text-center">
-                        <ImageIcon size={48} className="text-[#b5bcc4] mx-auto mb-2" />
-                        <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">NO COVER PHOTO</div>
-                      </div>
-                    )}
-                  </div>
+                  {coverCropSource ? (
+                    <CoverPhotoCropper
+                      file={coverCropSource}
+                      aspectRatio={4}
+                      onConfirm={handleCoverCropConfirm}
+                      onCancel={handleCoverCropCancel}
+                    />
+                  ) : (
+                    <div
+                      className="relative w-full border-2 border-[#202020] dark:border-[#616161] bg-[#f5f5f5] dark:bg-[#2a2a2a] flex items-center justify-center overflow-hidden"
+                      style={{ aspectRatio: '4' }}
+                    >
+                      {coverPhotoPreview ? (
+                        <NextImage src={coverPhotoPreview} alt="Cover photo preview" className="object-cover" fill />
+                      ) : (
+                        <div className="text-center">
+                          <ImageIcon size={48} className="text-[#b5bcc4] mx-auto mb-2" />
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">NO COVER PHOTO</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
                   Upload a wide banner image for your profile header. This will be displayed at the top of your explorer profile page.
                 </div>
 
-                <div className="flex gap-2">
-                  <label className="px-4 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-medium cursor-pointer inline-flex items-center gap-2">
-                    {coverPhotoPreview ? 'CHANGE COVER PHOTO' : 'UPLOAD COVER PHOTO'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleCoverPhotoUpload}
-                      className="hidden"
-                    />
-                  </label>
-                  {coverPhotoPreview && (
-                    <button
-                      type="button"
-                      onClick={removeCoverPhoto}
-                      className="px-4 py-2 border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] text-xs font-bold"
-                    >
-                      REMOVE
-                    </button>
-                  )}
-                </div>
+                {!coverCropSource && (
+                  <div className="flex gap-2">
+                    <label className="px-4 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-medium cursor-pointer inline-flex items-center gap-2">
+                      {coverPhotoPreview ? 'CHANGE COVER PHOTO' : 'UPLOAD COVER PHOTO'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCoverPhotoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {coverPhotoPreview && (
+                      <button
+                        type="button"
+                        onClick={removeCoverPhoto}
+                        className="px-4 py-2 border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] text-xs font-bold"
+                      >
+                        REMOVE
+                      </button>
+                    )}
+                  </div>
+                )}
                 <div className="mt-2 text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
                   Requirements: JPG or PNG • 1200x300px recommended • Max 25MB
                 </div>

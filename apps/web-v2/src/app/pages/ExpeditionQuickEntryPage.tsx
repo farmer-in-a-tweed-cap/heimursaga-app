@@ -9,6 +9,7 @@ import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { Upload, ArrowLeft, Lock, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { ConfirmationModal } from '@/app/components/ConfirmationModal';
 import { DatePicker } from '@/app/components/DatePicker';
+import { CoverPhotoCropper } from '@/app/components/CoverPhotoCropper';
 import { expeditionApi, uploadApi } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
 import { GEO_REGION_GROUPS } from '@/app/utils/geoRegions';
@@ -41,6 +42,7 @@ export function ExpeditionQuickEntryPage() {
   const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(null);
   const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(null);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [coverCropSource, setCoverCropSource] = useState<File | null>(null);
 
   // Blueprint origin tracking — locks region and mode
   const [isFromBlueprint, setIsFromBlueprint] = useState(false);
@@ -292,9 +294,10 @@ export function ExpeditionQuickEntryPage() {
     }
   };
 
-  // Handle cover photo selection and upload
-  const handleCoverPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle cover photo selection — open cropper before uploading.
+  const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
 
     const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -302,25 +305,27 @@ export function ExpeditionQuickEntryPage() {
 
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
       setSubmitError('Invalid file type. Please use JPG, PNG, or WEBP');
-      e.target.value = '';
       return;
     }
     if (file.size > MAX_COVER_SIZE) {
       setSubmitError('Cover photo must be less than 25MB');
-      e.target.value = '';
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setCoverPhotoPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    setSubmitError(null);
+    setCoverCropSource(file);
+  };
 
+  const handleCoverCropConfirm = async (cropped: File) => {
+    setCoverCropSource(null);
+    setCoverPhotoPreview((prev) => {
+      if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(cropped);
+    });
     setUploadingCover(true);
     setSubmitError(null);
     try {
-      const response = await uploadApi.upload(file);
+      const response = await uploadApi.upload(cropped);
       setCoverPhotoUrl(response.original);
     } catch {
       setSubmitError('Failed to upload cover photo');
@@ -647,37 +652,53 @@ export function ExpeditionQuickEntryPage() {
                   COVER PHOTO
                   <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
                 </label>
-                <label className="block border-2 border-dashed border-[#ac6d46] p-8 text-center hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] cursor-pointer transition-all">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCoverPhotoChange}
-                    className="hidden"
+                {coverCropSource ? (
+                  <CoverPhotoCropper
+                    file={coverCropSource}
+                    aspectRatio={2}
+                    onConfirm={handleCoverCropConfirm}
+                    onCancel={() => setCoverCropSource(null)}
                   />
-                  {coverPhotoPreview ? (
-                    <div className="relative">
-                      <Image src={coverPhotoPreview} alt="Cover preview" className="max-h-32 mx-auto object-cover" width={400} height={200} sizes="400px" style={{ width: 'auto', height: 'auto', maxHeight: '8rem' }} />
+                ) : coverPhotoPreview ? (
+                  <div className="border-2 border-[#ac6d46]">
+                    <div className="relative w-full" style={{ aspectRatio: '2' }}>
+                      <Image src={coverPhotoPreview} alt="Cover preview" fill className="object-cover" sizes="(max-width: 768px) 100vw, 800px" />
                       {uploadingCover && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                           <Loader2 className="w-8 h-8 text-white animate-spin" />
                         </div>
                       )}
-                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-2">
-                        {uploadingCover ? 'Uploading...' : coverPhotoUrl ? 'Uploaded successfully • Click to change' : 'Click to change'}
-                      </div>
                     </div>
-                  ) : (
-                    <>
-                      <Upload className="w-8 h-8 mx-auto mb-2 text-[#ac6d46]" />
-                      <div className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">
-                        UPLOAD COVER PHOTO
-                      </div>
-                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                        Click or drag file here • JPG, PNG, WEBP • Max 25MB • Recommended: 1200x600px
-                      </div>
-                    </>
-                  )}
-                </label>
+                    <label className="block p-3 border-t-2 border-[#ac6d46] bg-[#f5f5f5] dark:bg-[#2a2a2a] text-xs text-[#616161] dark:text-[#b5bcc4] flex items-center justify-between gap-2 cursor-pointer">
+                      <span>
+                        {uploadingCover ? 'Uploading...' : coverPhotoUrl ? 'Uploaded successfully' : 'Current cover photo'}
+                      </span>
+                      <span className="text-[#ac6d46] font-bold">REPLACE</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCoverPhotoChange}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <label className="block border-2 border-dashed border-[#ac6d46] p-8 text-center hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] cursor-pointer transition-all">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCoverPhotoChange}
+                      className="hidden"
+                    />
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-[#ac6d46]" />
+                    <div className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">
+                      UPLOAD COVER PHOTO
+                    </div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      Click or drag file here • JPG, PNG, WEBP • Max 25MB • Recommended: 1200x600px
+                    </div>
+                  </label>
+                )}
               </div>
 
               {/* Tags */}

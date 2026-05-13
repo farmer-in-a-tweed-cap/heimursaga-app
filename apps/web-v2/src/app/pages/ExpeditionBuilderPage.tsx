@@ -5647,7 +5647,6 @@ export function ExpeditionBuilderPage() {
                 aspectRatio={2}
                 onConfirm={handleCoverCropConfirm}
                 onCancel={() => setCoverCropSource(null)}
-                accentColor="#ac6d46"
               />
             ) : coverPhotoPreview ? (
               <div className="border-2 border-[#ac6d46]">
