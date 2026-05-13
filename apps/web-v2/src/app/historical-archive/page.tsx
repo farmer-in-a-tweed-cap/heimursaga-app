@@ -336,7 +336,8 @@ export default async function HistoricalArchivePage() {
             href="/historical-archive"
             className="px-3 md:px-4 py-2 text-xs font-bold shrink-0 bg-[#4676ac] text-white"
           >
-            HISTORICAL ARCHIVE
+            <span className="md:hidden">ARCHIVE</span>
+            <span className="hidden md:inline">HISTORICAL ARCHIVE</span>
           </Link>
         </div>
 

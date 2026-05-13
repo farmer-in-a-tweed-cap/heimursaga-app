@@ -323,7 +323,8 @@ export function ExplorersPage() {
                 : 'bg-[#2a2a2a] text-white hover:scale-105'
             }`}
           >
-            HISTORICAL ARCHIVE
+            <span className="md:hidden">ARCHIVE</span>
+            <span className="hidden md:inline">HISTORICAL ARCHIVE</span>
           </Link>
         </div>
 
