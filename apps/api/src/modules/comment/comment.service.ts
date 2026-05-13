@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { UserNotificationContext, UserRole } from '@repo/types';
 
 import { generator } from '@/lib/generator';
+import { idOrSlug } from '@/lib/slug';
 
 import {
   ServiceBadRequestException,
@@ -63,10 +64,10 @@ export class CommentService {
     try {
       const { userId } = session;
 
-      // Find the post by public_id
+      // Find the post by publicId or slug
       const post = await this.prisma.entry.findFirst({
         where: {
-          public_id: postId,
+          ...idOrSlug(postId),
           deleted_at: null,
         },
         select: {
@@ -210,7 +211,7 @@ export class CommentService {
       // Find the post and check if comments are enabled
       const post = await this.prisma.entry.findFirst({
         where: {
-          public_id: postId,
+          ...idOrSlug(postId),
           deleted_at: null,
         },
         select: {
@@ -554,7 +555,7 @@ export class CommentService {
       // Find the post
       const post = await this.prisma.entry.findFirst({
         where: {
-          public_id: postId,
+          ...idOrSlug(postId),
           deleted_at: null,
         },
         select: {

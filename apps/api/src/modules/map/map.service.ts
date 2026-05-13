@@ -12,6 +12,7 @@ import {
 } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
+import { idOrSlug } from '@/lib/slug';
 import { getStaticMediaUrl } from '@/lib/upload';
 import { sortByDate } from '@/lib/utils';
 
@@ -409,7 +410,7 @@ export class MapService {
       if (tripId) {
         expedition = await this.prisma.expedition
           .findFirstOrThrow({
-            where: { public_id: tripId, deleted_at: null },
+            where: { ...idOrSlug(tripId), deleted_at: null },
             select: { id: true, author_id: true },
           })
           .catch(() => null);

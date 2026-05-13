@@ -18,6 +18,15 @@ export function isLikelyPublicId(s: string | undefined | null): boolean {
   return PUBLIC_ID_RE.test(s);
 }
 
+/**
+ * Spread into Prisma `where` to match an entry/expedition by either its
+ * legacy publicId or its slug. Lets every endpoint accept slug URLs
+ * without thinking about which form the route param contains.
+ */
+export function idOrSlug(value: string): { OR: { public_id?: string; slug?: string }[] } {
+  return { OR: [{ public_id: value }, { slug: value }] };
+}
+
 export function kebabize(input: string | undefined | null): string {
   if (!input) return '';
   // Strip diacritics, lowercase, keep [a-z0-9 -], collapse whitespace/hyphens

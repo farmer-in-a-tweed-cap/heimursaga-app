@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UserNotificationContext } from '@repo/types';
 
+import { idOrSlug } from '@/lib/slug';
 import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
@@ -67,7 +68,7 @@ export class ExpeditionNoteService {
 
       // Get the expedition
       const expedition = await this.prisma.expedition.findFirst({
-        where: { public_id: expeditionId, deleted_at: null },
+        where: { ...idOrSlug(expeditionId), deleted_at: null },
         select: {
           id: true,
           public_id: true,
@@ -251,7 +252,7 @@ export class ExpeditionNoteService {
 
       // Get the expedition
       const expedition = await this.prisma.expedition.findFirst({
-        where: { public_id: expeditionId, deleted_at: null },
+        where: { ...idOrSlug(expeditionId), deleted_at: null },
         select: {
           id: true,
           author_id: true,
@@ -387,7 +388,7 @@ export class ExpeditionNoteService {
 
       // Get the expedition
       const expedition = await this.prisma.expedition.findFirst({
-        where: { public_id: expeditionId, deleted_at: null },
+        where: { ...idOrSlug(expeditionId), deleted_at: null },
         select: {
           id: true,
           public_id: true,
@@ -512,7 +513,7 @@ export class ExpeditionNoteService {
 
       // Get the expedition
       const expedition = await this.prisma.expedition.findFirst({
-        where: { public_id: expeditionId, deleted_at: null },
+        where: { ...idOrSlug(expeditionId), deleted_at: null },
         select: { id: true, author_id: true, status: true },
       });
 
@@ -557,7 +558,7 @@ export class ExpeditionNoteService {
       if (!explorerId) throw new ServiceForbiddenException();
 
       const expedition = await this.prisma.expedition.findFirst({
-        where: { public_id: expeditionId, deleted_at: null },
+        where: { ...idOrSlug(expeditionId), deleted_at: null },
         select: { id: true, author_id: true, status: true },
       });
 
@@ -606,7 +607,7 @@ export class ExpeditionNoteService {
       if (!explorerId) throw new ServiceForbiddenException();
 
       const expedition = await this.prisma.expedition.findFirst({
-        where: { public_id: expeditionId, deleted_at: null },
+        where: { ...idOrSlug(expeditionId), deleted_at: null },
         select: { id: true },
       });
 
@@ -659,7 +660,7 @@ export class ExpeditionNoteService {
       if (!explorerId) throw new ServiceForbiddenException();
 
       const expedition = await this.prisma.expedition.findFirst({
-        where: { public_id: expeditionId, deleted_at: null },
+        where: { ...idOrSlug(expeditionId), deleted_at: null },
         select: { id: true, author_id: true },
       });
 
@@ -709,7 +710,7 @@ export class ExpeditionNoteService {
       const { expeditionId } = query;
 
       const expedition = await this.prisma.expedition.findFirst({
-        where: { public_id: expeditionId, deleted_at: null },
+        where: { ...idOrSlug(expeditionId), deleted_at: null },
         select: { id: true },
       });
 

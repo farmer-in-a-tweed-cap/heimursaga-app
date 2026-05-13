@@ -28,7 +28,7 @@ import { dateformat } from '@/lib/date-format';
 import { integerToDecimal, normalizeText } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 import { resolveExpeditionLocations } from '@/lib/resolve-expedition-location';
-import { buildExpeditionSlugBase, ensureUniqueSlug } from '@/lib/slug';
+import { buildExpeditionSlugBase, ensureUniqueSlug, idOrSlug } from '@/lib/slug';
 import { getStaticMediaUrl } from '@/lib/upload';
 import { matchRoles, sortByDate } from '@/lib/utils';
 
@@ -2046,7 +2046,7 @@ export class ExpeditionService {
       // get the expedition (must be owned by this user)
       if (!id) throw new ServiceNotFoundException('expedition not found');
       const expedition = await this.prisma.expedition.findFirstOrThrow({
-        where: { public_id: id, author_id: explorerId, deleted_at: null },
+        where: { ...idOrSlug(id), author_id: explorerId, deleted_at: null },
         select: {
           id: true,
           visibility: true,
@@ -2514,7 +2514,7 @@ export class ExpeditionService {
       // get the expedition (must be owned by this user)
       if (!id) throw new ServiceNotFoundException('expedition not found');
       const expedition = await this.prisma.expedition.findFirstOrThrow({
-        where: { public_id: id, author_id: explorerId, deleted_at: null },
+        where: { ...idOrSlug(id), author_id: explorerId, deleted_at: null },
         select: {
           id: true,
           public_id: true,
@@ -2578,7 +2578,7 @@ export class ExpeditionService {
 
       // Get expedition and verify ownership
       const expedition = await this.prisma.expedition.findFirstOrThrow({
-        where: { public_id: id, author_id: explorerId, deleted_at: null },
+        where: { ...idOrSlug(id), author_id: explorerId, deleted_at: null },
         select: {
           id: true,
           public_id: true,
@@ -2652,7 +2652,7 @@ export class ExpeditionService {
 
       // Get expedition and verify ownership
       const expedition = await this.prisma.expedition.findFirstOrThrow({
-        where: { public_id: id, author_id: explorerId, deleted_at: null },
+        where: { ...idOrSlug(id), author_id: explorerId, deleted_at: null },
         select: {
           id: true,
           public_id: true,
@@ -2727,7 +2727,7 @@ export class ExpeditionService {
       // Verify ownership and get current state
       const expedition = await this.prisma.expedition
         .findFirstOrThrow({
-          where: { public_id: id, author_id: explorerId, deleted_at: null },
+          where: { ...idOrSlug(id), author_id: explorerId, deleted_at: null },
           select: {
             id: true,
             status: true,
@@ -2865,7 +2865,7 @@ export class ExpeditionService {
       const expedition = await this.prisma.expedition
         .findFirstOrThrow({
           where: {
-            public_id: expeditionId,
+            ...idOrSlug(expeditionId),
             author_id: explorerId,
             deleted_at: null,
           },
@@ -2941,7 +2941,7 @@ export class ExpeditionService {
       const expedition = await this.prisma.expedition
         .findFirstOrThrow({
           where: {
-            public_id: expeditionId,
+            ...idOrSlug(expeditionId),
             author_id: explorerId,
             deleted_at: null,
           },
@@ -2991,7 +2991,7 @@ export class ExpeditionService {
       // Update sequence on the join table if provided
       if (sequence !== undefined) {
         const expedition = await this.prisma.expedition.findFirstOrThrow({
-          where: { public_id: expeditionId },
+          where: idOrSlug(expeditionId),
           select: { id: true },
         });
         await this.prisma.expeditionWaypoint.update({
@@ -3031,7 +3031,7 @@ export class ExpeditionService {
       const expedition = await this.prisma.expedition
         .findFirstOrThrow({
           where: {
-            public_id: expeditionId,
+            ...idOrSlug(expeditionId),
             author_id: explorerId,
             deleted_at: null,
           },
@@ -3088,7 +3088,7 @@ export class ExpeditionService {
       // check if the expedition exists
       const expedition = await this.prisma.expedition
         .findFirstOrThrow({
-          where: { public_id: publicId, deleted_at: null },
+          where: { ...idOrSlug(publicId), deleted_at: null },
           select: {
             id: true,
             bookmarks_count: true,
@@ -3311,7 +3311,7 @@ export class ExpeditionService {
 
       const expedition = await this.prisma.expedition
         .findFirstOrThrow({
-          where: { public_id: id, author_id: explorerId, deleted_at: null },
+          where: { ...idOrSlug(id), author_id: explorerId, deleted_at: null },
           select: {
             id: true,
             status: true,
@@ -3480,7 +3480,7 @@ export class ExpeditionService {
 
       const expedition = await this.prisma.expedition
         .findFirstOrThrow({
-          where: { public_id: id, author_id: explorerId, deleted_at: null },
+          where: { ...idOrSlug(id), author_id: explorerId, deleted_at: null },
           select: {
             id: true,
             status: true,
@@ -3711,7 +3711,7 @@ export class ExpeditionService {
 
       const expedition = await this.prisma.expedition
         .findFirstOrThrow({
-          where: { public_id: id, author_id: explorerId, deleted_at: null },
+          where: { ...idOrSlug(id), author_id: explorerId, deleted_at: null },
           select: {
             id: true,
             is_blueprint: true,
@@ -3814,7 +3814,7 @@ export class ExpeditionService {
 
       const expedition = await this.prisma.expedition
         .findFirstOrThrow({
-          where: { public_id: id, deleted_at: null },
+          where: { ...idOrSlug(id), deleted_at: null },
           select: {
             id: true,
             public_id: true,
@@ -4124,7 +4124,7 @@ export class ExpeditionService {
       const blueprint = await this.prisma.expedition
         .findFirstOrThrow({
           where: {
-            public_id: id,
+            ...idOrSlug(id),
             is_blueprint: true,
             status: 'published',
             deleted_at: null,
@@ -4293,7 +4293,7 @@ export class ExpeditionService {
       const blueprint = await this.prisma.expedition
         .findFirstOrThrow({
           where: {
-            public_id: id,
+            ...idOrSlug(id),
             is_blueprint: true,
             deleted_at: null,
           },
@@ -4378,7 +4378,7 @@ export class ExpeditionService {
       const blueprint = await this.prisma.expedition
         .findFirstOrThrow({
           where: {
-            public_id: id,
+            ...idOrSlug(id),
             is_blueprint: true,
             deleted_at: null,
           },
@@ -4493,7 +4493,7 @@ export class ExpeditionService {
       const blueprint = await this.prisma.expedition
         .findFirstOrThrow({
           where: {
-            public_id: id,
+            ...idOrSlug(id),
             is_blueprint: true,
             deleted_at: null,
           },

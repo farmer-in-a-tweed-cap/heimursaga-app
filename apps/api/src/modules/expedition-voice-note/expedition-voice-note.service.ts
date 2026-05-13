@@ -3,6 +3,7 @@ import { ExplorerRole } from '@repo/types';
 import { ONE_TIME_TIER_SLOTS } from '@repo/types/sponsorship-tiers';
 
 import { integerToDecimal } from '@/lib/formatter';
+import { idOrSlug } from '@/lib/slug';
 
 import {
   ServiceBadRequestException,
@@ -57,7 +58,7 @@ export class ExpeditionVoiceNoteService {
         throw new ServiceNotFoundException('expedition not found');
 
       const expedition = await this.prisma.expedition.findFirst({
-        where: { public_id: expeditionId, deleted_at: null },
+        where: { ...idOrSlug(expeditionId), deleted_at: null },
         select: {
           id: true,
           public_id: true,
@@ -194,7 +195,7 @@ export class ExpeditionVoiceNoteService {
         throw new ServiceNotFoundException('expedition not found');
 
       const expedition = await this.prisma.expedition.findFirst({
-        where: { public_id: expeditionId, deleted_at: null },
+        where: { ...idOrSlug(expeditionId), deleted_at: null },
         select: { id: true, author_id: true, status: true, visibility: true },
       });
 
@@ -273,7 +274,7 @@ export class ExpeditionVoiceNoteService {
       if (!explorerId) throw new ServiceForbiddenException();
 
       const expedition = await this.prisma.expedition.findFirst({
-        where: { public_id: expeditionId, deleted_at: null },
+        where: { ...idOrSlug(expeditionId), deleted_at: null },
         select: { id: true, author_id: true },
       });
 

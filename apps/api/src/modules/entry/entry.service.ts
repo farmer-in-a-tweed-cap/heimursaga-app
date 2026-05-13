@@ -20,7 +20,7 @@ import { dateformat } from '@/lib/date-format';
 import { integerToDecimal, normalizeText } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 import { getCountryCodeFromCoordinates } from '@/lib/geocoding';
-import { buildEntrySlugBase, ensureUniqueSlug } from '@/lib/slug';
+import { buildEntrySlugBase, ensureUniqueSlug, idOrSlug } from '@/lib/slug';
 import { getStaticMediaUrl } from '@/lib/upload';
 import { matchRoles } from '@/lib/utils';
 
@@ -1541,7 +1541,7 @@ export class EntryService {
       const entry = await this.prisma.entry
         .findFirstOrThrow({
           where: {
-            public_id: publicId,
+            ...idOrSlug(publicId),
             author_id: explorerId,
             deleted_at: null,
           },
@@ -1940,7 +1940,7 @@ export class EntryService {
       if (!publicId) throw new ServiceNotFoundException('entry not found');
 
       let where = {
-        public_id: publicId,
+        ...idOrSlug(publicId),
         deleted_at: null,
       } as Prisma.EntryWhereInput;
 
@@ -2057,7 +2057,7 @@ export class EntryService {
       // check if the entry exists
       const entry = await this.prisma.entry
         .findFirstOrThrow({
-          where: { public_id: publicId, deleted_at: null },
+          where: { ...idOrSlug(publicId), deleted_at: null },
           select: {
             id: true,
             title: true,
@@ -2148,7 +2148,7 @@ export class EntryService {
       // check if the entry exists
       const entry = await this.prisma.entry
         .findFirstOrThrow({
-          where: { public_id: publicId, deleted_at: null },
+          where: { ...idOrSlug(publicId), deleted_at: null },
           select: {
             id: true,
             bookmarks_count: true,
