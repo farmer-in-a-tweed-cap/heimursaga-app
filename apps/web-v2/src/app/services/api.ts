@@ -850,6 +850,7 @@ export interface ExpeditionWaypoint {
   id: number | string;
   title: string;
   description?: string;
+  location?: string;
   lat?: number;
   lon?: number;
   elevationM?: number;

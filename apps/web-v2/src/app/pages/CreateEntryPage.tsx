@@ -743,6 +743,10 @@ export function CreateEntryPage() {
     if (waypoint) {
       if (!entryTitle && waypoint.title) setEntryTitle(waypoint.title);
       if (waypoint.date) setEntryDate(typeof waypoint.date === 'string' ? waypoint.date : new Date(waypoint.date).toISOString().split('T')[0]);
+      // Carry the waypoint's place label over to the entry's place field
+      // so guides don't have to retype "Near Almaty" etc. — only when the
+      // user hasn't already typed something.
+      if (waypoint.location && !entryLocation) setEntryLocation(waypoint.location);
     }
     setShowWaypointSelector(false);
   };
