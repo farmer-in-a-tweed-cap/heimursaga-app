@@ -24,16 +24,16 @@ export function LazyMount({
   className,
 }: LazyMountProps) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const [visible, setVisible] = useState(false);
+  // Lazy initializer: if the platform doesn't support IntersectionObserver
+  // (ancient browsers — not SSR; this component is client-only), mount
+  // immediately from the first render. Avoids a synchronous setState inside
+  // an effect, which Next.js's lint forbids.
+  const [visible, setVisible] = useState(
+    () => typeof IntersectionObserver === 'undefined',
+  );
 
   useEffect(() => {
     if (visible || !ref.current) return;
-    // If IntersectionObserver isn't available (very old browsers / SSR
-    // edge cases), fall back to mounting immediately.
-    if (typeof IntersectionObserver === 'undefined') {
-      setVisible(true);
-      return;
-    }
     const el = ref.current;
     const observer = new IntersectionObserver(
       (entries) => {

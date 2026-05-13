@@ -160,32 +160,6 @@ export function ExpeditionDetailPage() {
   const [embedCopied, setEmbedCopied] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
 
-  // Defer the heavy banner-map init out of the initial render so it doesn't
-  // block paint or count against LCP. Flip to true once the browser is idle
-  // (or, as a safety net, after a short timeout).
-  const [bannerMapIdle, setBannerMapIdle] = useState(false);
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const w = window as Window & {
-      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-      cancelIdleCallback?: (handle: number) => void;
-    };
-    let idleHandle: number | undefined;
-    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
-    const flip = () => setBannerMapIdle(true);
-    if (typeof w.requestIdleCallback === 'function') {
-      idleHandle = w.requestIdleCallback(flip, { timeout: 2000 });
-    } else {
-      timeoutHandle = setTimeout(flip, 200);
-    }
-    return () => {
-      if (idleHandle !== undefined && typeof w.cancelIdleCallback === 'function') {
-        w.cancelIdleCallback(idleHandle);
-      }
-      if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
-    };
-  }, []);
-
   // Mapbox map reference (modal)
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -325,10 +299,8 @@ export function ExpeditionDetailPage() {
   // Helper: check if any coordinate data exists for maps
   const hasMapData = waypoints.length > 0 || journalEntries.some(e => e.coords.lat !== 0 || e.coords.lng !== 0);
 
-  // Initialize non-interactive banner map (gated on bannerMapIdle so the
-  // heavy WebGL init runs after first paint instead of blocking LCP).
+  // Initialize non-interactive banner map
   useEffect(() => {
-    if (!bannerMapIdle) return;
     if (!bannerMapContainerRef.current) return;
 
     // Guard: skip if no coordinate data exists
@@ -648,7 +620,7 @@ export function ExpeditionDetailPage() {
       map.remove();
       bannerMapRef.current = null;
     };
-  }, [bannerMapIdle, theme, mapLayer, nauticalOverlay, waypoints, journalEntries, apiExpedition, debriefRoute]);
+  }, [theme, mapLayer, nauticalOverlay, waypoints, journalEntries, apiExpedition, debriefRoute]);
 
   // Phase 1: When modal opens, wait for browser paint then signal ready
   useEffect(() => {
