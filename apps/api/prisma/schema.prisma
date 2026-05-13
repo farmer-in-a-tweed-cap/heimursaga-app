@@ -379,6 +379,7 @@ model Waypoint {
   deleted_at  DateTime?
   description String?               @db.Text
   title       String?               @db.VarChar(200)
+  location    String?               @db.VarChar(150)
   date        DateTime?
   author_id   Int?
   entries     Entry[]

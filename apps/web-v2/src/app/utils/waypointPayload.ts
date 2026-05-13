@@ -3,6 +3,7 @@ interface WaypointLike {
   coordinates: { lat: number; lng: number };
   date: string;
   description: string;
+  location?: string;
   sequence: number;
 }
 
@@ -13,6 +14,7 @@ export function buildWaypointPayload(waypoint: WaypointLike) {
     lon: waypoint.coordinates.lng,
     date: waypoint.date || null,
     description: waypoint.description || undefined,
+    location: waypoint.location || undefined,
     sequence: waypoint.sequence,
   };
 }

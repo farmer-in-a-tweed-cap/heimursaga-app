@@ -1114,6 +1114,7 @@ export class ExpeditionService {
                     elevation_m: true,
                     date: true,
                     description: true,
+                    location: true,
                     entries: {
                       where: { deleted_at: null, is_draft: { not: true } },
                       select: { public_id: true },
@@ -1655,6 +1656,7 @@ export class ExpeditionService {
               title,
               date,
               description,
+              location,
               entries,
             },
           }) => ({
@@ -1665,6 +1667,7 @@ export class ExpeditionService {
             title,
             date,
             description,
+            location: location ?? undefined,
             sequence,
             entryId: entries?.[0]?.public_id || null,
             entryIds: entries?.map((e) => e.public_id) || [],
@@ -2879,7 +2882,7 @@ export class ExpeditionService {
       }
 
       // create a waypoint
-      const { title, lat, lon, date, description, sequence } = payload;
+      const { title, lat, lon, date, description, location, sequence } = payload;
       // Convert date: string → Date, null → null (no date), undefined → undefined (Prisma skips)
       const dateTime = date
         ? new Date(date as unknown as string)
@@ -2896,6 +2899,7 @@ export class ExpeditionService {
               lon,
               date: dateTime,
               description,
+              location,
             },
           },
 
@@ -2965,7 +2969,7 @@ export class ExpeditionService {
         });
 
       // update the waypoint
-      const { title, lat, lon, date, description, sequence } = payload;
+      const { title, lat, lon, date, description, location, sequence } = payload;
       // Convert date: string → Date, null → null (clear date), undefined → undefined (Prisma skips)
       const dateTime = date
         ? new Date(date as unknown as string)
@@ -2980,6 +2984,7 @@ export class ExpeditionService {
           lon,
           date: dateTime,
           description,
+          location,
         },
       });
 
@@ -3459,6 +3464,7 @@ export class ExpeditionService {
         title?: string;
         date?: string;
         description?: string;
+        location?: string;
         sequence: number;
         entryId?: string;
         entryIds?: string[];
@@ -3594,6 +3600,7 @@ export class ExpeditionService {
                       elevation_m: elevationM,
                       date: dateTime,
                       description: wp.description,
+                      location: wp.location,
                     },
                   },
                   expedition: {
@@ -4163,6 +4170,7 @@ export class ExpeditionService {
                     lon: true,
                     elevation_m: true,
                     description: true,
+                    location: true,
                   },
                 },
               },
@@ -4240,6 +4248,7 @@ export class ExpeditionService {
                     lon: wp.waypoint.lon,
                     elevation_m: wp.waypoint.elevation_m,
                     description: wp.waypoint.description,
+                    location: wp.waypoint.location,
                   },
                 },
                 expedition: { connect: { id: expedition.id } },

@@ -184,15 +184,16 @@ export function useExpeditionData(
     const currentSource = apiExpedition.currentLocationSource;
     const currentLocId = apiExpedition.currentLocationId;
 
-    // Linked-entry place lookup. The API returns waypoints with entryId(s) but
-    // no embedded entry — so the route tab was falling back to wp.title for
-    // the place line, which duplicated the title. Resolve to the linked
-    // entry's place name when one exists.
+    // Place line resolution. Prefer the waypoint's own location field
+    // (user-entered in the builder), then fall back to the linked entry's
+    // place. Without a value, leave empty so the card hides the line — we
+    // never duplicate wp.title under the pin icon.
     const entryPlaceById = new Map<string, string>();
     for (const e of apiExpedition.entries || []) {
       if (e.place) entryPlaceById.set(e.id, e.place);
     }
     const resolveWpPlace = (wp: any): string => {
+      if (wp.location) return wp.location;
       const ids = [wp.entryId, ...(wp.entryIds || [])].filter(Boolean);
       for (const id of ids) {
         const p = entryPlaceById.get(id);

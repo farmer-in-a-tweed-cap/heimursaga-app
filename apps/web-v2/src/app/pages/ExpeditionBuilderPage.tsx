@@ -893,6 +893,7 @@ export function ExpeditionBuilderPage() {
               title: item.waypoint.name || undefined,
               date: item.waypoint.date || undefined,
               description: item.waypoint.description || undefined,
+              location: item.waypoint.location || undefined,
               sequence: i,
               entryIds: item.waypoint.entryIds?.length > 0 ? item.waypoint.entryIds : undefined,
             };
@@ -1002,6 +1003,7 @@ export function ExpeditionBuilderPage() {
               title: item.waypoint.name || undefined,
               date: item.waypoint.date || undefined,
               description: item.waypoint.description || undefined,
+              location: item.waypoint.location || undefined,
               sequence: i,
               entryIds: item.waypoint.entryIds?.length > 0 ? item.waypoint.entryIds : undefined,
             };
@@ -2088,7 +2090,7 @@ export function ExpeditionBuilderPage() {
             name: wp.title || `Waypoint ${index + 1}`,
             type: 'standard' as const,
             coordinates: { lat: wp.lat || 0, lng: wp.lon || 0 },
-            location: '', // Not in API response
+            location: wp.location || '',
             date: toDateString(wp.date),
             description: wp.description || '',
             elevationM:
@@ -2261,7 +2263,7 @@ export function ExpeditionBuilderPage() {
         name: wp.title || `Waypoint ${index + 1}`,
         type: 'standard' as const,
         coordinates: { lat: wp.lat || 0, lng: wp.lon || 0 },
-        location: '',
+        location: wp.location || '',
         date: toDateString(wp.date),
         description: wp.description || '',
         entryIds: wp.entryIds || [],

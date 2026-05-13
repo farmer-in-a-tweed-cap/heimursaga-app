@@ -601,6 +601,7 @@ export interface IWaypoint {
   elevationM?: number;
   title?: string;
   description?: string;
+  location?: string;
   date?: Date;
   public?: boolean;
   post?: { id: string; title: string };
@@ -629,6 +630,7 @@ export interface IWaypointCreatePayload {
   elevationM?: number;
   title?: string;
   description?: string;
+  location?: string;
   date?: Date;
   sequence?: number;
   postId?: string;

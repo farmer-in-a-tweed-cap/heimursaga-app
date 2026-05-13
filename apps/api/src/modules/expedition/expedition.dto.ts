@@ -500,6 +500,13 @@ export class WaypointCreateDto implements IWaypointCreatePayload {
   description?: string;
 
   @ApiProperty({ required: false })
+  @SanitizeText()
+  @IsString()
+  @IsOptional()
+  @MaxLength(150)
+  location?: string;
+
+  @ApiProperty({ required: false })
   @IsNumber()
   @IsOptional()
   elevationM?: number;
@@ -543,6 +550,13 @@ export class WaypointUpdateDto implements IWaypointUpdatePayload {
   description?: string;
 
   @ApiProperty({ required: false })
+  @SanitizeText()
+  @IsString()
+  @IsOptional()
+  @MaxLength(150)
+  location?: string;
+
+  @ApiProperty({ required: false })
   @IsNumber()
   @IsOptional()
   elevationM?: number;
@@ -584,6 +598,13 @@ class WaypointSyncItemDto {
   @IsOptional()
   @MaxLength(4000)
   description?: string;
+
+  @ApiProperty({ required: false })
+  @SanitizeText()
+  @IsString()
+  @IsOptional()
+  @MaxLength(150)
+  location?: string;
 
   @ApiProperty({ required: false })
   @IsNumber()
