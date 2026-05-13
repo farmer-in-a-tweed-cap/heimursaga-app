@@ -33,6 +33,7 @@ export class AppService {
         },
         select: {
           public_id: true,
+          slug: true,
           updated_at: true,
         },
       });
@@ -45,6 +46,7 @@ export class AppService {
         },
         select: {
           public_id: true,
+          slug: true,
           updated_at: true,
         },
       });
@@ -65,14 +67,16 @@ export class AppService {
       const response: ISitemapGetResponse = {
         expeditions: expeditions
           .filter(({ public_id }) => public_id && public_id !== '')
-          .map(({ public_id, updated_at }) => ({
+          .map(({ public_id, slug, updated_at }) => ({
             publicId: public_id!,
+            slug: slug || undefined,
             updatedAt: updated_at,
           })),
         entries: posts
           .filter(({ public_id }) => public_id && public_id !== '')
-          .map(({ public_id, updated_at }) => ({
+          .map(({ public_id, slug, updated_at }) => ({
             publicId: public_id!,
+            slug: slug || undefined,
             updatedAt: updated_at,
           })),
         explorers: users.map(({ username, updated_at }) => ({

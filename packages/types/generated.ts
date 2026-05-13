@@ -31,8 +31,8 @@ type UploadedFile = {
 
 // app
 export interface ISitemapGetResponse {
-  expeditions: { publicId: string; updatedAt: Date }[];
-  entries: { publicId: string; updatedAt: Date }[];
+  expeditions: { publicId: string; slug?: string; updatedAt: Date }[];
+  entries: { publicId: string; slug?: string; updatedAt: Date }[];
   explorers: { username: string; updatedAt: Date }[];
 }
 
@@ -337,6 +337,7 @@ export interface IPlanDegradeResponse {}
 // post (entry) - entries are distinct from waypoints
 export interface IPostDetail {
   id: string;
+  slug?: string;
   title: string;
   content?: string;
   // Coordinates stored directly on entry
@@ -376,6 +377,7 @@ export interface IPostDetail {
   // Expedition relationship (direct foreign key on entry)
   trip?: {
     id: string;
+    slug?: string;
     title: string;
     status?: string;
     entriesCount?: number;
@@ -993,6 +995,7 @@ export interface IPostInsightsGetResponse {
 // trips
 export interface ITripDetail {
   id: string;
+  slug?: string;
   title: string;
   createdAt?: Date;
   startDate?: Date;

@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
+import { permanentRedirect } from 'next/navigation';
 import { getEntry } from '@/lib/server-api';
 import { JournalEntryPage } from '@/app/pages/JournalEntryPage';
+import {
+  EntryArticleSsr,
+  SsrShellAssets,
+} from '@/app/components/ssr/SsrArticleShell';
 import {
   buildEntryJsonLd,
   buildEntryDescription,
@@ -60,11 +65,15 @@ export async function generateMetadata({
       ? [entry.authorPicture]
       : [];
 
+  const canonical = `https://heimursaga.com/entry/${entry.slug || entry.publicId}`;
+
   return {
     title,
     description,
+    alternates: { canonical },
     openGraph: {
       type: 'article',
+      url: canonical,
       title,
       description,
       images,
@@ -86,6 +95,14 @@ export default async function Page({
 }) {
   const { entryId } = await params;
   const entry = await getEntry(entryId);
+
+  // Permanent redirect from legacy publicId URL to the canonical slug URL
+  // when one is available. permanentRedirect emits 308; Google treats this
+  // the same as 301 and transfers ranking signals.
+  if (entry?.slug && entry.slug !== entryId) {
+    permanentRedirect(`/entry/${entry.slug}`);
+  }
+
   const ld = entry ? buildEntryJsonLd(entry) : null;
 
   return (
@@ -95,6 +112,12 @@ export default async function Page({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdScript(ld) }}
         />
+      )}
+      {entry && (
+        <>
+          <SsrShellAssets />
+          <EntryArticleSsr entry={entry} />
+        </>
       )}
       <JournalEntryPage />
     </>

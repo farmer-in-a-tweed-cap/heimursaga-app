@@ -7,6 +7,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/v1';
 
 export interface ExpeditionMeta {
   publicId: string;
+  slug?: string;
   title: string;
   description?: string;
   coverImage?: string;
@@ -19,6 +20,7 @@ export interface ExpeditionMeta {
 
 export interface EntryMeta {
   publicId: string;
+  slug?: string;
   title: string;
   body?: string;
   coverImage?: string;
@@ -35,6 +37,7 @@ export interface EntryMeta {
   metadata?: Record<string, unknown>;
   expeditionTitle?: string;
   expeditionPublicId?: string;
+  expeditionSlug?: string;
 }
 
 export interface ExplorerMeta {
@@ -51,6 +54,7 @@ export async function getExpedition(id: string): Promise<ExpeditionMeta | null> 
     const data = await res.json();
     return {
       publicId: data.publicId || data.public_id || id,
+      slug: data.slug || undefined,
       title: data.title,
       description: data.description,
       coverImage: data.coverImage || data.cover_image,
@@ -75,6 +79,7 @@ export async function getEntry(id: string): Promise<EntryMeta | null> {
       : [];
     return {
       publicId: data.publicId || data.public_id || id,
+      slug: data.slug || undefined,
       title: data.title,
       body: data.content,
       coverImage: data.coverImage || images[0],
@@ -91,6 +96,7 @@ export async function getEntry(id: string): Promise<EntryMeta | null> {
       metadata: data.metadata,
       expeditionTitle: data.trip?.title,
       expeditionPublicId: data.trip?.id || data.trip?.publicId,
+      expeditionSlug: data.trip?.slug || undefined,
     };
   } catch {
     return null;

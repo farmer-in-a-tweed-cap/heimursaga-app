@@ -104,13 +104,13 @@ export function buildEntryJsonLd(entry: EntryMeta): object | null {
     ? splitHistoricalTitle(entry.title)
     : { explorer: undefined, title: entry.title };
 
-  const url = `${SITE_URL}/entry/${entry.publicId}`;
+  const url = `${SITE_URL}/entry/${entry.slug || entry.publicId}`;
   const personUrl = entry.authorUsername
     ? `${SITE_URL}/journal/${entry.authorUsername}`
     : undefined;
   const personId = personUrl ? `${personUrl}#person` : undefined;
   const expeditionUrl = entry.expeditionPublicId
-    ? `${SITE_URL}/expedition/${entry.expeditionPublicId}`
+    ? `${SITE_URL}/expedition/${entry.expeditionSlug || entry.expeditionPublicId}`
     : undefined;
 
   const description = buildEntryDescription(entry, isHistorical, explorer, cleanTitle);
@@ -244,7 +244,7 @@ export function buildExpeditionJsonLd(
   expedition: ExpeditionMeta,
 ): object | null {
   if (!expedition) return null;
-  const url = `${SITE_URL}/expedition/${expedition.publicId}`;
+  const url = `${SITE_URL}/expedition/${expedition.slug || expedition.publicId}`;
   const isHistorical =
     !!expedition.endDate && new Date(expedition.endDate) < new Date('1923-01-01');
 

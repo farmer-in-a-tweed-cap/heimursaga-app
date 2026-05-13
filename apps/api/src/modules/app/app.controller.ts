@@ -41,12 +41,12 @@ export class AppController {
 
     for (const e of data.expeditions) {
       urls.push(
-        `  <url><loc>${BASE}/expedition/${e.publicId}</loc><lastmod>${new Date(e.updatedAt).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`,
+        `  <url><loc>${BASE}/expedition/${e.slug || e.publicId}</loc><lastmod>${new Date(e.updatedAt).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`,
       );
     }
     for (const e of data.entries) {
       urls.push(
-        `  <url><loc>${BASE}/entry/${e.publicId}</loc><lastmod>${new Date(e.updatedAt).toISOString()}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`,
+        `  <url><loc>${BASE}/entry/${e.slug || e.publicId}</loc><lastmod>${new Date(e.updatedAt).toISOString()}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`,
       );
     }
     for (const e of data.explorers) {

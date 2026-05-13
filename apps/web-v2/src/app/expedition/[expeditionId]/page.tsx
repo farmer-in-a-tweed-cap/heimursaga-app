@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
+import { permanentRedirect } from 'next/navigation';
 import { getExpedition } from '@/lib/server-api';
 import { ExpeditionDetailPage } from '@/app/pages/ExpeditionDetailPage';
+import {
+  ExpeditionArticleSsr,
+  SsrShellAssets,
+} from '@/app/components/ssr/SsrArticleShell';
 import {
   buildExpeditionJsonLd,
   jsonLdScript,
@@ -23,11 +28,15 @@ export async function generateMetadata({
     'Follow this expedition on Heimursaga.';
   const images = expedition.coverImage ? [expedition.coverImage] : [];
 
+  const canonical = `https://heimursaga.com/expedition/${expedition.slug || expedition.publicId}`;
+
   return {
     title,
     description,
+    alternates: { canonical },
     openGraph: {
       type: 'website',
+      url: canonical,
       title,
       description,
       images,
@@ -48,6 +57,12 @@ export default async function Page({
 }) {
   const { expeditionId } = await params;
   const expedition = await getExpedition(expeditionId);
+
+  // Canonicalize: legacy publicId URL → slug URL (308 permanent).
+  if (expedition?.slug && expedition.slug !== expeditionId) {
+    permanentRedirect(`/expedition/${expedition.slug}`);
+  }
+
   const ld = expedition ? buildExpeditionJsonLd(expedition) : null;
 
   return (
@@ -57,6 +72,12 @@ export default async function Page({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdScript(ld) }}
         />
+      )}
+      {expedition && (
+        <>
+          <SsrShellAssets />
+          <ExpeditionArticleSsr expedition={expedition} />
+        </>
       )}
       <ExpeditionDetailPage />
     </>

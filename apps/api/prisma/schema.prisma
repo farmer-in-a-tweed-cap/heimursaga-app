@@ -280,6 +280,7 @@ model Entry {
   place                 String?                @db.VarChar(250)
   public                Boolean?               @default(false)
   public_id             String?                @unique @db.VarChar(14)
+  slug                  String?                @unique @db.VarChar(120)
   bookmarks_count       Int?                   @default(0)
   likes_count           Int?                   @default(0)
   comments_count        Int?                   @default(0)
@@ -391,6 +392,7 @@ model Waypoint {
 model Expedition {
   id             Int                  @id @default(autoincrement())
   public_id      String               @unique @db.VarChar(14)
+  slug           String?              @unique @db.VarChar(120)
   title          String               @db.VarChar(100)
   description    String?              @db.VarChar(500)
   public         Boolean?             @default(true)

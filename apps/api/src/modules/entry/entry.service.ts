@@ -20,6 +20,7 @@ import { dateformat } from '@/lib/date-format';
 import { integerToDecimal, normalizeText } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 import { getCountryCodeFromCoordinates } from '@/lib/geocoding';
+import { buildEntrySlugBase, ensureUniqueSlug } from '@/lib/slug';
 import { getStaticMediaUrl } from '@/lib/upload';
 import { matchRoles } from '@/lib/utils';
 
@@ -613,8 +614,13 @@ export class EntryService {
 
       if (!publicId) throw new ServiceNotFoundException('entry not found');
 
+      // Accept either the legacy publicId or the new slug for the same param.
+      const idMatch: Prisma.EntryWhereInput = {
+        OR: [{ public_id: publicId }, { slug: publicId }],
+      };
+
       let where = {
-        public_id: publicId,
+        AND: [idMatch],
         author: { blocked: false }, // Never show entries from blocked explorers
       } as Prisma.EntryWhereInput;
 
@@ -656,6 +662,7 @@ export class EntryService {
         select: {
           id: true, // Internal ID for entry number calculation
           public_id: true,
+          slug: true,
           title: true,
           content: true,
           public: true,
@@ -707,6 +714,7 @@ export class EntryService {
           expedition: {
             select: {
               public_id: true,
+              slug: true,
               title: true,
               visibility: true,
               start_date: true, // Need for expeditionDay calculation
@@ -992,6 +1000,7 @@ export class EntryService {
 
       const response: IEntryGetByIdResponse = {
         id: entry.public_id,
+        slug: entry.slug || undefined,
         title: entry.title,
         content: entry.content,
         place: entry.place,
@@ -1034,6 +1043,7 @@ export class EntryService {
         trip: entry.expedition
           ? {
               id: entry.expedition.public_id,
+              slug: entry.expedition.slug || undefined,
               title: entry.expedition.title,
               visibility: entry.expedition.visibility as
                 | 'public'
@@ -1344,6 +1354,26 @@ export class EntryService {
         countryCode = await getCountryCodeFromCoordinates(lat, lon);
       }
 
+      // Generate a stable URL slug. Historical-archive entries get the
+      // "{explorer}-{title}-{date}" form; user entries get "{title}-{shortId}".
+      const newPublicId = generator.publicId();
+      const slugBase = buildEntrySlugBase({
+        publicId: newPublicId,
+        title: title || '',
+        entryType: entryType || 'standard',
+        date: date ? new Date(date) : new Date(),
+        publishedAt: isDraft ? null : new Date(),
+      });
+      const slug = slugBase
+        ? await ensureUniqueSlug(slugBase, async (cand) => {
+            const hit = await this.prisma.entry.findFirst({
+              where: { slug: cand },
+              select: { id: true },
+            });
+            return !!hit;
+          })
+        : null;
+
       // create an entry
       const { entry } = await this.prisma.$transaction(async (tx) => {
         this.logger.log('entry_create: entry');
@@ -1351,7 +1381,8 @@ export class EntryService {
         // Create entry with coordinates stored directly (entries are distinct from waypoints)
         const entry = await tx.entry.create({
           data: {
-            public_id: generator.publicId(),
+            public_id: newPublicId,
+            slug: slug || undefined,
             title: title || '',
             content: content || ' ', // Ensure non-empty content for database constraints
             date: date ? new Date(date) : new Date(),

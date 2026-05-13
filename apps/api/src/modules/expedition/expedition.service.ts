@@ -28,6 +28,7 @@ import { dateformat } from '@/lib/date-format';
 import { integerToDecimal, normalizeText } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 import { resolveExpeditionLocations } from '@/lib/resolve-expedition-location';
+import { buildExpeditionSlugBase, ensureUniqueSlug } from '@/lib/slug';
 import { getStaticMediaUrl } from '@/lib/upload';
 import { matchRoles, sortByDate } from '@/lib/utils';
 
@@ -949,7 +950,7 @@ export class ExpeditionService {
         : { visibility: 'public' };
 
       const where: Prisma.ExpeditionWhereInput = {
-        public_id: id,
+        AND: [{ OR: [{ public_id: id }, { slug: id }] }],
         deleted_at: null,
         author: { blocked: false },
         ...visibilityFilter,
@@ -962,6 +963,7 @@ export class ExpeditionService {
           select: {
             id: true,
             public_id: true,
+            slug: true,
             public: true,
             visibility: true,
             title: true,
@@ -1129,6 +1131,7 @@ export class ExpeditionService {
 
       const {
         public_id,
+        slug: expeditionSlug,
         title,
         description,
         status,
@@ -1391,6 +1394,7 @@ export class ExpeditionService {
 
       const response: IExpeditionGetByIdResponse = {
         id: public_id,
+        slug: expeditionSlug || undefined,
         title,
         description,
         status,
@@ -1882,10 +1886,27 @@ export class ExpeditionService {
         );
       }
 
+      const newPublicId = generator.publicId();
+      const slugBase = buildExpeditionSlugBase({
+        publicId: newPublicId,
+        title: payload.title,
+        endDate: payload.endDate ? new Date(payload.endDate) : null,
+      });
+      const slug = slugBase
+        ? await ensureUniqueSlug(slugBase, async (cand) => {
+            const hit = await this.prisma.expedition.findFirst({
+              where: { slug: cand },
+              select: { id: true },
+            });
+            return !!hit;
+          })
+        : null;
+
       // create an expedition
       const expedition = await this.prisma.expedition.create({
         data: {
-          public_id: generator.publicId(),
+          public_id: newPublicId,
+          slug: slug || undefined,
           title: (payload.title || '').trim() || payload.title,
           description: payload.description,
           public: isBlueprint

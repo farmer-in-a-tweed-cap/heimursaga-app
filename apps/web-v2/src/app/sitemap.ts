@@ -38,7 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (data.expeditions) {
       for (const exp of data.expeditions) {
         dynamicPages.push({
-          url: `${SITE_URL}/expedition/${exp.publicId}`,
+          url: `${SITE_URL}/expedition/${exp.slug || exp.publicId}`,
           lastModified: new Date(exp.updatedAt),
           changeFrequency: 'weekly',
           priority: 0.8,
@@ -49,7 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (data.entries) {
       for (const entry of data.entries) {
         dynamicPages.push({
-          url: `${SITE_URL}/entry/${entry.publicId}`,
+          url: `${SITE_URL}/entry/${entry.slug || entry.publicId}`,
           lastModified: new Date(entry.updatedAt),
           changeFrequency: 'monthly',
           priority: 0.6,
