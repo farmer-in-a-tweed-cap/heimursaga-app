@@ -19,15 +19,18 @@ export class AppService {
 
   async generateSitemap(): Promise<ISitemapGetResponse> {
     try {
-      // entries (published, not draft, not deleted, not off-grid; parent
-      // expedition must also be live — not cancelled, drafted, or deleted).
+      // entries: public, not deleted, not private/off-grid. Standalone
+      // entries (no parent expedition) are always eligible; entries linked
+      // to an expedition require the expedition to be live (not cancelled,
+      // drafted, or deleted). `is_draft` is not filtered — explorers can
+      // mark `public: true` on in-progress entries and they should be
+      // crawlable.
       const posts = await this.prisma.entry.findMany({
         where: {
           public: true,
-          is_draft: false,
           public_id: { not: null },
           deleted_at: null,
-          NOT: { visibility: 'off-grid' },
+          NOT: { visibility: { in: ['private', 'off-grid'] } },
           OR: [
             { expedition_id: null },
             {
