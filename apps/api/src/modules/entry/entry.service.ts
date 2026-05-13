@@ -311,6 +311,10 @@ export class EntryService {
         public_id: { not: null },
         is_draft: false, // Exclude drafts from public views
         author: { blocked: false }, // Never show entries from blocked explorers
+        // Historical-archive entries live on /historical-archive and are
+        // excluded from the explore feed / /entries listing to keep the
+        // signal:noise sharp on user-authored content.
+        NOT: { entry_type: 'historical' },
       } as Prisma.EntryWhereInput;
 
       // filter based on role

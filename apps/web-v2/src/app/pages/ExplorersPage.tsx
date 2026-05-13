@@ -315,6 +315,16 @@ export function ExplorersPage() {
           >
             ENTRIES
           </Link>
+          <Link
+            href="/historical-archive"
+            className={`px-3 md:px-4 py-2 text-xs font-bold shrink-0 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
+              isActive('/historical-archive')
+                ? 'bg-[#4676ac] text-white'
+                : 'bg-[#2a2a2a] text-white hover:scale-105'
+            }`}
+          >
+            HISTORICAL ARCHIVE
+          </Link>
         </div>
 
         {/* Header Content */}

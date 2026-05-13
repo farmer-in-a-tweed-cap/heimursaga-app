@@ -36,6 +36,46 @@ export interface ISitemapGetResponse {
   explorers: { username: string; updatedAt: Date }[];
 }
 
+// historical archive landing page
+export interface IHistoricalArchiveExpedition {
+  publicId: string;
+  slug?: string;
+  title: string;
+  cleanTitle: string;
+  explorer: string;
+  description: string;
+  coverImage?: string;
+  startDate?: Date | null;
+  endDate?: Date | null;
+  region?: string;
+  countryCode?: string;
+  countryName?: string;
+  entriesCount: number;
+}
+
+export interface IHistoricalArchiveEntry {
+  publicId: string;
+  slug?: string;
+  title: string;
+  cleanTitle: string;
+  explorer: string;
+  excerpt: string;
+  date?: Date | null;
+  place?: string;
+  lat?: number;
+  lon?: number;
+  countryCode?: string;
+  coverImage?: string;
+  expeditionPublicId?: string;
+  expeditionSlug?: string;
+  expeditionTitle?: string;
+}
+
+export interface IHistoricalArchiveResponse {
+  expeditions: IHistoricalArchiveExpedition[];
+  entries: IHistoricalArchiveEntry[];
+}
+
 // session
 export interface ISessionUser {
   id: number;

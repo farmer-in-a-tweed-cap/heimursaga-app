@@ -75,6 +75,7 @@ export function Footer() {
             </h4>
             <ul className="text-xs space-y-2">
               <li><Link href="/about" className="text-[#b5bcc4] hover:text-[#ac6d46]">About Heimursaga</Link></li>
+              <li><Link href="/historical-archive" className="text-[#b5bcc4] hover:text-[#ac6d46]">Historical Archive</Link></li>
               <li><Link href="/documentation" className="text-[#b5bcc4] hover:text-[#ac6d46]">Platform Documentation</Link></li>
 
               <li><Link href="/sponsorship-guide" className="text-[#b5bcc4] hover:text-[#ac6d46]">Sponsorship Guide</Link></li>

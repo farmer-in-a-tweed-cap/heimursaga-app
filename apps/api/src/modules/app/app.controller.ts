@@ -33,6 +33,12 @@ export class AppController {
   }
 
   @Public()
+  @Get('historical-archive')
+  historicalArchive() {
+    return this.appService.getHistoricalArchive();
+  }
+
+  @Public()
   @Get('sitemap.xml')
   async sitemapXml(@Res() reply: FastifyReply) {
     const BASE = 'https://heimursaga.com';

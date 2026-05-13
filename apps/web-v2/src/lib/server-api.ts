@@ -2,6 +2,7 @@
  * Server-side API fetchers for generateMetadata() in App Router pages.
  * These run on the server only — no auth needed (public endpoints).
  */
+import type { IHistoricalArchiveResponse } from '@repo/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/v1';
 
@@ -98,6 +99,16 @@ export async function getEntry(id: string): Promise<EntryMeta | null> {
       expeditionPublicId: data.trip?.id || data.trip?.publicId,
       expeditionSlug: data.trip?.slug || undefined,
     };
+  } catch {
+    return null;
+  }
+}
+
+export async function getHistoricalArchive(): Promise<IHistoricalArchiveResponse | null> {
+  try {
+    const res = await fetch(`${API_URL}/historical-archive`, { next: { revalidate: 600 } });
+    if (!res.ok) return null;
+    return (await res.json()) as IHistoricalArchiveResponse;
   } catch {
     return null;
   }

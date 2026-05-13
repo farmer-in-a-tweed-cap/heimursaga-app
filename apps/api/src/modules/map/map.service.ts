@@ -149,6 +149,9 @@ export class MapService {
                 is_draft: false,
                 deleted_at: null,
                 waypoint_id: { not: null },
+                // Historical-archive content has its own surface at
+                // /historical-archive and is excluded from the explore map.
+                NOT: { entry_type: 'historical' },
                 author: { blocked: false },
                 OR: [
                   ...(userId ? [{ author_id: userId }] : []),
@@ -173,6 +176,7 @@ export class MapService {
                   public: true,
                   is_draft: false,
                   deleted_at: null,
+                  NOT: { entry_type: 'historical' },
                   OR: [
                     { author_id: userId },
                     { expedition_id: null, NOT: { visibility: 'off-grid' } },

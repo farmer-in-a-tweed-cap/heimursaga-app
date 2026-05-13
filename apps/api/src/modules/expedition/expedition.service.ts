@@ -289,7 +289,10 @@ export class ExpeditionService {
       let where: Prisma.ExpeditionWhereInput = {
         deleted_at: null,
         status: { notIn: ['cancelled', 'draft'] },
-        author: { blocked: false }, // Never show expeditions from blocked explorers
+        // Historical-archive expeditions (authored by `explorersfromhistory`)
+        // live at /historical-archive; they're excluded from the explore feed
+        // and /expeditions listing.
+        author: { blocked: false, username: { not: 'explorersfromhistory' } },
       };
 
       // query based on the explorer role (or public access for unauthenticated users)

@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { ISitemapGetResponse } from '@repo/types';
+import { IHistoricalArchiveResponse, ISitemapGetResponse } from '@repo/types';
+
+import { splitHistoricalTitle } from '@/lib/slug';
+import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
   ServiceBadRequestException,
@@ -101,6 +104,125 @@ export class AppService {
     } catch (error) {
       throw new ServiceBadRequestException('sitemap is not generated');
     }
+  }
+
+  /**
+   * Aggregated payload for the /historical-archive landing page. Returns every
+   * public, undeleted expedition and historical entry authored by the
+   * `explorersfromhistory` account, in a single round-trip so the page can
+   * render server-side without N+1 fetches.
+   */
+  async getHistoricalArchive(): Promise<IHistoricalArchiveResponse> {
+    const expeditions = await this.prisma.expedition.findMany({
+      where: {
+        visibility: 'public',
+        deleted_at: null,
+        status: { notIn: ['cancelled', 'draft'] },
+        author: { username: 'explorersfromhistory' },
+      },
+      select: {
+        public_id: true,
+        slug: true,
+        title: true,
+        description: true,
+        cover_image: true,
+        start_date: true,
+        end_date: true,
+        region: true,
+        country_code: true,
+        country_name: true,
+        entries_count: true,
+      },
+      orderBy: { start_date: 'asc' },
+    });
+
+    const entries = await this.prisma.entry.findMany({
+      where: {
+        public: true,
+        is_draft: false,
+        deleted_at: null,
+        public_id: { not: null },
+        NOT: { visibility: { in: ['private', 'off-grid'] } },
+        entry_type: 'historical',
+        author: { username: 'explorersfromhistory' },
+      },
+      select: {
+        public_id: true,
+        slug: true,
+        title: true,
+        content: true,
+        date: true,
+        place: true,
+        lat: true,
+        lon: true,
+        country_code: true,
+        cover_upload: { select: { original: true, thumbnail: true } },
+        media: {
+          take: 1,
+          orderBy: { created_at: 'asc' },
+          select: { upload: { select: { thumbnail: true, original: true } } },
+        },
+        expedition: { select: { public_id: true, slug: true, title: true } },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    return {
+      expeditions: expeditions.map((x) => {
+        const { explorer, title: cleanTitle } = splitHistoricalTitle(x.title);
+        return {
+          publicId: x.public_id,
+          slug: x.slug || undefined,
+          title: x.title,
+          cleanTitle,
+          explorer: explorer || '',
+          description: x.description || '',
+          coverImage: x.cover_image
+            ? getStaticMediaUrl(x.cover_image)
+            : undefined,
+          startDate: x.start_date,
+          endDate: x.end_date,
+          region: x.region || undefined,
+          countryCode: x.country_code || undefined,
+          countryName: x.country_name || undefined,
+          entriesCount: x.entries_count || 0,
+        };
+      }),
+      entries: entries.map((e) => {
+        const { explorer, title: cleanTitle } = splitHistoricalTitle(e.title);
+        const expClean = e.expedition
+          ? splitHistoricalTitle(e.expedition.title).title
+          : undefined;
+        const firstMedia = e.media[0]?.upload;
+        const cover = e.cover_upload?.original
+          ? getStaticMediaUrl(e.cover_upload.original)
+          : firstMedia?.thumbnail
+            ? getStaticMediaUrl(firstMedia.thumbnail)
+            : firstMedia?.original
+              ? getStaticMediaUrl(firstMedia.original)
+              : undefined;
+        return {
+          publicId: e.public_id!,
+          slug: e.slug || undefined,
+          title: e.title || '',
+          cleanTitle,
+          explorer: explorer || '',
+          excerpt: (e.content || '')
+            .replace(/[#*_~`>[\]()!]/g, '')
+            .trim()
+            .slice(0, 220),
+          date: e.date,
+          place: e.place || undefined,
+          lat: typeof e.lat === 'number' ? e.lat : undefined,
+          lon: typeof e.lon === 'number' ? e.lon : undefined,
+          countryCode: e.country_code || undefined,
+          coverImage: cover,
+          expeditionPublicId: e.expedition?.public_id,
+          expeditionSlug: e.expedition?.slug || undefined,
+          expeditionTitle: expClean,
+        };
+      }),
+    };
   }
 
   async submitContactForm(payload: {
