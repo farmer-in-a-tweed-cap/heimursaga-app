@@ -9,6 +9,7 @@ import { Slider } from '@/app/components/ui/slider';
 import { DatePicker } from '@/app/components/DatePicker';
 import { ConfirmationModal } from '@/app/components/ConfirmationModal';
 import { RouteImportModal } from '@/app/components/RouteImportModal';
+import { CoverPhotoCropper } from '@/app/components/CoverPhotoCropper';
 import type { ImportedRoute } from '@/app/utils/routeFileParser';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
@@ -355,6 +356,7 @@ export function ExpeditionBuilderPage() {
   const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(null);
   const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(null); // Uploaded URL for API
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [coverCropSource, setCoverCropSource] = useState<File | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-geocode location from first waypoint
@@ -602,6 +604,22 @@ export function ExpeditionBuilderPage() {
     const distKm = lastWp?.cumulativeDistance || 0;
     if (distKm <= 0) return;
 
+    // Modified route mode: a real directions fetch has populated per-leg
+    // durations on the waypoints. Trust those over the Naismith estimate —
+    // they reflect actual routed geometry (roads/trails/waterways) instead of
+    // straight-line guesses, so the Naismith number is wrong here.
+    const directionsCumSec = lastWp?.cumulativeTravelTime || 0;
+    if (directionsCumSec > 0) {
+      const numLegs = isRoundTrip ? waypoints.length : waypoints.length - 1;
+      const returnSec = isRoundTrip ? (directionsLegDurations?.[numLegs - 1] ?? 0) : 0;
+      const hours = (directionsCumSec + returnSec) / 3600;
+      if (hours > 0) {
+        setEstimatedDurationH(String(Math.round(hours * 10) / 10));
+        setDurationAutoFilled(true);
+      }
+      return;
+    }
+
     const controller = new AbortController();
     const mode = expeditionMode || routeMode || 'hike';
     const sailSpeedKmh = parseFloat(passageSpeedKn) > 0 ? parseFloat(passageSpeedKn) / 0.539957 : 14.8;
@@ -672,7 +690,7 @@ export function ExpeditionBuilderPage() {
       });
 
     return () => controller.abort();
-  }, [waypoints, expeditionMode, routeMode, durationManuallyEdited]);
+  }, [waypoints, expeditionMode, routeMode, durationManuallyEdited, isRoundTrip, directionsLegDurations]);
 
   // Auto-select default route mode based on expedition type
   useEffect(() => {
@@ -710,38 +728,36 @@ export function ExpeditionBuilderPage() {
   const isAutoSavingRef = useRef(false);
   const isSubmittingRef = useRef(false);
 
-  // Handle cover photo upload
-  const handleCoverPhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle cover photo selection — open the cropper before uploading.
+  const handleCoverPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
 
-    // Validate file type
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
       setSubmitError('Invalid file type. Please use JPG, PNG, or WEBP');
-      e.target.value = '';
       return;
     }
-
-    // Validate file size
     if (file.size > MAX_COVER_SIZE) {
       setSubmitError('Cover photo must be less than 25MB');
-      e.target.value = '';
       return;
     }
 
-    // Show preview immediately
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setCoverPhotoPreview(event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    setSubmitError(null);
+    setCoverCropSource(file);
+  };
 
-    // Upload to server
+  const handleCoverCropConfirm = async (cropped: File) => {
+    setCoverCropSource(null);
+    setCoverPhotoPreview((prev) => {
+      if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(cropped);
+    });
     setUploadingCover(true);
-    setSubmitError(null); // Clear any previous errors
+    setSubmitError(null);
     try {
-      const response = await uploadApi.upload(file);
-      setCoverPhotoUrl(response.original); // Store the server URL
+      const response = await uploadApi.upload(cropped);
+      setCoverPhotoUrl(response.original);
     } catch {
       setSubmitError('Failed to upload cover photo');
       setCoverPhotoPreview(null);
@@ -790,9 +806,6 @@ export function ExpeditionBuilderPage() {
     }
     if (!canCreateBlueprints && !coverPhotoUrl && !isEditMode) {
       errors.push('Cover photo is required');
-    }
-    if (!estimatedDurationH || Number(estimatedDurationH) <= 0) {
-      errors.push('Travel time is required');
     }
     if (!expeditionMode) {
       errors.push('Expedition type is required');
@@ -5505,7 +5518,6 @@ export function ExpeditionBuilderPage() {
             <div>
               <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
                 STARTING LOCATION
-                <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
                 {(locationManuallyEdited || locationAutoFilled) && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">{locationManuallyEdited ? '(manually set)' : '(auto-detected)'}</span>}
               </label>
               <input
@@ -5523,11 +5535,22 @@ export function ExpeditionBuilderPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
-                TRAVEL TIME (HOURS)
-                <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
-                {(durationManuallyEdited || durationAutoFilled) && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">{durationManuallyEdited ? '(manually set)' : '(auto-calculated)'}</span>}
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-medium dark:text-[#e5e5e5]">
+                  TRAVEL TIME (HOURS)
+                  {(durationManuallyEdited || durationAutoFilled) && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">{durationManuallyEdited ? '(manually set)' : '(auto-calculated)'}</span>}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => { setDurationManuallyEdited(false); setEstimatedDurationH(''); setDurationAutoFilled(false); }}
+                  disabled={waypoints.length < 2}
+                  className="px-2.5 py-1 text-[10px] text-white bg-[#4676ac] hover:bg-[#365d8a] disabled:opacity-60 disabled:cursor-not-allowed font-bold transition-all flex items-center gap-1.5 whitespace-nowrap"
+                  title="Recompute travel time from the current route"
+                >
+                  <RotateCw size={11} />
+                  RECALCULATE
+                </button>
+              </div>
               <div className="relative">
                 <input
                   type="number"
@@ -5618,30 +5641,49 @@ export function ExpeditionBuilderPage() {
               accept="image/*"
               className="hidden"
             />
-            {coverPhotoPreview ? (
-              <div className="relative border-2 border-[#ac6d46] h-48">
-                <Image
-                  src={coverPhotoPreview}
-                  alt="Cover preview"
-                  className="object-cover"
-                  fill
-                />
-                {uploadingCover && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 text-white animate-spin" />
-                  </div>
-                )}
-                <button
-                  onClick={() => {
-                    setCoverPhotoPreview(null);
-                    setCoverPhotoUrl(null);
-                  }}
-                  className="absolute top-2 right-2 bg-[#202020] hover:bg-[#ac6d46] text-white p-2 rounded-full transition-all"
-                >
-                  <X size={16} />
-                </button>
-                <div className="p-3 border-t-2 border-[#ac6d46] bg-[#f5f5f5] dark:bg-[#2a2a2a] text-xs text-[#616161] dark:text-[#b5bcc4]">
-                  {uploadingCover ? 'Uploading...' : coverPhotoUrl ? 'Cover photo uploaded successfully' : 'Current cover photo • Click X to upload a new one'}
+            {coverCropSource ? (
+              <CoverPhotoCropper
+                file={coverCropSource}
+                aspectRatio={2}
+                onConfirm={handleCoverCropConfirm}
+                onCancel={() => setCoverCropSource(null)}
+                accentColor="#ac6d46"
+              />
+            ) : coverPhotoPreview ? (
+              <div className="border-2 border-[#ac6d46]">
+                <div className="relative w-full" style={{ aspectRatio: '2' }}>
+                  <Image
+                    src={coverPhotoPreview}
+                    alt="Cover preview"
+                    className="object-cover"
+                    fill
+                  />
+                  {uploadingCover && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 text-white animate-spin" />
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      setCoverPhotoPreview(null);
+                      setCoverPhotoUrl(null);
+                    }}
+                    className="absolute top-2 right-2 bg-[#202020] hover:bg-[#ac6d46] text-white p-2 rounded-full transition-all"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="p-3 border-t-2 border-[#ac6d46] bg-[#f5f5f5] dark:bg-[#2a2a2a] text-xs text-[#616161] dark:text-[#b5bcc4] flex items-center justify-between gap-2">
+                  <span>
+                    {uploadingCover ? 'Uploading...' : coverPhotoUrl ? 'Cover photo uploaded successfully' : 'Current cover photo'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => coverInputRef.current?.click()}
+                    className="text-[#ac6d46] hover:underline font-bold"
+                  >
+                    REPLACE
+                  </button>
                 </div>
               </div>
             ) : (
