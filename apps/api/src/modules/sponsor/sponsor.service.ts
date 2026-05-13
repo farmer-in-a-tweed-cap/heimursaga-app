@@ -29,6 +29,7 @@ import { calculateFee } from '@/lib/calculator';
 import { dateformat } from '@/lib/date-format';
 import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
+import { idOrSlug } from '@/lib/slug';
 import { getStaticMediaUrl } from '@/lib/upload';
 import { matchRoles } from '@/lib/utils';
 
@@ -1201,7 +1202,7 @@ export class SponsorService {
           if (checkout.expedition_public_id) {
             targetExpedition = await tx.expedition.findFirst({
               where: {
-                public_id: checkout.expedition_public_id,
+                ...idOrSlug(checkout.expedition_public_id),
                 deleted_at: null,
               },
               select: { id: true },
@@ -2731,7 +2732,7 @@ export class SponsorService {
       // Idempotency guard: verify expedition is actually cancelled
       const expedition = await this.prisma.expedition.findFirst({
         where: {
-          public_id: expeditionPublicId,
+          ...idOrSlug(expeditionPublicId),
           author_id: explorerId,
         },
         select: {
@@ -2928,7 +2929,7 @@ export class SponsorService {
 
       // Look up entry and verify author is Pro
       const entry = await this.prisma.entry.findFirst({
-        where: { public_id: entryPublicId, deleted_at: null },
+        where: { ...idOrSlug(entryPublicId), deleted_at: null },
         select: {
           id: true,
           public_id: true,
@@ -3159,7 +3160,7 @@ export class SponsorService {
 
       // Look up entry
       const entry = await this.prisma.entry.findFirst({
-        where: { public_id: entryPublicId, deleted_at: null },
+        where: { ...idOrSlug(entryPublicId), deleted_at: null },
         select: {
           id: true,
           public_id: true,

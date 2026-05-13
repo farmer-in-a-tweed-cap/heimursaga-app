@@ -9,6 +9,7 @@ import Stripe from 'stripe';
 
 import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
+import { idOrSlug } from '@/lib/slug';
 
 import { PaymentTransactionType, StripeMetadataKey } from '@/common/enums';
 
@@ -543,7 +544,7 @@ export class StripeService {
             if (checkout?.expedition_public_id) {
               targetExpedition = await this.prisma.expedition.findFirst({
                 where: {
-                  public_id: checkout.expedition_public_id,
+                  ...idOrSlug(checkout.expedition_public_id),
                   deleted_at: null,
                 },
                 select: { id: true },
@@ -1096,7 +1097,7 @@ export class StripeService {
         if (checkout.expedition_public_id) {
           targetExpedition = await this.prisma.expedition.findFirst({
             where: {
-              public_id: checkout.expedition_public_id,
+              ...idOrSlug(checkout.expedition_public_id),
               deleted_at: null,
             },
             select: { id: true },

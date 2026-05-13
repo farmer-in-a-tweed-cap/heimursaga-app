@@ -12,6 +12,7 @@ import {
 
 import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
+import { idOrSlug } from '@/lib/slug';
 import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
@@ -141,7 +142,7 @@ export class AdminService {
       await this.assertAdmin(session);
 
       const entry = await this.prisma.entry.findFirst({
-        where: { public_id: publicId },
+        where: idOrSlug(publicId),
         select: { id: true },
       });
 
@@ -230,7 +231,7 @@ export class AdminService {
       await this.assertAdmin(session);
 
       const expedition = await this.prisma.expedition.findFirst({
-        where: { public_id: publicId },
+        where: idOrSlug(publicId),
         select: { id: true },
       });
 

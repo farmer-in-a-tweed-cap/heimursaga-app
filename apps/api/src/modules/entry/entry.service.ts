@@ -1255,7 +1255,7 @@ export class EntryService {
       if (expeditionId) {
         const expedition = await this.prisma.expedition.findFirst({
           where: {
-            public_id: expeditionId,
+            ...idOrSlug(expeditionId),
             author_id: explorerId,
             deleted_at: null,
           },
@@ -1857,7 +1857,7 @@ export class EntryService {
             // get expedition and connect it
             const expedition = await tx.expedition.findFirst({
               where: {
-                public_id: expeditionId,
+                ...idOrSlug(expeditionId),
                 author_id: explorerId,
                 deleted_at: null,
               },

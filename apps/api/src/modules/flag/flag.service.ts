@@ -12,6 +12,7 @@ import {
 } from '@repo/types';
 
 import { generator } from '@/lib/generator';
+import { idOrSlug } from '@/lib/slug';
 import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
@@ -116,7 +117,7 @@ export class FlagService {
 
       if (flaggedPostId) {
         const post = await this.prisma.entry.findFirst({
-          where: { public_id: flaggedPostId, deleted_at: null },
+          where: { ...idOrSlug(flaggedPostId), deleted_at: null },
           select: { id: true },
         });
         if (!post) throw new ServiceNotFoundException('Entry not found');
@@ -155,7 +156,7 @@ export class FlagService {
 
       if (flaggedExpeditionId) {
         const expedition = await this.prisma.expedition.findFirst({
-          where: { public_id: flaggedExpeditionId, deleted_at: null },
+          where: { ...idOrSlug(flaggedExpeditionId), deleted_at: null },
           select: { id: true },
         });
         if (!expedition)
