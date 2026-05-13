@@ -375,12 +375,15 @@ export class EntryService {
       // filter must also match nulls; everything else is an exact match.
       // Standard's null-or-equals condition goes through `AND` to avoid
       // clobbering the visibility `OR` already set by publicExpeditionFilter.
+      // 'historical' is intentionally omitted — historical-archive content
+      // is excluded by the base `where` (NOT entry_type='historical') and
+      // surfaces on /historical-archive instead. Including it here would let
+      // a caller pass ?entryType=historical and silently get zero results.
       const allowedEntryTypes = new Set([
         'standard',
         'photo',
         'video',
         'data',
-        'historical',
       ]);
       if (entryType && allowedEntryTypes.has(entryType)) {
         if (entryType === 'standard') {
@@ -1292,6 +1295,21 @@ export class EntryService {
         );
       }
 
+      // The 'historical' entry type is gated to official accounts —
+      // historical-archive content is curated by the explorersfromhistory
+      // account and surfaces on /historical-archive.
+      if (entryType === 'historical') {
+        const owner = await this.prisma.explorer.findUnique({
+          where: { id: explorerId },
+          select: { secondary_role: true },
+        });
+        if (owner?.secondary_role !== 'official') {
+          throw new ServiceForbiddenException(
+            'Only official accounts can create historical-archive entries',
+          );
+        }
+      }
+
       // Pro-only entry types require Explorer Pro
       const proEntryTypes = ['photo', 'video', 'data'];
       if (
@@ -1604,6 +1622,20 @@ export class EntryService {
         throw new ServiceBadRequestException(
           `Invalid entry type: ${entryType}. Must be one of: ${validEntryTypes.join(', ')}`,
         );
+      }
+
+      // The 'historical' entry type is gated to official accounts (see
+      // entry create for the same guard).
+      if (entryType === 'historical') {
+        const owner = await this.prisma.explorer.findUnique({
+          where: { id: explorerId },
+          select: { secondary_role: true },
+        });
+        if (owner?.secondary_role !== 'official') {
+          throw new ServiceForbiddenException(
+            'Only official accounts can use the historical entry type',
+          );
+        }
       }
 
       // Pro-only entry types require Explorer Pro

@@ -1892,6 +1892,22 @@ export class ExpeditionService {
         );
       }
 
+      // The "Historical Archive" category is gated to official accounts —
+      // historical content is sourced + curated by the explorersfromhistory
+      // account and surfaces on /historical-archive. Regular users picking
+      // that category would pollute the archive feed.
+      if (payload.category === 'Historical Archive') {
+        const owner = await this.prisma.explorer.findUnique({
+          where: { id: explorerId },
+          select: { secondary_role: true },
+        });
+        if (owner?.secondary_role !== 'official') {
+          throw new ServiceForbiddenException(
+            'Only official accounts can use the Historical Archive category',
+          );
+        }
+      }
+
       const newPublicId = generator.publicId();
       const slugBase = buildExpeditionSlugBase({
         publicId: newPublicId,
@@ -2064,6 +2080,20 @@ export class ExpeditionService {
           is_blueprint: true,
         },
       });
+
+      // The "Historical Archive" category is gated to official accounts —
+      // see createExpedition for the same guard.
+      if (payload.category === 'Historical Archive') {
+        const owner = await this.prisma.explorer.findUnique({
+          where: { id: explorerId },
+          select: { secondary_role: true },
+        });
+        if (owner?.secondary_role !== 'official') {
+          throw new ServiceForbiddenException(
+            'Only official accounts can use the Historical Archive category',
+          );
+        }
+      }
 
       // Route locking: adopted expeditions cannot change route fields
       if (expedition.is_route_locked) {

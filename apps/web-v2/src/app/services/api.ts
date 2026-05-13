@@ -264,6 +264,7 @@ export const api = {
 export interface SessionUser {
   id: number;
   role: string;
+  secondaryRole?: string;
   admin: boolean;
   username: string;
   email: string;

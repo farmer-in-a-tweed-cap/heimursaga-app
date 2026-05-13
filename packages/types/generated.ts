@@ -80,6 +80,7 @@ export interface IHistoricalArchiveResponse {
 export interface ISessionUser {
   id: number;
   role: string;
+  secondaryRole?: string;
   admin: boolean;
   username: string;
   email: string;

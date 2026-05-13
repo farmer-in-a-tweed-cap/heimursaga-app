@@ -495,22 +495,30 @@ export function JournalEntryPage() {
                   {entry.isMilestone && (
                     <span className="px-2 py-1 bg-[#ac6d46] text-white text-xs font-bold rounded-full">MILESTONE</span>
                   )}
-                  <span
-                    className="px-2 py-1 text-white text-xs rounded-full"
-                    style={{
-                      backgroundColor: entry.entryType === 'historical' ? '#202020'
-                        : entry.entryType === 'photo' ? '#4676ac'
-                        : entry.entryType === 'video' ? '#4676ac'
-                        : entry.entryType === 'data' ? '#616161'
-                        : '#4676ac'
-                    }}
-                  >
-                    {entry.entryType === 'historical' ? 'HISTORICAL'
-                      : entry.entryType === 'photo' ? 'PHOTO'
-                      : entry.entryType === 'video' ? 'VIDEO'
-                      : entry.entryType === 'data' ? 'DATA'
-                      : 'STANDARD'}
-                  </span>
+                  {entry.entryType === 'historical' ? (
+                    <Link
+                      href="/historical-archive"
+                      className="px-2 py-1 bg-[#202020] text-white text-xs rounded-full hover:bg-[#3a3a3a] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
+                      aria-label="View the historical archive"
+                    >
+                      HISTORICAL ARCHIVE
+                    </Link>
+                  ) : (
+                    <span
+                      className="px-2 py-1 text-white text-xs rounded-full"
+                      style={{
+                        backgroundColor: entry.entryType === 'photo' ? '#4676ac'
+                          : entry.entryType === 'video' ? '#4676ac'
+                          : entry.entryType === 'data' ? '#616161'
+                          : '#4676ac'
+                      }}
+                    >
+                      {entry.entryType === 'photo' ? 'PHOTO'
+                        : entry.entryType === 'video' ? 'VIDEO'
+                        : entry.entryType === 'data' ? 'DATA'
+                        : 'STANDARD'}
+                    </span>
+                  )}
                   <span className="px-2 py-1 bg-[#616161] dark:bg-[#3a3a3a] text-white text-xs rounded-full">{entry.visibility.toUpperCase()}</span>
                   {!entry.expeditionId && (
                     <span className="px-2 py-1 bg-[#3a3a3a] text-white text-xs rounded-full">STANDALONE</span>

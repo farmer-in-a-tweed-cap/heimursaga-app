@@ -76,6 +76,5 @@ export const EXPEDITION_CATEGORIES = [
   'Documentary',
   'Adventure & Exploration',
   'Environmental',
-  'Historical Documentation',
   'Other',
 ];

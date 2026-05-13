@@ -510,7 +510,9 @@ export function ExpeditionQuickEntryPage() {
                     <option>Documentary</option>
                     <option>Adventure & Exploration</option>
                     <option>Environmental</option>
-                    <option>Historical Documentation</option>
+                    {user?.secondaryRole === 'official' && (
+                      <option>Historical Archive</option>
+                    )}
                     <option>Other</option>
                   </select>
                 </div>

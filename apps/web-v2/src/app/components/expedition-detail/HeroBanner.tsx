@@ -141,9 +141,20 @@ export function HeroBanner({
                     </span>
                   ))}
                   {expedition.category && (
-                    <span className="px-2.5 py-0.5 bg-white/15 text-white/80 text-xs font-bold tracking-wide whitespace-nowrap rounded-full">
-                      {expedition.category.toUpperCase()}
-                    </span>
+                    expedition.category === 'Historical Archive' ? (
+                      <Link
+                        href="/historical-archive"
+                        className="px-2.5 py-0.5 bg-white/15 text-white/80 text-xs font-bold tracking-wide whitespace-nowrap rounded-full hover:bg-white/25 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] pointer-events-auto"
+                        aria-label="View the historical archive"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {expedition.category.toUpperCase()}
+                      </Link>
+                    ) : (
+                      <span className="px-2.5 py-0.5 bg-white/15 text-white/80 text-xs font-bold tracking-wide whitespace-nowrap rounded-full">
+                        {expedition.category.toUpperCase()}
+                      </span>
+                    )
                   )}
                 </div>
               )}

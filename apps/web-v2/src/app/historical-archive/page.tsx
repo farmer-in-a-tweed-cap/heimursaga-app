@@ -19,21 +19,38 @@ import {
 const SITE_URL = 'https://heimursaga.com';
 const PAGE_URL = `${SITE_URL}/historical-archive`;
 
-export const revalidate = 600; // refresh hourly so new historical entries surface
+export const revalidate = 600; // refresh every 10 minutes so new historical entries surface quickly
 
-export const metadata: Metadata = {
-  title: 'Historical Expedition Journals — Heimursaga',
-  description:
-    "First-person dispatches from explorers across the Age of Romantic Exploration, the Victorian era, and the Heroic Age — drawn from public-domain texts, dated, geotagged, and presented unedited.",
-  alternates: { canonical: PAGE_URL },
-  openGraph: {
-    type: 'website',
-    url: PAGE_URL,
-    title: 'Historical Expedition Journals — Heimursaga',
-    description:
-      "First-person dispatches from explorers from history — public-domain journals dated, geotagged, and presented unedited.",
-  },
-};
+const META_TITLE = 'Historical Expedition Journals — Heimursaga';
+const META_DESCRIPTION =
+  'First-person dispatches from explorers across the Age of Romantic Exploration, the Victorian era, and the Heroic Age — drawn from public-domain texts, dated, geotagged, and presented unedited.';
+
+export async function generateMetadata(): Promise<Metadata> {
+  // Pull the first expedition with a cover image and use it as the social
+  // share thumbnail. `getHistoricalArchive` is fetch-cached so this doesn't
+  // double-fetch with the page render.
+  const data = await getHistoricalArchive();
+  const cover = data?.expeditions.find((x) => x.coverImage)?.coverImage;
+  const images = cover ? [cover] : undefined;
+  return {
+    title: META_TITLE,
+    description: META_DESCRIPTION,
+    alternates: { canonical: PAGE_URL },
+    openGraph: {
+      type: 'website',
+      url: PAGE_URL,
+      title: META_TITLE,
+      description: META_DESCRIPTION,
+      images,
+    },
+    twitter: {
+      card: cover ? 'summary_large_image' : 'summary',
+      title: META_TITLE,
+      description: META_DESCRIPTION,
+      images,
+    },
+  };
+}
 
 function formatDate(d: Date | string | null | undefined): string | undefined {
   if (!d) return undefined;
@@ -57,6 +74,13 @@ function formatDateShort(d: Date | string | null | undefined): string | undefine
     day: 'numeric',
     timeZone: 'UTC',
   });
+}
+
+function toIsoDate(d: Date | string | null | undefined): string | undefined {
+  if (!d) return undefined;
+  const date = typeof d === 'string' ? new Date(d) : d;
+  if (isNaN(date.getTime())) return undefined;
+  return date.toISOString().slice(0, 10);
 }
 
 function formatYearRange(
@@ -127,15 +151,25 @@ function ExpeditionCard({ x }: { x: IHistoricalArchiveExpedition }) {
 
 function EntryTimelineRow({ e }: { e: IHistoricalArchiveEntry }) {
   const dateLabel = formatDateShort(e.date);
+  const dateIso = toIsoDate(e.date);
   return (
     <Link
       href={entryHref(e)}
       className="group block border-b border-[#b5bcc4] dark:border-[#3a3a3a] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-colors"
     >
       <div className="px-4 md:px-6 py-3 md:py-4 grid grid-cols-1 md:grid-cols-[140px_1fr] gap-1 md:gap-6">
-        <div className="text-[10px] font-mono text-[#616161] dark:text-[#b5bcc4] tracking-wider md:pt-1">
-          {dateLabel?.toUpperCase()}
-        </div>
+        {dateIso ? (
+          <time
+            dateTime={dateIso}
+            className="text-[10px] font-mono text-[#616161] dark:text-[#b5bcc4] tracking-wider md:pt-1"
+          >
+            {dateLabel?.toUpperCase()}
+          </time>
+        ) : (
+          <div className="text-[10px] font-mono text-[#616161] dark:text-[#b5bcc4] tracking-wider md:pt-1">
+            {dateLabel?.toUpperCase()}
+          </div>
+        )}
         <div className="min-w-0">
           <div className="text-[10px] font-mono font-bold text-[#ac6d46] tracking-wider mb-1">
             {e.explorer.toUpperCase() || 'EXPLORER'}

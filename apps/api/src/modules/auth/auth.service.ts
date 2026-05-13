@@ -74,6 +74,7 @@ export class AuthService {
         select: {
           id: true,
           role: true,
+          secondary_role: true,
           admin: true,
           username: true,
           email: true,
@@ -96,6 +97,7 @@ export class AuthService {
         id,
         email,
         role,
+        secondary_role: secondaryRole,
         admin,
         username,
         is_email_verified: isEmailVerified,
@@ -155,6 +157,7 @@ export class AuthService {
         email,
         username,
         role,
+        secondaryRole: secondaryRole ?? undefined,
         admin,
         // name,
         picture: getStaticMediaUrl(picture),
@@ -262,6 +265,7 @@ export class AuthService {
           email: true,
           username: true,
           role: true,
+          secondary_role: true,
           admin: true,
           is_email_verified: true,
           is_premium: true,
@@ -338,6 +342,7 @@ export class AuthService {
       const userResponse: ISessionUserGetResponse = {
         id: user.id,
         role: user.role as UserRole,
+        secondaryRole: user.secondary_role ?? undefined,
         admin: user.admin,
         username: user.username,
         email: user.email,
@@ -453,6 +458,7 @@ export class AuthService {
         select: {
           id: true,
           role: true,
+          secondary_role: true,
           admin: true,
           username: true,
           email: true,
@@ -503,6 +509,7 @@ export class AuthService {
       return {
         id: user.id,
         role: user.role as UserRole,
+        secondaryRole: user.secondary_role ?? undefined,
         admin: user.admin,
         username: user.username,
         email: user.email,

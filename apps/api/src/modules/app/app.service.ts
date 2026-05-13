@@ -113,6 +113,7 @@ export class AppService {
    * render server-side without N+1 fetches.
    */
   async getHistoricalArchive(): Promise<IHistoricalArchiveResponse> {
+   try {
     const expeditions = await this.prisma.expedition.findMany({
       where: {
         visibility: 'public',
@@ -223,6 +224,10 @@ export class AppService {
         };
       }),
     };
+   } catch (error) {
+     this.logger.error('getHistoricalArchive failed', error);
+     return { expeditions: [], entries: [] };
+   }
   }
 
   async submitContactForm(payload: {
