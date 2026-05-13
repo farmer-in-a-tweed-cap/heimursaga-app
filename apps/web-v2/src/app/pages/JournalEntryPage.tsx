@@ -3,14 +3,31 @@
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { usePageOwner } from '@/app/context/PageOwnerContext';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
 import { ShareButton } from '@/app/components/ShareButton';
-import { InlineLocationMap } from '@/app/components/InlineLocationMap';
+import { LazyMount } from '@/app/components/LazyMount';
 import { QuickSponsorButton } from '@/app/components/QuickSponsorButton';
+
+// Lazy-load Mapbox out of the main entry-page bundle (~200KB gzipped of
+// JS + CSS that only matters once the user scrolls to the inline location
+// map at the bottom of the page).
+const InlineLocationMap = dynamic(
+  () =>
+    import('@/app/components/InlineLocationMap').then(
+      (m) => m.InlineLocationMap,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="absolute inset-0 w-full h-full bg-[#e8e8e8] dark:bg-[#2a2a2a]" />
+    ),
+  },
+);
 import { UserPlus, UserCheck, ExternalLink, Loader2, AlertTriangle, Trash2, ShieldAlert, Clock } from 'lucide-react';
 import { ReportModal } from '@/app/components/ReportModal';
 import { toast } from 'sonner';
@@ -941,14 +958,19 @@ export function JournalEntryPage() {
                 <span className="font-bold dark:text-[#e5e5e5]">{entry.coords.lat.toFixed(6)}°, {entry.coords.lng.toFixed(6)}°</span>
               </div>
             </div>
-            <div className="relative overflow-hidden h-[300px]">
+            <LazyMount
+              className="relative overflow-hidden h-[300px]"
+              placeholder={
+                <div className="absolute inset-0 w-full h-full bg-[#e8e8e8] dark:bg-[#2a2a2a]" />
+              }
+            >
               <InlineLocationMap
                 lat={entry.coords.lat}
                 lng={entry.coords.lng}
                 locationName={entry.location}
                 className="h-full"
               />
-            </div>
+            </LazyMount>
             {entry.entryType === 'standard' && !!entry.metadata && (
                   (() => {
                     const meta = entry.metadata as Record<string, unknown>;

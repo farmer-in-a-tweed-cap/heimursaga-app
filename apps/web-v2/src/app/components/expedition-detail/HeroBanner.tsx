@@ -71,21 +71,24 @@ export function HeroBanner({
       tabIndex={hasMapData ? 0 : undefined}
       onKeyDown={hasMapData ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenMapModal(); } } : undefined}
     >
-      {/* Banner Map */}
-      <div ref={bannerMapContainerRef} className="absolute inset-0 w-full h-full z-0" />
-
-      {/* Fallback cover image when no map data */}
-      {!hasMapData && expedition.imageUrl && (
+      {/* Underlay: rendered first so the banner has something to show while
+          the Mapbox bundle loads + initializes. Once the map's WebGL canvas
+          paints in the container above, it covers this layer. When there
+          is no map data at all (hasMapData=false), this stays visible. */}
+      {expedition.imageUrl ? (
         <ImageWithFallback
           src={expedition.imageUrl}
           alt={expedition.title}
           className="absolute inset-0 h-full w-full object-cover z-0"
         />
-      )}
-      {/* No cover & no map = topo pattern fallback */}
-      {!hasMapData && !expedition.imageUrl && (
+      ) : (
         <CoverPhotoFallback className="absolute inset-0 h-full w-full z-0" />
       )}
+
+      {/* Banner Map — rendered above the underlay; populated by parent's
+          deferred useEffect (requestIdleCallback) so the heavy WebGL init
+          doesn't block LCP. */}
+      <div ref={bannerMapContainerRef} className="absolute inset-0 w-full h-full z-0" />
 
       {/* Dark gradient overlay for text readability (only when cover image or map) */}
       {(hasMapData || expedition.imageUrl) && (
