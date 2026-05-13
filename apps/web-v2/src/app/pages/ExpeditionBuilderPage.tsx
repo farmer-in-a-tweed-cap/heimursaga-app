@@ -5542,12 +5542,32 @@ export function ExpeditionBuilderPage() {
                 </label>
                 <button
                   type="button"
-                  onClick={() => { setDurationManuallyEdited(false); setEstimatedDurationH(''); setDurationAutoFilled(false); }}
-                  disabled={waypoints.length < 2}
+                  onClick={() => {
+                    setDurationManuallyEdited(false);
+                    setDurationAutoFilled(false);
+                    // Mirror the map's "Recalculate all routes" button: blow away
+                    // the leg cache and re-fingerprint so fetchMixedRoute actually
+                    // re-fetches and produces fresh per-leg durations, which then
+                    // flow into cumulativeTravelTime and update the hours field.
+                    const modes = [...perLegModesRef.current];
+                    if (modes.some(m => !isStraightLike(m))) {
+                      legCacheRef.current = [];
+                      const currentWp = waypointsRef.current;
+                      const modeStr = modes.length > 0 ? modes.join(',') : routeMode;
+                      lastDirectionsCoordsRef.current = currentWp.map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|')
+                        + `::${modeStr}::${isRoundTripRef.current}::${waterwayProfileRef.current}`;
+                      fetchMixedRoute(currentWp, modes as RouteMode[]);
+                    } else {
+                      // All-straight route: no directions to fetch, just clear and
+                      // let the Naismith effect re-fire.
+                      setEstimatedDurationH('');
+                    }
+                  }}
+                  disabled={waypoints.length < 2 || directionsLoading}
                   className="px-2.5 py-1 text-[10px] text-white bg-[#4676ac] hover:bg-[#365d8a] disabled:opacity-60 disabled:cursor-not-allowed font-bold transition-all flex items-center gap-1.5 whitespace-nowrap"
                   title="Recompute travel time from the current route"
                 >
-                  <RotateCw size={11} />
+                  <RotateCw size={11} className={directionsLoading ? 'animate-spin' : ''} />
                   RECALCULATE
                 </button>
               </div>
