@@ -21,6 +21,13 @@ const SITE_URL = 'https://heimursaga.com';
 export const revalidate = 600;
 
 export function generateStaticParams() {
+  // Skip in dev — Next.js 15's static-paths worker races with the main
+  // dev compile, trying to load the page module before vendor chunks
+  // (e.g. posthog-js, pulled in transitively via client components in
+  // the page tree) are written to disk. Returning [] avoids the worker
+  // load path entirely; pages still render on-demand thanks to the
+  // default `dynamicParams: true`. Production builds get full SSG.
+  if (process.env.NODE_ENV === 'development') return [];
   return EXPLORER_BIOS.map((b) => ({ slug: b.slug }));
 }
 
@@ -480,7 +487,7 @@ export default async function ExplorerHubPage({
       <div className="text-center">
         <Link
           href="/historical-archive"
-          className="inline-block px-4 py-2 border-2 border-[#202020] dark:border-[#616161] text-xs font-bold tracking-[0.14em] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#ac6d46] hover:text-white hover:border-[#ac6d46] transition-colors"
+          className="inline-block px-4 py-2 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] text-xs font-bold tracking-[0.14em] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#ac6d46] dark:hover:bg-[#ac6d46] hover:text-white hover:border-[#ac6d46] dark:hover:border-[#ac6d46] transition-colors"
         >
           ← BACK TO HISTORICAL ARCHIVE
         </Link>
