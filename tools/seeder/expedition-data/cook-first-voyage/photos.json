@@ -1,0 +1,97 @@
+[
+  {
+    "title": "First Days at Tahiti",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/f/f2/A_View_of_Matavia_Bay_in_Otaheite_..._from_One_Tree_Hill.jpg",
+        "caption": "Matavai Bay from One Tree Hill, 1773 engraving after a drawing by Sydney Parkinson, expedition artist on the Endeavour.",
+        "credit": "John James Barralet, after Sydney Parkinson / British Library"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/f/f0/A_Native_of_Otaheite.jpg",
+        "caption": "A Native of Otaheite, in the Dress of his Country. Engraving after a Sydney Parkinson sketch made on the Endeavour, 1769.",
+        "credit": "After Sydney Parkinson / Natural History Museum, London"
+      }
+    ]
+  },
+  {
+    "title": "The Transit of Venus",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/f/f0/Observing_the_Venus_Transit_at_Tahiti_in_1769_%28oil_painting%29_%28eso0404b%29.jpg",
+        "caption": "The Endeavour at anchor in Matavai Bay during the observation of the 1769 transit of Venus.",
+        "credit": "European Southern Observatory"
+      }
+    ]
+  },
+  {
+    "title": "First Sight of New Zealand",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/d/df/Sydney_Parkinson_Maori_War_Canoe%2C_1769%2C_Cook%27s_first_voyage.jpg",
+        "caption": "Māori war canoe, drawn by Sydney Parkinson on the Endeavour off New Zealand, 1769.",
+        "credit": "Sydney Parkinson / British Library"
+      }
+    ]
+  },
+  {
+    "title": "Landing at Poverty Bay",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/e/e2/A_Maori_man_and_Joseph_Banks_exchanging_a_crayfish_for_a_piece_of_cloth%2C_c._1769.jpg",
+        "caption": "A Māori man and Joseph Banks exchanging a crayfish for a piece of cloth, c. 1769. Drawing made on Cook's first voyage.",
+        "credit": "British Library, attributed to Tupaia"
+      }
+    ]
+  },
+  {
+    "title": "Queen Charlotte's Sound",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/7/76/Captainjamescookportrait.jpg",
+        "caption": "Captain James Cook, official portrait — commander of HMS Endeavour on the first voyage, 1768–1771.",
+        "credit": "Royal Museums Greenwich"
+      }
+    ]
+  },
+  {
+    "title": "Landfall at Botany Bay",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/9/92/People_in_a_canoe%2C_Botany_Bay%2C_April_1770.jpg",
+        "caption": "People in a canoe at Botany Bay, April 1770, drawn by Tupaia — the Tahitian navigator and artist sailing with the Endeavour.",
+        "credit": "Tupaia / British Library"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/6/6b/Landing_of_Lieutenant_James_Cook_at_Botany_Bay%2C_29_April_1770_%28painting_by_E_Phillips_Fox%29.jpg",
+        "caption": "Landing of Lieutenant James Cook at Botany Bay, 29 April 1770. Painting by E. Phillips Fox, 1902.",
+        "credit": "E. Phillips Fox / National Gallery of Victoria"
+      }
+    ]
+  },
+  {
+    "title": "Stranded on the Great Barrier Reef",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/3/32/HMS_Endeavour_off_the_coast_of_New_Holland%2C_by_Samuel_Atkins_c.1794.jpg",
+        "caption": "HMS Endeavour off the coast of New Holland during Cook's voyage of discovery. Painting by Samuel Atkins, c. 1794.",
+        "credit": "Samuel Atkins / Royal Museums Greenwich"
+      }
+    ]
+  },
+  {
+    "title": "Repair at Endeavour River",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/b/b6/HMS_Endeavour_careened_for_repairs%2C_1770_Australia.png",
+        "caption": "HMS Endeavour careened for repairs on the Endeavour River, 1770. Engraving after a contemporary drawing.",
+        "credit": "Royal Museums Greenwich"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/9/90/Kangourou_Sydney_Parkinson.jpg",
+        "caption": "Kangaroo observed at the Endeavour River, 23 June 1770. Sydney Parkinson's drawing — the first European depiction of the animal.",
+        "credit": "Sydney Parkinson / Natural History Museum, London"
+      }
+    ]
+  }
+]

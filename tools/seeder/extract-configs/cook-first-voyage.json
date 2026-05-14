@@ -1,0 +1,78 @@
+{
+  "name": "cook-first-voyage",
+  "expedition": "First Voyage of HMS Endeavour",
+  "_source": "Project Gutenberg #8106 — Captain Cook's Journal During His First Voyage Round the World (W.J.L. Wharton, ed., 1893)",
+  "source": {
+    "urls": [
+      "https://www.gutenberg.org/cache/epub/8106/pg8106.txt",
+      "https://www.gutenberg.org/files/8106/8106-0.txt"
+    ],
+    "cache": "pg8106.txt"
+  },
+  "entries": [
+    {
+      "title": "First Days at Tahiti",
+      "date": "1769-04-13",
+      "anchors": [
+        "We had no sooner come to an Anchor in Royal Bay, as before-mentioned",
+        "Owhaa,\\s+him the Gentlemen that had been here before in the\\s+Dolphin"
+      ]
+    },
+    {
+      "title": "The Transit of Venus",
+      "date": "1769-06-03",
+      "anchors": [
+        "This day proved as favourable to our purpose as we could\\s+wish",
+        "the Passage of the planet Venus over the Sun's Disk"
+      ]
+    },
+    {
+      "title": "First Sight of New Zealand",
+      "date": "1769-10-07",
+      "anchors": [
+        "At 2 p\\.m\\. saw land\\* \\(\\*\\s+The North island of New Zealand\\.\\) from the Masthead",
+        "Gentle breezes and settled weather\\. At 2 p\\.m\\. saw land"
+      ]
+    },
+    {
+      "title": "Landing at Poverty Bay",
+      "date": "1769-10-09",
+      "anchors": [
+        "MONDAY, 9th October\\. Gentle breezes and Clear Weather\\. P\\.M\\. stood into\\s+the Bay and Anchored",
+        "Anchored on the North-East side before the Entrance of a\\s+small River"
+      ]
+    },
+    {
+      "title": "Queen Charlotte's Sound",
+      "date": "1770-01-16",
+      "anchors": [
+        "TUESDAY, 16th\\. Variable light Airs and Clear settled weather",
+        "we anchor'd in a very Snug Cove,\\* \\(\\* Ship Cove, in Queen\\s+Charlotte's Sound"
+      ]
+    },
+    {
+      "title": "Landfall at Botany Bay",
+      "date": "1770-04-29",
+      "anchors": [
+        "Sunday, 29th\\. In the P\\.M\\. wind Southerly and Clear weather, with which we\\s+stood into the bay and Anchored under the South shore",
+        "we discover'd a Bay,\\* \\(\\* Botany Bay\\.\\) which\\s+appeared to be tollerably well shelter'd"
+      ]
+    },
+    {
+      "title": "Stranded on the Great Barrier Reef",
+      "date": "1770-06-11",
+      "anchors": [
+        "before the Man at the Lead could heave another cast, the Ship Struck\\s+and stuck fast",
+        "we had got upon\\s+the South-East Edge of a reef of Coral Rocks"
+      ]
+    },
+    {
+      "title": "Repair at Endeavour River",
+      "date": "1770-06-17",
+      "anchors": [
+        "Sunday, 17th\\. Most part strong Gales at South-East, with some heavy",
+        "we weigh'd\\s+and run into the Harbour, in doing of which we run the Ship ashore Twice"
+      ]
+    }
+  ]
+}

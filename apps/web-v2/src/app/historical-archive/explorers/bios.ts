@@ -133,6 +133,19 @@ export const EXPLORER_BIOS: ExplorerBio[] = [
     sourceTitle: '“George Mallory”',
   },
   {
+    slug: 'james-cook',
+    displayName: 'James Cook',
+    shortName: 'James Cook',
+    lifespan: '1728–1779',
+    knownFor: 'English naval captain and explorer',
+    prose:
+      'COOK, JAMES (1728–1779), English naval captain and explorer, was born on the 28th of October 1728, at Marton village, Cleveland, Yorkshire, where his father was first an agricultural labourer and then a farm bailiff. At twelve years of age he was apprenticed to a haberdasher at Staithes, near Whitby, and afterwards to Messrs Walker, shipowners, of Whitby, whom he served for years in the Norway, Baltic and Newcastle trades. In 1768 Cook was appointed to conduct an expedition, suggested by the revival of geographical interest now noticeable, and resolved on by the English admiralty at the instance of the Royal Society, for observing the impending transit of Venus, and prosecuting geographical researches in the South Pacific Ocean.',
+    source: 'britannica-11',
+    sourceUrl:
+      'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Cook,_James',
+    sourceTitle: '“Cook, James”',
+  },
+  {
     slug: 'mary-kingsley',
     displayName: 'Mary Kingsley',
     shortName: 'Mary Kingsley',
