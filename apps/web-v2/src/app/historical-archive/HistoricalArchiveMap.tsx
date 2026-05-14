@@ -511,6 +511,8 @@ export function HistoricalArchiveMap({ expeditions, entries }: Props) {
               </div>
               <Link
                 href={clickedEntry.href}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-block px-3 py-2 text-[10px] font-mono font-bold tracking-wider bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-colors"
               >
                 READ ENTRY →
