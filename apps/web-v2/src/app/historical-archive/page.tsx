@@ -16,6 +16,7 @@ import {
   regionForEntry,
   regionForExpedition,
 } from './buckets';
+import { HistoricalArchiveMap } from './HistoricalArchiveMap';
 
 const SITE_URL = 'https://heimursaga.com';
 const PAGE_URL = `${SITE_URL}/historical-archive`;
@@ -270,9 +271,17 @@ export default async function HistoricalArchivePage() {
   const expeditions = data?.expeditions || [];
   const entries = data?.entries || [];
 
-  // Featured: first 6 expeditions with cover images (fall back to first 6).
+  // Featured: 6 random expeditions with cover images (fall back to any 6).
+  // Reshuffled on each ISR revalidation so the hub rotates over time. The
+  // Math.random() looks impure to the React Compiler purity rule, but in
+  // a `revalidate`-cached RSC the result is computed once per cycle and
+  // baked into the static HTML — equivalent to a build-time random.
   const withCovers = expeditions.filter((x) => x.coverImage);
-  const featured = (withCovers.length >= 6 ? withCovers : expeditions).slice(0, 6);
+  const featuredPool = withCovers.length >= 6 ? withCovers : expeditions;
+  const featured = [...featuredPool]
+    // eslint-disable-next-line react-hooks/purity
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 6);
 
   // By explorer — group, sort alphabetically.
   const byExplorer = new Map<string, number>();
@@ -375,7 +384,8 @@ export default async function HistoricalArchivePage() {
         </div>
       </div>
 
-      {/* Featured Expeditions */}
+      {/* Featured Expeditions — placed above the atlas so the text-heavy
+          cards (not the map canvas) are the likely LCP element. */}
       {featured.length > 0 && (
         <section className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
           <SectionHeader label="FEATURED EXPEDITIONS" count={featured.length} />
@@ -385,6 +395,16 @@ export default async function HistoricalArchivePage() {
             ))}
           </div>
         </section>
+      )}
+
+      {/* The Explorer Atlas — every expedition, every entry, plotted */}
+      {entries.length > 0 && (
+        <HistoricalArchiveMap
+          expeditions={expeditions}
+          entries={entries.filter(
+            (e) => typeof e.lat === 'number' && typeof e.lon === 'number',
+          )}
+        />
       )}
 
       {/* By Explorer */}
