@@ -107,6 +107,18 @@ async function run() {
 
   const coverIndex = buildCoverIndex(covers, archive);
 
+  // Archive title → explorer, used to rebuild the prefixed title for the PUT.
+  // seedState.expeditions stores raw archive titles, but the API row was
+  // created with the prefixed form. Sending the raw title in a cover PUT
+  // would overwrite the prefix and break the historical-archive splitter.
+  const explorerByArchiveTitle = new Map();
+  for (const item of archive.expeditions || []) {
+    const exp = item.expedition;
+    if (exp?.title && exp?.explorer) {
+      explorerByArchiveTitle.set(exp.title, exp.explorer);
+    }
+  }
+
   // Build the plan
   const plan = [];
   for (const created of seedState.expeditions) {
@@ -121,10 +133,13 @@ async function run() {
       console.warn(`[warn] no cover entry for "${created.title}" — skipping`);
       continue;
     }
+    const explorer = explorerByArchiveTitle.get(created.title);
+    const apiTitle = formatTitle(explorer, created.title);
     plan.push({
       stateEntry: created,
       expeditionId: created.expeditionId,
       title: created.title,
+      apiTitle,
       sourceUrl: cover.url,
       caption: cover.caption,
     });
@@ -170,7 +185,7 @@ async function run() {
       console.log(`  → ${uploaded.url}`);
 
       console.log(`${tag} attaching cover…`);
-      await attachCover(api, p.expeditionId, p.title, uploaded.url);
+      await attachCover(api, p.expeditionId, p.apiTitle, uploaded.url);
 
       // Persist progress
       p.stateEntry.coverUrl = uploaded.url;
