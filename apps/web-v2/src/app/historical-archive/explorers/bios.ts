@@ -209,6 +209,19 @@ export const EXPLORER_BIOS: ExplorerBio[] = [
     sourceTitle: '“Nellie Bly”',
   },
   {
+    slug: 'richard-burton-john-hanning-speke',
+    displayName: 'Richard Burton & John Hanning Speke',
+    shortName: 'Richard Burton & John Hanning Speke',
+    lifespan: '1821–1890 · 1827–1864',
+    knownFor: 'British explorers — joint expedition to the East African lakes',
+    prose:
+      'BURTON, SIR RICHARD FRANCIS (1821–1890), British consul, explorer and Orientalist, was born at Barham House, Hertfordshire, on the 19th of March 1821. In 1856 the foreign office, moved by the Royal Geographical Society, commissioned him to search for the sources of the Nile, and, again accompanied by Speke, he explored the lake regions of equatorial Africa. They discovered Lake Tanganyika in February 1858, and Speke, pushing on during Burton’s illness and acting on indications supplied by him, lighted upon Victoria Nyanza.',
+    source: 'britannica-11',
+    sourceUrl:
+      'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Burton,_Sir_Richard_Francis',
+    sourceTitle: '“Burton, Sir Richard Francis”',
+  },
+  {
     slug: 'roald-amundsen',
     displayName: 'Roald Amundsen',
     shortName: 'Roald Amundsen',

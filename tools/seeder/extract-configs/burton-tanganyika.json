@@ -1,0 +1,95 @@
+{
+  "name": "burton-tanganyika",
+  "expedition": "The Lake Regions of Central Africa",
+  "_source": "Project Gutenberg #66812 (Vol 1) + #66813 (Vol 2) — Burton's Lake Regions of Central Africa (1860). Joint expedition with Speke 1857–1859.",
+  "sources": [
+    {
+      "urls": [
+        "https://www.gutenberg.org/cache/epub/66812/pg66812.txt",
+        "https://www.gutenberg.org/files/66812/66812-0.txt"
+      ],
+      "cache": "pg66812.txt"
+    },
+    {
+      "urls": [
+        "https://www.gutenberg.org/cache/epub/66813/pg66813.txt",
+        "https://www.gutenberg.org/files/66813/66813-0.txt"
+      ],
+      "cache": "pg66813.txt"
+    }
+  ],
+  "entries": [
+    {
+      "title": "Out from Zanzibar",
+      "date": "1857-06-16",
+      "volume": 1,
+      "anchors": [
+        "At noon, on the 16th of June, 1857, the corvette Artémise",
+        "usual expenditure of gunpowder which must in Eastern lands announce"
+      ]
+    },
+    {
+      "title": "The Caravan Sets Out",
+      "date": "1857-07-01",
+      "volume": 1,
+      "anchors": [
+        "The departure from Bomani was effected on the 1st of July with some\\s+trouble",
+        "it was like driving a herd of wild cattle"
+      ]
+    },
+    {
+      "title": "Crossing the Usagara Ghauts",
+      "date": "1857-08-07",
+      "volume": 1,
+      "anchors": [
+        "On the 7th August, 1857, the Expedition left Zungomero",
+        "We were martyred\\s+by miasma; my companion and I were so feeble"
+      ]
+    },
+    {
+      "title": "Through Ugogo",
+      "date": "1857-10-01",
+      "volume": 1,
+      "anchors": [
+        "Ugogo, the reader may remember, was the ultimate period applied to the\\s+prospects of the Exploration",
+        "I halted three days at Ugogi to recruit the party"
+      ]
+    },
+    {
+      "title": "Arrival at Kazeh",
+      "date": "1857-11-07",
+      "volume": 1,
+      "anchors": [
+        "On the 7th November, 1857,--the 134th day from the date of our leaving\\s+the coast",
+        "after marching at least 600 miles, we prepared to enter\\s+Kazeh"
+      ]
+    },
+    {
+      "title": "The Sea of Ujiji",
+      "date": "1858-02-13",
+      "volume": 2,
+      "anchors": [
+        "On the 13th February we resumed our travel through screens of lofty\\s+grass",
+        "I gazed in dismay; the remains of my\\s+blindness"
+      ]
+    },
+    {
+      "title": "Exploring the Tanganyika",
+      "date": "1858-03-02",
+      "volume": 2,
+      "anchors": [
+        "Being determined to explore the northern extremity of the Tanganyika\\s+Lake, whence",
+        "and seeing scanty chance of success, and every\\s+prospect of an accident"
+      ]
+    },
+    {
+      "title": "The Down-March to the Coast",
+      "date": "1858-09-26",
+      "volume": 2,
+      "anchors": [
+        "The 26th September, 1858, saw us on foot betimes",
+        "The hospitable Snay\\s+bin Amir, freshly recovered from an influenza"
+      ]
+    }
+  ]
+}

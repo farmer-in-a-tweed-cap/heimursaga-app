@@ -1,0 +1,47 @@
+[
+  {
+    "title": "Out from Zanzibar",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/6/6c/Zanzibar_mid_19th_century.png",
+        "caption": "Zanzibar harbour, mid-19th century — the port Burton and Speke sailed from on 16 June 1857.",
+        "credit": "Public domain"
+      },
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/c/c1/Sultan_Majid_bin_Said.jpg",
+        "caption": "Sultan Sayyid Majid bin Said of Zanzibar (r. 1856–1870), who provided the corvette Artémise that carried the expedition to the mainland.",
+        "credit": "Public domain"
+      }
+    ]
+  },
+  {
+    "title": "The Caravan Sets Out",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Richard_Francis_Burton_%28painting_by_Frederic_Leighton%29.jpg",
+        "caption": "Richard Francis Burton, commander of the Royal Geographical Society's East African expedition. Painting by Frederic Leighton, c. 1872–1875.",
+        "credit": "Frederic Leighton / National Portrait Gallery"
+      }
+    ]
+  },
+  {
+    "title": "Arrival at Kazeh",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/c/cf/Wanyamwezi-1860.jpg",
+        "caption": "Hair-dresses of the Wanyamwezi, the people inhabiting the region around Kazeh. Engraving from Burton's Lake Regions of Central Africa, 1860.",
+        "credit": "Richard F. Burton / Lake Regions of Central Africa (1860)"
+      }
+    ]
+  },
+  {
+    "title": "Exploring the Tanganyika",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/1/16/John_Hanning_Speke_%281827-64%29_RMG_F8616.jpg",
+        "caption": "John Hanning Speke with a surveying sextant. Photograph by Southwell Brothers, c. 1863 — Speke conducted the canoe voyage to the northern end of Lake Tanganyika in March 1858.",
+        "credit": "Southwell Brothers / Royal Museums Greenwich"
+      }
+    ]
+  }
+]
