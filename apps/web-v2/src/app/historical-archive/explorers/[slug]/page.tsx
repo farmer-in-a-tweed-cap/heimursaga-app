@@ -20,13 +20,17 @@ const SITE_URL = 'https://heimursaga.com';
 
 export const revalidate = 600;
 
+// Dev: skip static optimization entirely. Returning [] from
+// generateStaticParams was still loading the page module in Next.js 15's
+// static-paths worker, which raced against the main dev compile and
+// triggered missing-chunk errors (e.g. posthog-js vendor chunk, pulled
+// in transitively via client components in the page tree). Forcing
+// dynamic rendering in dev tells Next.js to skip the worker outright;
+// production builds still get full SSG via generateStaticParams below.
+export const dynamic =
+  process.env.NODE_ENV === 'development' ? 'force-dynamic' : 'auto';
+
 export function generateStaticParams() {
-  // Skip in dev — Next.js 15's static-paths worker races with the main
-  // dev compile, trying to load the page module before vendor chunks
-  // (e.g. posthog-js, pulled in transitively via client components in
-  // the page tree) are written to disk. Returning [] avoids the worker
-  // load path entirely; pages still render on-demand thanks to the
-  // default `dynamicParams: true`. Production builds get full SSG.
   if (process.env.NODE_ENV === 'development') return [];
   return EXPLORER_BIOS.map((b) => ({ slug: b.slug }));
 }
