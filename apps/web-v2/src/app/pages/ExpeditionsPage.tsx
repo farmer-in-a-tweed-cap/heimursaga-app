@@ -269,7 +269,7 @@ export function ExpeditionsPage() {
       {/* Page Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         {/* Submenu Banner */}
-        <div className="bg-[#616161] px-3 md:px-6 py-3 flex items-center gap-2 md:gap-3 border-b-2 border-[#202020] dark:border-[#4a4a4a] overflow-x-auto">
+        <div className="bg-[#616161] px-3 md:px-6 py-3 flex flex-wrap items-center gap-2 md:gap-3 border-b-2 border-[#202020] dark:border-[#4a4a4a]">
           <span className="text-xs text-[#e5e5e5] font-bold shrink-0 hidden md:inline">DISCOVER:</span>
           <Link
             href="/explorers"
@@ -309,8 +309,7 @@ export function ExpeditionsPage() {
                 : 'bg-[#2a2a2a] text-white hover:scale-105'
             }`}
           >
-            <span className="md:hidden">ARCHIVE</span>
-            <span className="hidden md:inline">HISTORICAL ARCHIVE</span>
+            HISTORICAL ARCHIVE
           </Link>
         </div>
 
