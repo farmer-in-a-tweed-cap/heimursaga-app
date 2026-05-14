@@ -12,6 +12,7 @@ import {
   REGIONS,
   eraForYear,
   expeditionYear,
+  explorerSlug,
   regionForEntry,
   regionForExpedition,
 } from './buckets';
@@ -393,17 +394,18 @@ export default async function HistoricalArchivePage() {
           <SectionHeader label="BY EXPLORER" count={explorerList.length} />
           <div className="p-4 md:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 md:gap-x-6 gap-y-1">
             {explorerList.map(([name, count]) => (
-              <div
+              <Link
                 key={name}
-                className="flex items-baseline justify-between gap-3 border-b border-[#b5bcc4] dark:border-[#3a3a3a] py-2"
+                href={`/historical-archive/explorers/${explorerSlug(name)}`}
+                className="flex items-baseline justify-between gap-3 border-b border-[#b5bcc4] dark:border-[#3a3a3a] py-2 hover:text-[#ac6d46] focus-visible:outline-none focus-visible:text-[#ac6d46]"
               >
-                <span className="font-serif text-sm text-[#202020] dark:text-[#e5e5e5] truncate">
+                <span className="font-serif text-sm text-[#202020] dark:text-[#e5e5e5] truncate group-hover:text-[#ac6d46]">
                   {name}
                 </span>
                 <span className="text-[10px] font-mono text-[#616161] dark:text-[#b5bcc4] tracking-wider whitespace-nowrap shrink-0">
                   {count} {count === 1 ? 'ENTRY' : 'ENTRIES'}
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
         </section>

@@ -6,6 +6,15 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   eslint: { ignoreDuringBuilds: false },
   transpilePackages: ['@repo/types'],
+  // Disable webpack's persistent filesystem cache in dev. Stale .pack files
+  // were causing "Cannot find module './3151.js'" errors when chunk hashes
+  // shifted between recompiles and the runtime kept resolving against old
+  // pack-cache entries. Memory cache only is slower on cold start but
+  // deterministic. Production builds (`next build`) are unaffected.
+  webpack(config, { dev }) {
+    if (dev) config.cache = { type: 'memory' };
+    return config;
+  },
   images: {
     remotePatterns: [
       {

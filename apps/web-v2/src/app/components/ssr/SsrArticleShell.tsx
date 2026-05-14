@@ -23,19 +23,13 @@ function paragraphs(body?: string): string[] {
     .filter(Boolean);
 }
 
-// CSS module-free inline style: SSR shell is part of the initial HTML so
-// crawlers see the body. Once JS hydrates, the script flips a root class
-// that hides the shell — the client component renders the user-facing UI.
-const HIDE_AFTER_HYDRATION_SCRIPT = `(function(){try{document.documentElement.classList.add('ssr-shell-hidden');}catch(e){}})();`;
-const HIDE_AFTER_HYDRATION_STYLE = `.ssr-shell-hidden [data-ssr-shell]{display:none!important;}`;
-
+// SSR shell is part of the initial HTML so crawlers see the body. The
+// `ssr-shell-hidden` class is added once by the root layout's inline
+// script and persists across soft navigations, so the CSS rule defined
+// alongside it (also in root layout) hides every `[data-ssr-shell]`
+// element on JS-capable clients without per-page setup.
 export function SsrShellAssets() {
-  return (
-    <>
-      <style dangerouslySetInnerHTML={{ __html: HIDE_AFTER_HYDRATION_STYLE }} />
-      <script dangerouslySetInnerHTML={{ __html: HIDE_AFTER_HYDRATION_SCRIPT }} />
-    </>
-  );
+  return null;
 }
 
 export function EntryArticleSsr({ entry }: { entry: EntryMeta }) {

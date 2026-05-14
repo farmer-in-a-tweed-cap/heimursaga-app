@@ -122,7 +122,13 @@ export default function RootLayout({
         />
       </head>
       <body>
-        {/* Dark mode flash prevention */}
+        {/* Dark mode flash prevention + SSR-shell hide.
+            The SSR shell is rendered on entry/expedition pages so crawlers
+            without JS see the article body. The class added here hides it
+            from JS-capable clients. Setting it from the root layout means
+            it survives soft (client) navigations — pages rendered via RSC
+            after hydration don't get a fresh document parse, so a script
+            tag inside the page tree never executes. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -133,10 +139,12 @@ export default function RootLayout({
                     document.documentElement.classList.add('dark');
                   }
                 } catch(e) {}
+                try { document.documentElement.classList.add('ssr-shell-hidden'); } catch(e) {}
               })();
             `,
           }}
         />
+        <style dangerouslySetInnerHTML={{ __html: `.ssr-shell-hidden [data-ssr-shell]{display:none!important;}` }} />
         <ClientProviders><main>{children}</main></ClientProviders>
 
         {/* reCAPTCHA v3 */}

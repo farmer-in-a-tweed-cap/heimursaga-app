@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { EXPLORER_BIOS } from './historical-archive/explorers/bios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/v1';
 const SITE_URL = 'https://heimursaga.com';
@@ -12,6 +13,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/expeditions`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
     { url: `${SITE_URL}/entries`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
     { url: `${SITE_URL}/historical-archive`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
+    // Per-explorer hub pages — static list from the bios data file.
+    ...EXPLORER_BIOS.map((b) => ({
+      url: `${SITE_URL}/historical-archive/explorers/${b.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    })),
     { url: `${SITE_URL}/about`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${SITE_URL}/documentation`, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${SITE_URL}/contact`, changeFrequency: 'monthly', priority: 0.4 },
