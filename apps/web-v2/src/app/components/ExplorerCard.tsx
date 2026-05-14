@@ -86,7 +86,7 @@ export function ExplorerCard({
       {/* Section: Name & Journal */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] px-4 py-4 bg-white dark:bg-[#202020]">
         <h3 className="font-bold leading-tight dark:text-[#e5e5e5] mb-1">{username}</h3>
-        <p className="text-sm text-[#616161] dark:text-[#b5bcc4] font-mono mb-2">
+        <p className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono mb-2">
           {journalName}
         </p>
         <p className="text-xs text-[#202020] dark:text-[#b5bcc4] leading-relaxed">

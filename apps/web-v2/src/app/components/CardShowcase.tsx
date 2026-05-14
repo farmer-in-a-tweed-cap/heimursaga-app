@@ -11,9 +11,14 @@ import { WaypointCardLandscape } from '@/app/components/WaypointCardLandscape';
 import { NotificationCard } from '@/app/components/NotificationCard';
 import { NotificationCardCompact } from '@/app/components/NotificationCardCompact';
 import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownDemo';
+import {
+  ReferenceExpeditionCard,
+  ReferenceEntryCard,
+  ReferenceExplorerCard,
+} from '@/app/components/preview/HistoricalReferenceCards';
 
 /**
- * CardShowcase - A demo component showing how to use the reusable 
+ * CardShowcase - A demo component showing how to use the reusable
  * ExpeditionCard, EntryCard, and ExplorerCard components throughout the app
  */
 export function CardShowcase() {
@@ -27,6 +32,102 @@ export function CardShowcase() {
           </h1>
           <p className="text-sm text-[#616161] dark:text-[#b5bcc4] font-mono">
             Reusable card components with consistent 2-button architecture for displaying expedition, entry, and explorer previews
+          </p>
+        </div>
+
+        {/* Reference: historical-archive aesthetic */}
+        <div className="mb-12">
+          <h2 className="text-lg font-bold text-[#202020] dark:text-[#e5e5e5] mb-2 border-b-2 border-[#ac6d46] pb-2">
+            REFERENCE: HISTORICAL-ARCHIVE AESTHETIC
+          </h2>
+          <p className="text-sm text-[#616161] dark:text-[#b5bcc4] font-mono mb-6">
+            The card style used on /historical-archive — a candidate visual
+            language for the rest of the card library. Differences from the
+            current cards: <strong>serif title</strong>, <strong>10px mono
+            uppercase metadata in copper</strong>, <strong>hover border flips
+            to copper</strong>, <strong>compact footer with hairline border</strong>,
+            no action buttons (whole card is the link), <strong>16:10 image
+            aspect</strong>.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <ReferenceExpeditionCard
+              title="The Endurance Expedition"
+              explorer="Ernest Shackleton"
+              years="1914–1917"
+              description="Shackleton's Imperial Trans-Antarctic Expedition aimed to cross the Antarctic continent. After the Endurance was crushed in pack ice, the crew survived 22 months on the ice before reaching South Georgia in a small boat."
+              imageUrl="https://images.unsplash.com/photo-1562743227-dbfb8875c61b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhbnRhcmN0aWNhJTIwcmVzZWFyY2glMjBzdGF0aW9ufGVufDF8fHx8MTc2ODMxNDE1OHww&ixlib=rb-4.1.0&q=80&w=1080"
+              entriesCount={7}
+              region="Antarctica"
+            />
+            <ReferenceExpeditionCard
+              title="Voyage of the Beagle — Galapagos Islands"
+              explorer="Charles Darwin"
+              years="1835"
+              description="Darwin's observations of finches, tortoises, and mockingbirds on the Galapagos Islands during the second voyage of HMS Beagle would become foundational to his theory of natural selection."
+              imageUrl="https://images.unsplash.com/photo-1564750576234-75de3cc54053?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhbWF6b24lMjByaXZlciUyMGp1bmdsZXxlbnwxfHx8fDE3NjgzMTQxNTh8MA&ixlib=rb-4.1.0&q=80&w=1080"
+              entriesCount={2}
+              region="South America"
+            />
+            <ReferenceExpeditionCard
+              title="The Niger at Last"
+              explorer="Mungo Park"
+              years="1805"
+              description="On Park's second expedition to find the Niger, the boat struck on a rock at the Bussa rapids, not far below Yauri, and the survivors sprang into the river and were drowned."
+              entriesCount={2}
+              region="Africa"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <ReferenceEntryCard
+              title="Endurance Crushed"
+              explorer="Ernest Shackleton"
+              date="Oct 27, 1915"
+              place="Position of Endurance when abandoned, Weddell Sea pack"
+              excerpt="The end of the Endurance has come. Her end was always inevitable, but now it is brought to a stage where we must abandon her."
+            />
+            <ReferenceEntryCard
+              title="The Last Entry"
+              explorer="Robert Falcon Scott"
+              date="Mar 29, 1912"
+              place="Final camp, Ross Ice Shelf"
+              excerpt="For my own sake I do not regret this journey, which has shown that Englishmen can endure hardships, help one another, and meet death with as great a fortitude as ever in the past."
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <ReferenceExplorerCard
+              name="Ernest Shackleton"
+              lifespan="1874–1922"
+              knownFor="Anglo-Irish Antarctic explorer, principal figure of the Heroic Age of Antarctic Exploration"
+              expeditions={1}
+              entries={7}
+            />
+            <ReferenceExplorerCard
+              name="Charles Darwin"
+              lifespan="1809–1882"
+              knownFor="English naturalist, author of the Origin of Species"
+              expeditions={3}
+              entries={4}
+            />
+            <ReferenceExplorerCard
+              name="Mary Kingsley"
+              lifespan="1862–1900"
+              knownFor="English traveller, ethnologist and author of Travels in West Africa"
+              expeditions={1}
+              entries={3}
+            />
+          </div>
+        </div>
+
+        <div className="mb-8 border-l-4 border-[#616161] pl-4">
+          <h2 className="text-lg font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">
+            CURRENT CARDS
+          </h2>
+          <p className="text-sm text-[#616161] dark:text-[#b5bcc4] font-mono">
+            Everything below is the existing card library, unchanged. Compare
+            against the reference cards above and call out which traits you
+            want migrated (font family, metadata color, hover state, etc.).
           </p>
         </div>
 

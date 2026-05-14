@@ -22,6 +22,7 @@ export default function robots(): MetadataRoute.Robots {
           '/sponsorship',
           '/upgrade-success',
           '/payment-success',
+          '/cards-preview',
         ],
       },
       // Block AI crawlers

@@ -82,7 +82,7 @@ export function EntryCard({
           </div>
 
           <div className="relative pt-6">
-            <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed italic font-serif min-h-[4.5rem]">
+            <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed italic font-serif min-h-[4rem]">
               {excerpt}
             </p>
           </div>
@@ -92,7 +92,7 @@ export function EntryCard({
 
       {/* Section: Title */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] px-5 py-4 bg-white dark:bg-[#202020]">
-        <h3 className="font-serif font-bold text-lg dark:text-[#e5e5e5] line-clamp-2" style={{ lineHeight: 1.3 }}>{title}</h3>
+        <h3 className="font-serif font-bold text-base dark:text-[#e5e5e5] line-clamp-2 leading-snug">{title}</h3>
       </div>
 
       {/* Section: Attribution */}
