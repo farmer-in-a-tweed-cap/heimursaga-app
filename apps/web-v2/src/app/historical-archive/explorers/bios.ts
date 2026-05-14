@@ -51,7 +51,7 @@ export const EXPLORER_BIOS: ExplorerBio[] = [
     lifespan: '1769–1859',
     knownFor: 'German naturalist and traveller',
     prose:
-      'HUMBOLDT, FRIEDRICH HEINRICH ALEXANDER, Baron von (1769–1859), German naturalist and traveller, was born at Berlin, on the 14th of September 1769.',
+      'HUMBOLDT, FRIEDRICH HEINRICH ALEXANDER, Baron von (1769–1859), German naturalist and traveller, was born at Berlin, on the 14th of September 1769. By his delineation (in 1817) of “isothermal lines,” he at once suggested the idea and devised the means of comparing the climatic conditions of various countries. His essay on the geography of plants was based on the then novel idea of studying the distribution of organic life as affected by varying physical conditions.',
     source: 'britannica-11',
     sourceUrl:
       'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Humboldt,_Friedrich_Heinrich_Alexander_von',
@@ -76,7 +76,7 @@ export const EXPLORER_BIOS: ExplorerBio[] = [
     lifespan: '1809–1882',
     knownFor: 'English naturalist, author of the Origin of Species',
     prose:
-      'DARWIN, CHARLES ROBERT (1809–1882), English naturalist, author of the Origin of Species, was born at Shrewsbury on the 12th of February 1809.',
+      'DARWIN, CHARLES ROBERT (1809–1882), English naturalist, author of the Origin of Species, was born at Shrewsbury on the 12th of February 1809. The voyage of HMS Beagle, lasting until the 2nd of October 1836, crystallized his observations on the relation between animals in islands and those of the nearest continental areas, near akin and yet not the same. In October 1838 he read Malthus on Population, and his observations having long since convinced him of the struggle for existence, it at once struck him “that under these circumstances favourable variations would tend to be preserved, and unfavourable ones to be destroyed.”',
     source: 'britannica-11',
     sourceUrl:
       'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Darwin,_Charles_Robert',
@@ -89,7 +89,7 @@ export const EXPLORER_BIOS: ExplorerBio[] = [
     lifespan: '1813–1873',
     knownFor: 'Scottish missionary and explorer in Africa',
     prose:
-      'LIVINGSTONE, DAVID (1813–1873), Scottish missionary and explorer in Africa, was born on the 19th of March 1813, at the village of Blantyre Works, in Lanarkshire, Scotland.',
+      'LIVINGSTONE, DAVID (1813–1873), Scottish missionary and explorer in Africa, was born on the 19th of March 1813, at the village of Blantyre Works, in Lanarkshire, Scotland. With the aid and in the company of two English sportsmen, William C. Oswell and Mungo Murray, he was able to undertake a journey to Lake Ngami, which had never yet been seen by a white man. A fortnight afterwards he discovered the famous “Victoria” falls of the Zambezi, and on the 18th of July 1868 discovered Lake Bangweulu in his search for the sources of the Nile.',
     source: 'britannica-11',
     sourceUrl:
       'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Livingstone,_David',
@@ -114,7 +114,7 @@ export const EXPLORER_BIOS: ExplorerBio[] = [
     lifespan: '1861–1930',
     knownFor: 'Norwegian scientist, explorer and statesman',
     prose:
-      'NANSEN, FRIDTJOF (1861–), Norwegian scientist, explorer and statesman, was born at Fröen near Christiania on the 10th of October 1861. His childhood was spent at this place till his fifteenth year, when his parents removed to Christiania, where he went to school.',
+      'NANSEN, FRIDTJOF (1861–), Norwegian scientist, explorer and statesman, was born at Fröen near Christiania on the 10th of October 1861. On the 22nd of September the “Fram” was made fast to a floe in 78° 50′ N., 133° 37′ E.; shortly afterwards she was frozen in, and the long drift began. On the 8th of April they turned back from 86° 14′ N., the highest latitude then reached by man.',
     source: 'britannica-11',
     sourceUrl:
       'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Nansen,_Fridtjof',
@@ -139,7 +139,7 @@ export const EXPLORER_BIOS: ExplorerBio[] = [
     lifespan: '1862–1900',
     knownFor: 'English traveller, ethnologist and author',
     prose:
-      'KINGSLEY, MARY HENRIETTA (1862–1900), English traveller, ethnologist and author, daughter of George Henry Kingsley (1827–1892), was born in Islington, London, on the 13th of October 1862.',
+      'KINGSLEY, MARY HENRIETTA (1862–1900), English traveller, ethnologist and author, daughter of George Henry Kingsley (1827–1892), was born in Islington, London, on the 13th of October 1862. She started for the West Coast in August 1893; and at Kabinda, at Old Calabar, Fernando Po and on the Lower Congo she pursued her investigations, returning to England in June 1894. The story of her adventures and her investigations in fetish is vividly told in her Travels in West Africa (1897).',
     source: 'britannica-11',
     sourceUrl:
       'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Kingsley,_Mary_Henrietta',
@@ -164,7 +164,7 @@ export const EXPLORER_BIOS: ExplorerBio[] = [
     lifespan: '1771–1806',
     knownFor: 'Scottish explorer of the Niger',
     prose:
-      'PARK, MUNGO (1771–1806?), Scottish explorer of the Niger, was born in Selkirkshire, Scotland, on the 20th of September 1771, at Foulshiels on the Yarrow—the farm which his father rented from the duke of Buccleuch.',
+      'PARK, MUNGO (1771–1806?), Scottish explorer of the Niger, was born in Selkirkshire, Scotland, on the 20th of September 1771, at Foulshiels on the Yarrow—the farm which his father rented from the duke of Buccleuch. On the 21st of July 1796 he reached the long-sought Niger at Segu, being the first European to gaze on its waters. On his second expedition the boat struck on a rock at the Bussa rapids, not far below Yauri, and Park and the two soldiers who still survived sprang into the river and were drowned.',
     source: 'britannica-11',
     sourceUrl:
       'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Park,_Mungo',
@@ -189,7 +189,7 @@ export const EXPLORER_BIOS: ExplorerBio[] = [
     lifespan: '1872–1928',
     knownFor: 'Norwegian explorer of polar regions',
     prose:
-      'Roald Engelbregt Gravning Amundsen (16 July 1872 – c. 18 June 1928) was a Norwegian explorer of polar regions. He was a key figure of the period known as the Heroic Age of Antarctic Exploration.',
+      'Roald Engelbregt Gravning Amundsen (16 July 1872 – c. 18 June 1928) was a Norwegian explorer of polar regions and a key figure of the period known as the Heroic Age of Antarctic Exploration. From 1903 to 1906, he led the first expedition to successfully traverse the Northwest Passage on the sloop Gjøa. The party of five, led by Amundsen, became the first to reach the South Pole on 14 December 1911. On 12 May 1926, Amundsen and 15 other men in the airship Norge became the first explorers verified to have reached the North Pole.',
     source: 'wikipedia',
     sourceUrl: 'https://en.wikipedia.org/wiki/Roald_Amundsen',
     sourceTitle: '“Roald Amundsen”',
@@ -201,7 +201,7 @@ export const EXPLORER_BIOS: ExplorerBio[] = [
     lifespan: '1868–1912',
     knownFor: 'British Royal Navy officer, Antarctic explorer',
     prose:
-      'Captain Robert Falcon Scott (6 June 1868 – c. 29 March 1912) was a British Royal Navy officer and explorer who led two expeditions to Antarctica.',
+      'Captain Robert Falcon Scott (6 June 1868 – c. 29 March 1912) was a British Royal Navy officer and explorer who led two expeditions to Antarctica. On the first expedition, Scott set a new southern record by marching to latitude 82°S and discovered the Antarctic Plateau, on which the South Pole is located. On the second venture, Scott led a party of five which reached the South Pole on 17 January 1912, less than five weeks after Amundsen\'s South Pole expedition.',
     source: 'wikipedia',
     sourceUrl: 'https://en.wikipedia.org/wiki/Robert_Falcon_Scott',
     sourceTitle: '“Robert Falcon Scott”',
@@ -213,7 +213,7 @@ export const EXPLORER_BIOS: ExplorerBio[] = [
     lifespan: '1856–1920',
     knownFor: 'American Arctic explorer',
     prose:
-      'PEARY, ROBERT EDWIN (1856–), American Arctic explorer, was born at Cresson, Pennsylvania, on the 6th of May 1856. He graduated at Bowdoin College in 1877, and in 1881 became a civil engineer in the U.S. navy with the rank of lieutenant.',
+      'PEARY, ROBERT EDWIN (1856–), American Arctic explorer, was born at Cresson, Pennsylvania, on the 6th of May 1856. In 1902 Peary with Henson and an Eskimo advanced as far north as lat. 84° 17′ 27″, the highest point then reached in the western hemisphere. On the 6th of April 1909 they reached the North Pole, remained some thirty hours, took observations, and on sounding a few miles from the pole found no bottom at 1500 fathoms.',
     source: 'britannica-11',
     sourceUrl:
       'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Peary,_Robert_Edwin',
