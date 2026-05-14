@@ -1,0 +1,82 @@
+[
+  {
+    "title": "Lake Tahoe",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/f/f0/California_views._No._4._Lake_Tahoe%2C_looking_southwest_LCCN2003663834.jpg",
+        "caption": "Lake Tahoe, looking southwest. California Views No. 4, 1873 — the year Isabella Bird stopped at Tahoe on her way east.",
+        "credit": "Library of Congress"
+      }
+    ]
+  },
+  {
+    "title": "Cheyenne and the Foot Hills",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/3/36/Isabella_Bird.jpg",
+        "caption": "Isabella Lucy Bird, English traveller and naturalist (1831–1904), who crossed Colorado on horseback in the autumn of 1873.",
+        "credit": "Public domain"
+      }
+    ]
+  },
+  {
+    "title": "First View of the Rockies",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Head_of_the_Saint_Vrain%2C_Rocky_Mountains%2C_Colorado_-_NARA_-_517671.jpg",
+        "caption": "Head of the Saint Vrain, Rocky Mountains, Colorado, 1873 — the river Bird followed up into the front range.",
+        "credit": "William Henry Jackson / U.S. Geological Survey of the Territories"
+      }
+    ]
+  },
+  {
+    "title": "Estes Park",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/b/b7/Long%27s_Peak%2C_from_Estes_Park._Larimer_County%2C_Colorado_-_NARA_-_517493.jpg",
+        "caption": "Long's Peak from Estes Park, Colorado, 1873 — photographed during the Hayden Survey the same season Bird arrived at Evans's cabin.",
+        "credit": "William Henry Jackson / U.S. Geological Survey of the Territories"
+      }
+    ]
+  },
+  {
+    "title": "The Ascent of Long's Peak",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/8/82/Long%27s_Peak%2C_from_lower_end_of_Estes_Park._Larimer_County%2C_Colorado._-_NARA_-_516971.jpg",
+        "caption": "Long's Peak from the lower end of Estes Park, 1873 — the 14,259-ft summit Bird climbed with Mountain Jim Nugent in early October.",
+        "credit": "William Henry Jackson / U.S. Geological Survey of the Territories"
+      }
+    ]
+  },
+  {
+    "title": "Life at the Cabin",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Front_range_of_Rocky_Mountains%2C_Colorado%2C_from_Bald_Mountain%2C_near_Ward._-_NARA_-_517673.jpg",
+        "caption": "The Front Range of the Colorado Rockies, seen from Bald Mountain near Ward, 1873 — the country Bird rode through daily from Evans's ranch.",
+        "credit": "William Henry Jackson / U.S. Geological Survey of the Territories"
+      }
+    ]
+  },
+  {
+    "title": "Through Hall's Gulch",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/6/65/Castle_Rock%2C_Boulder_Canyon._Boulder_County%2C_Colorado_-_NARA_-_517497.jpg",
+        "caption": "Castle Rock, Boulder Canyon, Colorado, 1873 — typical of the canyons Bird picked her way through on the long November ride south.",
+        "credit": "William Henry Jackson / U.S. Geological Survey of the Territories"
+      }
+    ]
+  },
+  {
+    "title": "A Perilous Winter Ride",
+    "photos": [
+      {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/4/4b/Long%27s_Peak%2C_view_from_Estes_Park_-_DPLA_-_717e66ab9c089509e2cd61d02162e9dc.jpg",
+        "caption": "Long's Peak from Estes Park, 1873 — Bird's final view of the range before her December ride back across the plains.",
+        "credit": "William Henry Jackson / U.S. Geological Survey of the Territories"
+      }
+    ]
+  }
+]

@@ -1,0 +1,78 @@
+{
+  "name": "isabella-bird-rockies",
+  "expedition": "A Lady's Life in the Rocky Mountains",
+  "_source": "Project Gutenberg #755 — Isabella L. Bird, A Lady's Life in the Rocky Mountains (1879). Letters home from her 1873 Colorado journey.",
+  "source": {
+    "urls": [
+      "https://www.gutenberg.org/cache/epub/755/pg755.txt",
+      "https://www.gutenberg.org/files/755/755-0.txt"
+    ],
+    "cache": "pg755.txt"
+  },
+  "entries": [
+    {
+      "title": "Lake Tahoe",
+      "date": "1873-09-02",
+      "anchors": [
+        "LAKE TAHOE, September 2",
+        "I have found a dream of beauty at which one might look all one's life\\s+and sigh"
+      ]
+    },
+    {
+      "title": "Cheyenne and the Foot Hills",
+      "date": "1873-09-10",
+      "anchors": [
+        "FORT COLLINS, September 10",
+        "It gave me a strange sensation to embark upon the Plains"
+      ]
+    },
+    {
+      "title": "First View of the Rockies",
+      "date": "1873-09-25",
+      "anchors": [
+        "LOWER CANYON, September 25",
+        "This is another world\\.  My entrance upon it was signalized in this\\s+fashion"
+      ]
+    },
+    {
+      "title": "Estes Park",
+      "date": "1873-09-28",
+      "anchors": [
+        "ESTES PARK!!!  September 28",
+        "I wish I could let those three notes of admiration go to you instead of\\s+a letter"
+      ]
+    },
+    {
+      "title": "The Ascent of Long's Peak",
+      "date": "1873-10-02",
+      "anchors": [
+        "As this account of the ascent of Long's Peak could not be written at\\s+the time",
+        "I am much disinclined to write it"
+      ]
+    },
+    {
+      "title": "Life at the Cabin",
+      "date": "1873-10-10",
+      "anchors": [
+        "ESTES PARK, COLORADO TERRITORY, October 2",
+        "How time has slipped by I do not know\\.  This is a glorious region"
+      ]
+    },
+    {
+      "title": "Through Hall's Gulch",
+      "date": "1873-11-06",
+      "anchors": [
+        "HALL'S GULCH, COLORADO, November 6",
+        "It was another cloudless morning, one of the many here on which one\\s+awakes early"
+      ]
+    },
+    {
+      "title": "A Perilous Winter Ride",
+      "date": "1873-12-04",
+      "anchors": [
+        "DR\\. HUGHES'S, LOWER CANYON, COLORADO, December 4",
+        "Once again here, in refined and cultured society"
+      ]
+    }
+  ]
+}

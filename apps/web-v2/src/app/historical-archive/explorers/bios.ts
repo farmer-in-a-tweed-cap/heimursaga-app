@@ -146,6 +146,18 @@ export const EXPLORER_BIOS: ExplorerBio[] = [
     sourceTitle: '“Stanley, Sir Henry Morton”',
   },
   {
+    slug: 'isabella-bird',
+    displayName: 'Isabella Bird',
+    shortName: 'Isabella Bird',
+    lifespan: '1831–1904',
+    knownFor: 'English explorer and writer',
+    prose:
+      'Isabella Lucy Bishop FRGS (née Bird; 15 October 1831 – 7 October 1904) was an English explorer, writer, photographer and naturalist. She was the first woman to be elected as a fellow of the Royal Geographical Society. Dressed practically and riding not sidesaddle but frontwards like a man, she covered over 800 miles in the Rocky Mountains in 1873; her letters to her sister, first printed in the magazine The Leisure Hour, comprised Bird’s fourth and perhaps most famous book, A Lady’s Life in the Rocky Mountains.',
+    source: 'wikipedia',
+    sourceUrl: 'https://en.wikipedia.org/wiki/Isabella_Bird',
+    sourceTitle: '“Isabella Bird”',
+  },
+  {
     slug: 'james-cook',
     displayName: 'James Cook',
     shortName: 'James Cook',
