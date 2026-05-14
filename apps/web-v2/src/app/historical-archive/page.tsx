@@ -360,17 +360,16 @@ export default async function HistoricalArchivePage() {
           </div>
           <div className="prose-none max-w-3xl space-y-3 font-serif text-sm md:text-[15px] leading-relaxed text-[#202020] dark:text-[#e5e5e5]">
             <p>
-              First-person dispatches from explorers across the Age of Romantic
-              Exploration, the Victorian era, and the Heroic Age — dated,
-              geotagged, and presented unedited. The texts are drawn from the
-              public domain (Project Gutenberg, Wikisource, and original
-              published expedition reports).
+              First-hand accounts from explorers of the Romantic, Victorian,
+              and Heroic ages, preserved as originally written. Dates,
+              coordinates, and the original prose are presented without
+              alteration. Sources are public domain: Project Gutenberg,
+              Wikisource, and the original expedition volumes.
             </p>
             <p>
-              Every entry is the explorer&rsquo;s own words. No paraphrasing, no
-              summarization, no AI-generated prose. Where the source is a
-              translation or a transcription of a handwritten log, the entry
-              notes that on the page itself.
+              No paraphrasing, no summaries, no AI-generated prose.
+              Translations and transcriptions of handwritten logs are
+              identified as such on the entry.
             </p>
           </div>
         </div>
@@ -548,20 +547,18 @@ export default async function HistoricalArchivePage() {
         <SectionHeader label="ABOUT THIS ARCHIVE" />
         <div className="p-4 md:p-6 max-w-3xl space-y-3 font-serif text-sm md:text-[15px] leading-relaxed text-[#202020] dark:text-[#e5e5e5]">
           <p>
-            The archive is operated by Heimursaga as a non-commercial reading
-            surface for public-domain expedition writing. Source attribution
-            appears on each entry — typically Project Gutenberg, Wikisource, or
-            the original published volume.
+            Heimursaga curates this archive directly, without paywall or
+            registration. Each entry credits its source, typically Project
+            Gutenberg, Wikisource, or the original published volume.
           </p>
           <p>
-            Coordinates are derived from the explorer&rsquo;s own descriptions
-            in the text. Where the source gives a precise position, that
-            position is used unchanged; where it gives only a place name, the
-            place is geocoded and labeled approximate on the entry page.
+            Coordinates come from the explorer&rsquo;s own descriptions.
+            Where the text provides a precise position, the entry uses that
+            position unchanged; if only a place name is given, the location
+            is geocoded and marked approximate.
           </p>
           <p>
-            Heimursaga does not generate, paraphrase, or summarize archive
-            prose with AI. If you spot a transcription error or a misattribution,{' '}
+            If you find a transcription error or a misattribution, please{' '}
             <Link href="/contact" className="text-[#ac6d46] hover:underline">
               report it
             </Link>
