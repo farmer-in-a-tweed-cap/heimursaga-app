@@ -136,6 +136,9 @@ function isChapterHeading(p) {
     // the narrative, not real chapter breaks. Excluding them lets the
     // passage continue past short letters.
     if (/^TO\s+(HIS|HER|THE|MR\.|MRS\.|SIR|LORD|LADY|MAJESTY)\b/i.test(t)) return false;
+    // Quoted dialog in caps ("DR. LIVINGSTONE, I PRESUME?") is narrative,
+    // not a chapter heading. Real chapter headings never start with a quote.
+    if (/^["“]/.test(t)) return false;
     return true;
   }
   if (/^\s*\[Pg \d+\]\s*$/.test(t)) return true;
@@ -177,13 +180,36 @@ function cleanParagraph(p) {
     .replace(/_/g, '')
     .replace(/\s+/g, ' ')
     .trim();
-  // Strip leading and trailing quote characters from each paragraph.
-  // Nansen's English edition (and similar period travel writing) wraps
-  // journal entries in `"`, opening at the start of a quoted day and
-  // closing at the end. When passages are excerpted these marks survive
-  // as orphaned opening/closing quotes — strip them. Smart and straight
-  // quotes both handled.
-  cleaned = cleaned.replace(/^["“”]+\s*/, '').replace(/\s*["“”]+$/, '');
+  // Strip orphaned wrap quotes. Period travel writing (Nansen, Livingstone)
+  // wraps each diary entry in `"..."`, so when a passage is excerpted the
+  // opener or closer may survive as an orphan. But a paragraph that ends
+  // with legitimate dialogue (`"...attempt it."`) has a balanced pair —
+  // stripping the closer there corrupts the quote.
+  //
+  // Heuristic: count double quotes (straight + smart). Even → balanced,
+  // leave alone. Odd → an orphan exists; strip the one closest to a
+  // boundary. Smart quotes are direction-aware (` strips leading `, ”
+  // strips trailing); straight `"` is non-directional.
+  const quoteCount = (cleaned.match(/["“”]/g) || []).length;
+  if (quoteCount % 2 === 1) {
+    const lead = cleaned.match(/^["“]\s*/);
+    const trail = cleaned.match(/\s*["”]+$/);
+    if (lead && !trail) {
+      cleaned = cleaned.slice(lead[0].length);
+    } else if (trail && !lead) {
+      cleaned = cleaned.slice(0, cleaned.length - trail[0].length);
+    } else if (lead && trail) {
+      // Both ends carry a quote and total is odd — pick the side that
+      // looks more orphan-like. A leading `"` followed immediately by a
+      // lowercase letter is usually a mid-sentence orphan; otherwise
+      // default to stripping the trailing one (Nansen's typical pattern).
+      if (/^["“]\s*[a-z]/.test(cleaned)) {
+        cleaned = cleaned.slice(lead[0].length);
+      } else {
+        cleaned = cleaned.slice(0, cleaned.length - trail[0].length);
+      }
+    }
+  }
   return cleaned;
 }
 

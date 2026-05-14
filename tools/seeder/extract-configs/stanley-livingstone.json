@@ -1,0 +1,78 @@
+{
+  "name": "stanley-livingstone",
+  "expedition": "How I Found Livingstone",
+  "_source": "Project Gutenberg #5157 — How I Found Livingstone, by Henry M. Stanley (1872)",
+  "source": {
+    "urls": [
+      "https://www.gutenberg.org/cache/epub/5157/pg5157.txt",
+      "https://www.gutenberg.org/files/5157/5157-0.txt"
+    ],
+    "cache": "pg5157.txt"
+  },
+  "entries": [
+    {
+      "title": "Arrival at Zanzibar",
+      "date": "1871-01-06",
+      "anchors": [
+        "On the morning of the 6th January, 1871, we were sailing through the\\s+channel that separates the fruitful island of Zanzibar",
+        "Zanzibar from Africa\\. The\\s+high lands of the continent loomed like a lengthening shadow"
+      ]
+    },
+    {
+      "title": "Setting Out from Bagamoyo",
+      "date": "1871-03-23",
+      "anchors": [
+        "We left Bagamoyo the attraction of all the curious, with much eclat",
+        "defiled up a narrow lane shaded almost to twilight by the dense umbrage"
+      ]
+    },
+    {
+      "title": "Across the Makata Plain",
+      "date": "1871-04-15",
+      "anchors": [
+        "The long broad plain visible from the eminences crossed between the\\s+Ungerengeri and Simbo was now before us, and became known to sorrowful",
+        "memory subsequently, as the Makata Valley"
+      ]
+    },
+    {
+      "title": "Arrival at Unyanyembe",
+      "date": "1871-06-23",
+      "anchors": [
+        "The signal sounded and the caravan was joyfully off with banners flying,\\s+and trumpets and horns blaring",
+        "A short two and a half hours' march\\s+brought us within sight of Kwikuru"
+      ]
+    },
+    {
+      "title": "The War with Mirambo",
+      "date": "1871-08-11",
+      "anchors": [
+        "Kwihara\\. Friday, 11th August, 1871\\.--Arrived to-day from Zimbili",
+        "I am quite disappointed and almost disheartened"
+      ]
+    },
+    {
+      "title": "Through Ukawendi to Ujiji",
+      "date": "1871-10-17",
+      "anchors": [
+        "We bade farewell to Mrera on the 17th of October, to continue our route\\s+north-westward",
+        "All the men and I were firm friends now; all squabbling\\s+had long ceased"
+      ]
+    },
+    {
+      "title": "Dr. Livingstone, I Presume?",
+      "date": "1871-11-10",
+      "anchors": [
+        "At last the sublime hour has arrived;--our dreams, our hopes, and\\s+anticipations are now about to be realised",
+        "Our hearts and our\\s+feelings are with our eyes, as we peer into the palms"
+      ]
+    },
+    {
+      "title": "Cruise on the Tanganika",
+      "date": "1871-11-20",
+      "anchors": [
+        "Had Livingstone and myself, after making up our minds to visit the\\s+northern head of the Lake Tanganika",
+        "the absurd\\s+demands or fears of a crew of Wajiji"
+      ]
+    }
+  ]
+}

@@ -133,6 +133,19 @@ export const EXPLORER_BIOS: ExplorerBio[] = [
     sourceTitle: '“George Mallory”',
   },
   {
+    slug: 'henry-morton-stanley',
+    displayName: 'Henry Morton Stanley',
+    shortName: 'Henry Morton Stanley',
+    lifespan: '1840–1904',
+    knownFor: 'British explorer of Africa',
+    prose:
+      'STANLEY, SIR HENRY MORTON (1840–1904), British explorer of Africa, discoverer of the course of the Congo, was born at Denbigh, Wales, on the 10th of June 1840. Arrived in Paris Stanley was informed that he was to go and find Livingstone. Stanley then shared the common opinion that Livingstone had died somewhere in Central Africa, but Bennett was sure he was alive and Stanley was to find and help him to the best of his ability.',
+    source: 'britannica-11',
+    sourceUrl:
+      'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Stanley,_Sir_Henry_Morton',
+    sourceTitle: '“Stanley, Sir Henry Morton”',
+  },
+  {
     slug: 'james-cook',
     displayName: 'James Cook',
     shortName: 'James Cook',
