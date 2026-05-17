@@ -184,6 +184,19 @@ export const EXPLORER_BIOS: ExplorerBio[] = [
     sourceTitle: '“Kingsley, Mary Henrietta”',
   },
   {
+    slug: 'marco-polo',
+    displayName: 'Marco Polo',
+    shortName: 'Marco Polo',
+    lifespan: 'c. 1254–1324',
+    knownFor: 'Venetian, greatest of medieval travellers',
+    prose:
+      'POLO, MARCO (c. 1254–1324), the Venetian, greatest of medieval travellers. About 1260, and even perhaps as early as 1250, we find Nicolo and Maffeo at Constantinople. The Venetians, in their further journey, were met and welcomed by the Great Khan’s people, and at last reached his presence at Shangtu, in the spring of 1275. Kublai received them with great cordiality, and took kindly to young Marco, by this time about twenty-one years old.',
+    source: 'britannica-11',
+    sourceUrl:
+      'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Polo,_Marco',
+    sourceTitle: '“Polo, Marco”',
+  },
+  {
     slug: 'meriwether-lewis-william-clark',
     displayName: 'Meriwether Lewis & William Clark',
     shortName: 'Lewis and Clark',

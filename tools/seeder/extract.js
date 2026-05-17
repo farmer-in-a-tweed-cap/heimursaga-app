@@ -213,9 +213,18 @@ function cleanParagraph(p) {
   return cleaned;
 }
 
-function paragraphs(text) {
+function paragraphs(text, options = {}) {
+  const { filterIndented = false } = options;
   return text
     .split(/\n\s*\n/)
+    .filter((p) => {
+      // filterIndented: drop paragraphs whose original first line is
+      // indented two or more spaces. Yule's Marco Polo edition uses that
+      // indent for editorial footnotes (NOTE 1.— etc.) interleaved with
+      // Polo's narrative; this strips them before extraction.
+      if (!filterIndented) return true;
+      return !/^ {2,}/.test(p);
+    })
     .map((p) => p.replace(/\n/g, ' ').trim())
     .filter(Boolean);
 }
@@ -259,11 +268,18 @@ function isAdminFragment(rawPara) {
     /^Took\s+equal\s+altit/i.test(t) ||
     // Paragraphs that are dominated by numbered "(1) ... (2) ..." course
     // notes (more than two of them and short overall — short admin form).
-    (t.length < 600 && (t.match(/\(\d+\)/g) || []).length >= 2)
+    (t.length < 600 && (t.match(/\(\d+\)/g) || []).length >= 2) ||
+    // Yule/Cordier-style editorial footnotes in the Marco Polo edition.
+    // "NOTE 1.—Baldwin II..." etc. — scholarly annotation, not source text.
+    /^NOTE\s+\d+\.[—–-]/i.test(t) ||
+    // Illustration markers ("[Illustration: ...]") that escape the
+    // earlier filter — usually short, may carry caption text after.
+    /^\[Illustration[:\s]/i.test(t)
   );
 }
 
-function buildPassage(paras, startIdx) {
+function buildPassage(paras, startIdx, options = {}) {
+  const { mergeChapters = false } = options;
   // Pass 1: chunk paragraphs into blocks. Each block begins with a
   // bracketed [Editor, Date] paragraph and includes any subsequent
   // unbracketed paragraphs (which are continuations of that day's entry).
@@ -342,6 +358,11 @@ function buildPassage(paras, startIdx) {
   for (const block of finalBlocks) {
     if (stop) break;
     if (block.isChapterBreak) {
+      // mergeChapters: keep going past chapter headings instead of stopping.
+      // Useful for sources like Yule's Marco Polo where the narrative is
+      // chopped into many very short numbered chapters that all belong to
+      // the same passage.
+      if (mergeChapters) continue;
       if (out.length > 0) {
         stop = true;
         break;
@@ -414,18 +435,23 @@ async function main() {
   // ensureSource strips Gutenberg frames per-volume; volumeStarts is char
   // offsets so we can map to paragraph indices for per-volume scoping.
   const { framed, volumeStarts } = await ensureSource(config);
-  const paras = paragraphs(framed);
+  const paras = paragraphs(framed, {
+    filterIndented: config.filterIndentedParagraphs === true,
+  });
   console.log(`[extract] ${paras.length} paragraphs after framing (${volumeStarts.length} volume(s))`);
 
-  // Compute the paragraph index where each volume starts.
+  // Compute the paragraph index where each volume starts. Mirrors the
+  // same filter rules as `paragraphs()` above so the index lines up with
+  // the actual filtered `paras` array.
+  const filterIndented = config.filterIndentedParagraphs === true;
   const volumeParaStarts = volumeStarts.map((charOffset) => {
     if (charOffset === 0) return 0;
-    // Walk paragraphs counting char positions. We use the same split rule
-    // (\n\s*\n with paragraph trimming/joining) so this is approximate but
-    // good enough for cursor-anchoring; we only need to land in the right
-    // volume, not at an exact paragraph.
     const before = framed.slice(0, charOffset);
-    const beforeParas = before.split(/\n\s*\n/).filter((p) => p.trim()).length;
+    const beforeParas = before
+      .split(/\n\s*\n/)
+      .filter((p) => p.trim())
+      .filter((p) => !filterIndented || !/^ {2,}/.test(p))
+      .length;
     return beforeParas;
   });
 
@@ -454,7 +480,9 @@ async function main() {
       });
       continue;
     }
-    const body = buildPassage(paras, idx);
+    const body = buildPassage(paras, idx, {
+      mergeChapters: entry.mergeChapters === true,
+    });
     if (!body) {
       console.warn(`[warn] empty passage for "${entry.title}" at paragraph ${idx}`);
       results.push({

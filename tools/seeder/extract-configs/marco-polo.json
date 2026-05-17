@@ -1,0 +1,104 @@
+{
+  "name": "marco-polo",
+  "expedition": "The Travels of Marco Polo",
+  "_source": "Project Gutenberg #10636 (Vol 1) + #12410 (Vol 2) — Yule & Cordier edition of The Travels of Marco Polo (1903). Chapters are short; entries set mergeChapters:true so the extractor spans multiple chapters per entry.",
+  "filterIndentedParagraphs": true,
+  "sources": [
+    {
+      "urls": [
+        "https://www.gutenberg.org/cache/epub/10636/pg10636.txt",
+        "https://www.gutenberg.org/files/10636/10636-0.txt"
+      ],
+      "cache": "pg10636.txt"
+    },
+    {
+      "urls": [
+        "https://www.gutenberg.org/cache/epub/12410/pg12410.txt",
+        "https://www.gutenberg.org/files/12410/12410-0.txt"
+      ],
+      "cache": "pg12410.txt"
+    }
+  ],
+  "entries": [
+    {
+      "title": "From Constantinople to the East",
+      "date": "1260-01-01",
+      "volume": 1,
+      "mergeChapters": true,
+      "anchors": [
+        "It came to pass in the year of Christ 1260, when Baldwin was reigning\\s+at Constantinople",
+        "Messer Nicolas Polo, the father of my lord\\s+Mark, and Messer Maffeo Polo"
+      ]
+    },
+    {
+      "title": "First Audience with the Great Kaan",
+      "date": "1266-01-01",
+      "volume": 1,
+      "mergeChapters": true,
+      "anchors": [
+        "When the Two Brothers got to the Great Kaan, he received them with\\s+great honour and hospitality",
+        "showed much pleasure at their visit"
+      ]
+    },
+    {
+      "title": "The Brothers Set Out with Marco",
+      "date": "1271-01-01",
+      "volume": 1,
+      "mergeChapters": true,
+      "anchors": [
+        "When the Two Brothers had received the Legate's letters, they set\\s+forth from Acre to return to the Grand Kaan",
+        "got as far as\\s+Layas"
+      ]
+    },
+    {
+      "title": "Marco at the Khan's Court",
+      "date": "1275-01-01",
+      "volume": 1,
+      "mergeChapters": true,
+      "anchors": [
+        "Now it came to pass that Marco, the son of Messer Nicolo, sped\\s+wondrously in learning the customs of the Tartars",
+        "as well as their\\s+language, their manner of writing"
+      ]
+    },
+    {
+      "title": "Departure from the Great Kaan",
+      "date": "1292-01-01",
+      "volume": 1,
+      "mergeChapters": true,
+      "anchors": [
+        "And when the Prince saw that the Two Brothers and Messer Marco were\\s+ready to set forth",
+        "he called them all three to his presence"
+      ]
+    },
+    {
+      "title": "The Country of Greater Armenia",
+      "date": "1271-06-01",
+      "volume": 1,
+      "mergeChapters": true,
+      "anchors": [
+        "HERE THE BOOK BEGINS; AND FIRST IT SPEAKS OF THE LESSER",
+        "HERMENIA"
+      ]
+    },
+    {
+      "title": "Concerning the City of Cambaluc",
+      "date": "1280-01-01",
+      "volume": 1,
+      "mergeChapters": true,
+      "anchors": [
+        "Now there was on that spot in old times a great and noble city called\\s+CAMBALUC",
+        "which is as much as to say in our tongue \"The city of the\\s+Emperor"
+      ]
+    },
+    {
+      "title": "The Great City of Kinsay",
+      "date": "1285-01-01",
+      "volume": 2,
+      "mergeChapters": true,
+      "anchors": [
+        "When you have left the city of Changan and have travelled for three\\s+days through a splendid country",
+        "you arrive at the most noble city of KINSAY"
+      ]
+    }
+  ]
+}
