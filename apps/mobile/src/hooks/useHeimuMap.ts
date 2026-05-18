@@ -1,5 +1,5 @@
 import { useState, useEffect, ComponentType } from 'react';
-import type { HeimuMapProps } from '@/components/map/HeimuMap';
+import HeimuMapView, { type HeimuMapProps } from '@/components/map/HeimuMap';
 
 /**
  * Defers the Mapbox import so its native module initialisation
@@ -12,7 +12,7 @@ export function useHeimuMap(delay = 300): ComponentType<HeimuMapProps> | null {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      import('@/components/map/HeimuMap').then((mod) => setMapComponent(() => mod.default));
+      setMapComponent(() => HeimuMapView);
     }, delay);
     return () => clearTimeout(timer);
   }, [delay]);

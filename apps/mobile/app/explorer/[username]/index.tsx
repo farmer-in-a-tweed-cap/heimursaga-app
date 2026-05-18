@@ -15,7 +15,7 @@ import { StatsBar } from '@/components/ui/StatsBar';
 import { SectionDivider } from '@/components/ui/SectionDivider';
 import { HCard } from '@/components/ui/HCard';
 import { Svg, Path } from 'react-native-svg';
-import type { HeimuMapProps, WaypointMarker } from '@/components/map/HeimuMap';
+import HeimuMapView, { type HeimuMapProps, type WaypointMarker } from '@/components/map/HeimuMap';
 import { TopoBackground } from '@/components/ui/TopoBackground';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
 import { getExplorerStatus, explorerStatusConfig } from '@/utils/explorerStatus';
@@ -105,7 +105,7 @@ export default function ExplorerProfileScreen() {
   const [MapComponent, setMapComponent] = useState<ComponentType<HeimuMapProps> | null>(null);
   useEffect(() => {
     const timer = setTimeout(() => {
-      import('@/components/map/HeimuMap').then((mod) => setMapComponent(() => mod.default));
+      setMapComponent(() => HeimuMapView);
     }, 300);
     return () => clearTimeout(timer);
   }, []);

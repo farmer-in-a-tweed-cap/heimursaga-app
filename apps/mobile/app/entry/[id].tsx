@@ -17,7 +17,7 @@ import { Svg, Path, Circle } from 'react-native-svg';
 import { QuickSponsorButton } from '@/components/ui/QuickSponsorButton';
 import { TopoBackground } from '@/components/ui/TopoBackground';
 import { mono, heading, colors as brandColors, borders } from '@/theme/tokens';
-import type { HeimuMapProps, WaypointMarker } from '@/components/map/HeimuMap';
+import HeimuMapView, { type HeimuMapProps, type WaypointMarker } from '@/components/map/HeimuMap';
 import type { Entry, Comment } from '@/types/api';
 
 export default function EntryDetailScreen() {
@@ -39,7 +39,7 @@ export default function EntryDetailScreen() {
   const [MapComponent, setMapComponent] = useState<ComponentType<HeimuMapProps> | null>(null);
   useEffect(() => {
     const timer = setTimeout(() => {
-      import('@/components/map/HeimuMap').then((mod) => setMapComponent(() => mod.default));
+      setMapComponent(() => HeimuMapView);
     }, 400);
     return () => clearTimeout(timer);
   }, []);

@@ -29,7 +29,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { SectionDivider } from '@/components/ui/SectionDivider';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
 import type { HeimuMapProps, HeimuMapRef, WaypointMarker } from '@/components/map/HeimuMap';
-import { clusterMarkers, getClusterExpansionZoom, spreadCoincidentMarkers } from '@/components/map/HeimuMap';
+import HeimuMapView, { clusterMarkers, getClusterExpansionZoom, spreadCoincidentMarkers } from '@/components/map/HeimuMap';
 import { ExpeditionCardFull } from '@/components/cards/ExpeditionCardFull';
 import { ExplorerCardMini } from '@/components/cards/ExplorerCardMini';
 import { EntryCardFull } from '@/components/cards/EntryCardFull';
@@ -179,7 +179,7 @@ export default function HomeScreen() {
   const [MapComponent, setMapComponent] = useState<HeimuMapComponent | null>(null);
   useEffect(() => {
     const timer = setTimeout(() => {
-      import('@/components/map/HeimuMap').then((mod) => setMapComponent(() => mod.default));
+      setMapComponent(() => HeimuMapView);
     }, 500);
     return () => clearTimeout(timer);
   }, []);

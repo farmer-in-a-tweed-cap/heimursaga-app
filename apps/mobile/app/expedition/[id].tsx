@@ -33,7 +33,7 @@ import { ReviewsList } from '@/components/blueprint/ReviewsList';
 import { ReviewModal } from '@/components/blueprint/ReviewModal';
 import { StarRating } from '@/components/ui/StarRating';
 import type { HeimuMapProps, WaypointMarker, WaypointType } from '@/components/map/HeimuMap';
-import { clusterMarkers } from '@/components/map/HeimuMap';
+import HeimuMapView, { clusterMarkers } from '@/components/map/HeimuMap';
 import { TopoBackground } from '@/components/ui/TopoBackground';
 import type { Entry as ApiEntry, BlueprintReview } from '@/types/api';
 
@@ -250,7 +250,7 @@ export default function ExpeditionDetailScreen() {
   const [MapComponent, setMapComponent] = useState<ComponentType<HeimuMapProps> | null>(null);
   useEffect(() => {
     const timer = setTimeout(() => {
-      import('@/components/map/HeimuMap').then((mod) => setMapComponent(() => mod.default));
+      setMapComponent(() => HeimuMapView);
     }, 300);
     return () => clearTimeout(timer);
   }, []);

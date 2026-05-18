@@ -78,6 +78,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-router',
+    'expo-image',
     [
       '@stripe/stripe-react-native',
       {

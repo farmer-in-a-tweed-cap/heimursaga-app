@@ -16,7 +16,7 @@ import { EntryCardMini } from '@/components/cards/EntryCardMini';
 import { ExplorerCardMini } from '@/components/cards/ExplorerCardMini';
 import { TopoBackground } from '@/components/ui/TopoBackground';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
-import type { HeimuMapProps, WaypointMarker } from '@/components/map/HeimuMap';
+import HeimuMapView, { type HeimuMapProps, type WaypointMarker } from '@/components/map/HeimuMap';
 import type { Expedition, Entry, ExplorerProfile } from '@/types/api';
 import { getExplorerStatus, explorerStatusConfig } from '@/utils/explorerStatus';
 
@@ -37,7 +37,7 @@ export default function ProfileScreen() {
   const [MapComponent, setMapComponent] = useState<ComponentType<HeimuMapProps> | null>(null);
   useEffect(() => {
     const timer = setTimeout(() => {
-      import('@/components/map/HeimuMap').then((mod) => setMapComponent(() => mod.default));
+      setMapComponent(() => HeimuMapView);
     }, 300);
     return () => clearTimeout(timer);
   }, []);

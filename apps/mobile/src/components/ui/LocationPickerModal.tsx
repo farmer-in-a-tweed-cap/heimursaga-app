@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeContext';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
 import { MAPBOX_TOKEN } from '@/services/mapConfig';
-import type { HeimuMapProps, HeimuMapRef, WaypointMarker } from '@/components/map/HeimuMap';
+import HeimuMapView, { type HeimuMapProps, type HeimuMapRef, type WaypointMarker } from '@/components/map/HeimuMap';
 
 let ExpoLocation: typeof import('expo-location') | null = null;
 try { ExpoLocation = require('expo-location'); } catch { /* not available */ }
@@ -48,9 +48,7 @@ export function LocationPickerModal({
   // Load map lazily
   useEffect(() => {
     if (visible && !MapComponent) {
-      import('@/components/map/HeimuMap').then((mod) =>
-        setMapComponent(() => mod.default),
-      );
+      setMapComponent(() => HeimuMapView);
     }
   }, [visible, MapComponent]);
 
