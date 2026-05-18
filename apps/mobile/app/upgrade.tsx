@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  ActivityIndicator, Alert, Platform,
+  ActivityIndicator, Alert, Platform, Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
@@ -380,6 +380,21 @@ export default function UpgradeScreen() {
             <Text style={[styles.termsText, { color: colors.textTertiary }]}>
               Payment will be charged to your {Platform.OS === 'ios' ? 'Apple ID' : 'Google Play'} account at confirmation of purchase. Subscription automatically renews unless cancelled at least 24 hours before the end of the current period. Manage subscriptions in your {Platform.OS === 'ios' ? 'Apple ID' : 'Google Play'} account settings.
             </Text>
+            <View style={styles.termsLinks}>
+              <Text
+                style={[styles.termsLink, { color: brandColors.copper }]}
+                onPress={() => Linking.openURL('https://heimursaga.com/legal/terms')}
+              >
+                Terms of Use
+              </Text>
+              <Text style={[styles.termsText, { color: colors.textTertiary }]}>{'   ·   '}</Text>
+              <Text
+                style={[styles.termsLink, { color: brandColors.copper }]}
+                onPress={() => Linking.openURL('https://heimursaga.com/legal/privacy')}
+              >
+                Privacy Policy
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -486,6 +501,8 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     textAlign: 'center',
   },
+  termsLinks: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 10 },
+  termsLink: { fontFamily: mono, fontSize: 10, lineHeight: 16, textDecorationLine: 'underline' },
   alreadyPro: { padding: 16, paddingVertical: 24 },
   proCard: { borderWidth: borders.thick, padding: 20, gap: 14 },
   proCheckRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
