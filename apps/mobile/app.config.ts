@@ -22,7 +22,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
     fallbackToCacheTimeout: 0,
   },
-  runtimeVersion: '1.0.0',
+  runtimeVersion: { policy: 'fingerprint' },
   splash: {
     backgroundColor: '#141109',
   },
