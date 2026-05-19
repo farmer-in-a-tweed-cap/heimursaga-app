@@ -21,6 +21,7 @@
       "distribution": "store",
       "autoIncrement": true,
       "channel": "production",
+      "environment": "production",
       "ios": {
         "buildConfiguration": "Release"
       }
