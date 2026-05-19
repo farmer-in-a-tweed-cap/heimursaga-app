@@ -246,7 +246,6 @@ export class AuthController {
     medium: { limit: 2, ttl: 300000 },
     long: { limit: 2, ttl: 300000 },
   })
-  @UseGuards(BotDetectionGuard)
   async mobileSignup(
     @Body() body: SignupDto,
     @Session() session: ISession,
