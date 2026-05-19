@@ -11,13 +11,12 @@ import { NavBar } from '@/components/ui/NavBar';
 import { HCard } from '@/components/ui/HCard';
 import { HButton } from '@/components/ui/HButton';
 import { mono, colors as brandColors } from '@/theme/tokens';
-import { clearTokens } from '@/services/tokenStorage';
 
 export default function PrivacyScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { ready } = useRequireAuth();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const [sendingReset, setSendingReset] = useState(false);
 
@@ -96,7 +95,7 @@ export default function PrivacyScreen() {
                       onPress: () => {
                         Alert.alert(
                           'Are you sure?',
-                          'Type DELETE to confirm account deletion.',
+                          'This permanently deletes your account and all associated data. This cannot be undone.',
                           [
                             { text: 'Cancel', style: 'cancel' },
                             {
@@ -105,8 +104,7 @@ export default function PrivacyScreen() {
                               onPress: async () => {
                                 try {
                                   await settingsApi.deleteAccount();
-                                  await clearTokens();
-                                  router.replace('/(auth)/login');
+                                  await logout();
                                 } catch (err: any) {
                                   Alert.alert('Error', err.message ?? 'Failed to delete account');
                                 }
