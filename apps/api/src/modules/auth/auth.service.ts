@@ -529,7 +529,7 @@ export class AuthService {
 
   async signup(
     payload: ISignupPayload,
-    options?: { return?: boolean },
+    options?: { return?: boolean; skipRecaptcha?: boolean },
   ): Promise<void | { email: string; password: string }> {
     try {
       const returnCredentials = options?.return || false;
@@ -554,7 +554,11 @@ export class AuthService {
 
       // Verify reCAPTCHA token when configured (skip in development)
       const isDevelopment = process.env.NODE_ENV === 'development';
-      if (this.recaptchaService.isConfigured() && !isDevelopment) {
+      if (
+        this.recaptchaService.isConfigured() &&
+        !isDevelopment &&
+        !options?.skipRecaptcha
+      ) {
         if (!payload.recaptchaToken) {
           throw new ServiceForbiddenException(
             'reCAPTCHA verification is required',
@@ -695,6 +699,33 @@ export class AuthService {
       if (e.status) throw e;
       throw new ServiceInternalException();
     }
+  }
+
+  async mobileSignup(
+    payload: ISignupPayload,
+    session: ISession,
+  ): Promise<{
+    token: string;
+    refreshToken: string;
+    user: ISessionUserGetResponse;
+  }> {
+    // Create the account, skipping the web-only reCAPTCHA gate (native apps
+    // cannot run web reCAPTCHA). All other anti-abuse checks remain:
+    // banned usernames, detectSuspiciousRegistration, controller-level
+    // BotDetectionGuard + strict throttling.
+    const credentials = await this.signup(payload, {
+      return: true,
+      skipRecaptcha: true,
+    });
+    if (!credentials) {
+      throw new ServiceInternalException();
+    }
+    // Issue mobile JWT tokens via the same path as mobile/login.
+    return this.mobileLogin({
+      query: {},
+      payload: { login: credentials.email, password: credentials.password },
+      session,
+    });
   }
 
   async signupAndLogin(payload: ISignupPayload): Promise<ILoginResponse> {

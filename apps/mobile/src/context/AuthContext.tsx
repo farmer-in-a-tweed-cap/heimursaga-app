@@ -146,11 +146,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = useCallback(
     async (email: string, username: string, password: string, inviteCode?: string) => {
-      await api.post('/auth/signup', { email, username, password, inviteCode }, { noAuth: true });
-      await login(username, password);
+      const res = await api.post<{
+        success: boolean;
+        data: { token: string; refreshToken: string; user: User };
+      }>('/auth/mobile/signup', { email, username, password, inviteCode }, { noAuth: true });
+
+      await setTokens(res.data.token, res.data.refreshToken);
+      setUser(res.data.user);
+      setHasStoredSession(false);
+      analytics.identify(String(res.data.user.id), {
+        username: res.data.user.username,
+        is_pro: res.data.user.is_pro,
+      });
       analytics.track('signup', { method: 'email' });
     },
-    [login],
+    [],
   );
 
   const logout = useCallback(async () => {

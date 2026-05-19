@@ -239,6 +239,27 @@ export class AuthController {
   }
 
   @Public()
+  @Post('mobile/signup')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short: { limit: 2, ttl: 300000 },
+    medium: { limit: 2, ttl: 300000 },
+    long: { limit: 2, ttl: 300000 },
+  })
+  @UseGuards(BotDetectionGuard)
+  async mobileSignup(
+    @Body() body: SignupDto,
+    @Session() session: ISession,
+  ) {
+    const result = await this.authService.mobileSignup(body, session);
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @Public()
   @Get('mobile/user')
   @HttpCode(HttpStatus.OK)
   @Throttle({
