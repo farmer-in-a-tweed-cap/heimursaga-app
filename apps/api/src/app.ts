@@ -81,7 +81,7 @@ export async function app() {
 
     // set fastify plugins
     await fastify.register<FastifyCorsOptions>(fastifyCors as any, {
-      origin: CORS_ORIGIN ? CORS_ORIGIN.split(';') : (IS_DEVELOPMENT ? true : []),
+      origin: CORS_ORIGIN ? CORS_ORIGIN.split(';') : IS_DEVELOPMENT ? true : [],
       credentials: true,
       methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     } satisfies FastifyCorsOptions);
@@ -216,6 +216,7 @@ export async function app() {
         '/v1/auth/login',
         '/v1/auth/mobile/login',
         '/v1/auth/mobile/refresh',
+        '/v1/auth/mobile/signup',
         '/v1/auth/signup',
         '/v1/auth/reset-password',
         '/v1/auth/change-password',
