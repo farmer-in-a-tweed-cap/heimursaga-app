@@ -319,8 +319,12 @@ export default function CreateScreen() {
         return;
       }
       const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
-      if (wordCount < 10) {
-        Alert.alert('Content too short', 'Please write at least a few sentences.');
+      const minWords = ENTRY_TYPE_VALUES[entryType] === 'standard' ? 200 : 50;
+      if (wordCount < minWords) {
+        Alert.alert(
+          'Content too short',
+          `Please write at least ${minWords} words (currently ${wordCount}).`,
+        );
         return;
       }
     }
@@ -473,6 +477,17 @@ export default function CreateScreen() {
   const selectedExp = expeditions.find((e) => e.id === selectedExpedition);
   const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
   const typeValue = ENTRY_TYPE_VALUES[entryType];
+  const minWords = typeValue === 'standard' ? 200 : 50;
+  const contentLabel =
+    typeValue === 'photo' ? 'PHOTO NARRATIVE'
+    : typeValue === 'video' ? 'VIDEO NARRATIVE'
+    : typeValue === 'data' ? 'DATA NARRATIVE'
+    : 'ENTRY CONTENT';
+  const contentPlaceholder =
+    typeValue === 'photo' ? 'Provide context and narrative for your photo essay...'
+    : typeValue === 'video' ? 'Describe the footage and provide context...'
+    : typeValue === 'data' ? 'Document observations, methodology, and analysis...'
+    : 'Write your journal entry...';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -667,47 +682,29 @@ export default function CreateScreen() {
             </View>
           )}
 
-          {/* Content */}
-          <View style={styles.fieldGroup}>
-            <View style={styles.labelRow}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>CONTENT</Text>
-              <Text style={[styles.wordCount, { color: colors.textTertiary }]}>
-                {wordCount} {wordCount === 1 ? 'word' : 'words'}
+          {/* PHOTO type: photo upload appears BEFORE the narrative */}
+          {typeValue === 'photo' && (
+            <View style={styles.fieldGroup}>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>
+                PHOTOS{photos.length > 0 ? ` (${photos.length})` : ''}
               </Text>
+              <PhotoGrid
+                photos={photos}
+                coverIndex={photos.length > 0 ? coverIndex : undefined}
+                onAdd={handleAddPhoto}
+                onRemove={handleRemovePhoto}
+                onSetCover={setCoverIndex}
+                onRetry={handleRetryUpload}
+              />
+              {photos.length > 1 && (
+                <Text style={[styles.hint, { color: colors.textTertiary }]}>
+                  Tap star to set cover image
+                </Text>
+              )}
             </View>
-            <TextInput
-              style={[styles.textarea, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }]}
-              multiline
-              placeholder="Write your journal entry..."
-              placeholderTextColor={colors.textTertiary}
-              value={body}
-              onChangeText={setBody}
-              textAlignVertical="top"
-            />
-          </View>
+          )}
 
-          {/* Photos */}
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>
-              PHOTOS{photos.length > 0 ? ` (${photos.length})` : ''}
-            </Text>
-            <PhotoGrid
-              photos={photos}
-              coverIndex={photos.length > 0 ? coverIndex : undefined}
-              onAdd={handleAddPhoto}
-              onRemove={handleRemovePhoto}
-              onSetCover={setCoverIndex}
-              onRetry={handleRetryUpload}
-            />
-            {photos.length > 1 && (
-              <Text style={[styles.hint, { color: colors.textTertiary }]}>
-                Tap star to set cover image
-              </Text>
-            )}
-          </View>
-
-          {/* Standard/photo carry no type-specific metadata block (retired in web) */}
-
+          {/* VIDEO / DATA: type-specific fields appear BEFORE the narrative */}
           {typeValue === 'video' && (
             <View style={styles.fieldGroup}>
               <SectionDivider title="VIDEO" />
@@ -788,6 +785,52 @@ export default function CreateScreen() {
                 </View>
                 <View style={styles.metaField} />
               </View>
+            </View>
+          )}
+
+          {/* Content — label and minimum word count per entry type */}
+          <View style={styles.fieldGroup}>
+            <View style={styles.labelRow}>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>{contentLabel}</Text>
+              <Text
+                style={[
+                  styles.wordCount,
+                  { color: wordCount > 0 && wordCount < minWords ? brandColors.red : colors.textTertiary },
+                ]}
+              >
+                {wordCount} / min {minWords}
+              </Text>
+            </View>
+            <TextInput
+              style={[styles.textarea, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }]}
+              multiline
+              placeholder={contentPlaceholder}
+              placeholderTextColor={colors.textTertiary}
+              value={body}
+              onChangeText={setBody}
+              textAlignVertical="top"
+            />
+          </View>
+
+          {/* STANDARD type: photos appear AFTER the content (video/data omit photos entirely) */}
+          {typeValue === 'standard' && (
+            <View style={styles.fieldGroup}>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>
+                PHOTOS{photos.length > 0 ? ` (${photos.length})` : ''}
+              </Text>
+              <PhotoGrid
+                photos={photos}
+                coverIndex={photos.length > 0 ? coverIndex : undefined}
+                onAdd={handleAddPhoto}
+                onRemove={handleRemovePhoto}
+                onSetCover={setCoverIndex}
+                onRetry={handleRetryUpload}
+              />
+              {photos.length > 1 && (
+                <Text style={[styles.hint, { color: colors.textTertiary }]}>
+                  Tap star to set cover image
+                </Text>
+              )}
             </View>
           )}
 
