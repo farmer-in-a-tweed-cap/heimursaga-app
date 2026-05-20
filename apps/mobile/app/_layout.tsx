@@ -36,6 +36,12 @@ import {
 import * as Notifications from 'expo-notifications';
 import { mono, colors as brandColors } from '@/theme/tokens';
 
+// Cap Dynamic Type scaling app-wide so accessibility-large text can't break
+// fixed-cell layouts (stats rows, tabs, badges, headers). Components still
+// honor Dynamic Type up to 130% of base.
+(Text as any).defaultProps = (Text as any).defaultProps || {};
+(Text as any).defaultProps.maxFontSizeMultiplier = 1.3;
+
 // Keep the native splash visible until we explicitly hide it
 SplashScreen.preventAutoHideAsync();
 

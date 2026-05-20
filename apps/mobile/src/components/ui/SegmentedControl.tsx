@@ -50,6 +50,9 @@ export function SegmentedControl({
             ]}
           >
             <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
               style={[
                 styles.label,
                 {

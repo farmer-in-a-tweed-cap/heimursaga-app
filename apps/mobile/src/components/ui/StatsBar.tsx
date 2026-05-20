@@ -41,7 +41,12 @@ export function StatsBar({ stats }: StatsBarProps) {
               },
             ]}
           >
-            <Text style={[styles.value, { color: valueColor }]}>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.65}
+              style={[styles.value, { color: valueColor }]}
+            >
               {s.value}
               {s.suffix && (
                 <Text style={{ color: colors.textTertiary, fontSize: 13, fontWeight: '500' }}>
@@ -49,7 +54,12 @@ export function StatsBar({ stats }: StatsBarProps) {
                 </Text>
               )}
             </Text>
-            <Text style={[styles.label, { color: colors.textTertiary }]}>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+              style={[styles.label, { color: colors.textTertiary }]}
+            >
               {s.label}
             </Text>
           </View>

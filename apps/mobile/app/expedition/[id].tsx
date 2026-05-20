@@ -793,7 +793,12 @@ export default function ExpeditionDetailScreen() {
             <SafeAreaView style={styles.popupSafeWrap} edges={['top']} pointerEvents="box-none">
               <View style={[styles.popupWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.popupHeader}>
-                  <Text style={[styles.popupTitle, { color: colors.text }]} numberOfLines={1}>
+                  <Text
+                    style={[styles.popupTitle, { color: colors.text }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.6}
+                  >
                     {selectedEntry.title}
                   </Text>
                   <TouchableOpacity onPress={() => setSelectedEntry(null)} hitSlop={8}>
@@ -824,7 +829,12 @@ export default function ExpeditionDetailScreen() {
             <SafeAreaView style={styles.popupSafeWrap} edges={['top']} pointerEvents="box-none">
               <View style={[styles.popupWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.popupHeader}>
-                  <Text style={[styles.popupTitle, { color: colors.text }]}>
+                  <Text
+                    style={[styles.popupTitle, { color: colors.text }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.6}
+                  >
                     {selectedEntries.length} ENTRIES
                   </Text>
                   <TouchableOpacity onPress={() => setSelectedEntries([])} hitSlop={8}>
