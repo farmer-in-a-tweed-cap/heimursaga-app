@@ -66,22 +66,26 @@ export default function CreateScreen() {
   const [commentsEnabled, setCommentsEnabled] = useState(true);
   const [isMilestone, setIsMilestone] = useState(false);
 
-  // Metadata fields (standard)
-  const [weather, setWeather] = useState('');
-  const [mood, setMood] = useState('');
-  const [distanceTraveled, setDistanceTraveled] = useState('');
-  const [expenses, setExpenses] = useState('');
-
-  // Video URL
+  // Video URL (video type only)
   const [videoUrl, setVideoUrl] = useState('');
 
-  // Metadata fields (data)
+  // Data-log metadata (data type only) — full parity with web CreateEntryPage
   const [temperature, setTemperature] = useState('');
   const [humidity, setHumidity] = useState('');
   const [windSpeed, setWindSpeed] = useState('');
   const [pressure, setPressure] = useState('');
+  const [distanceTraveled, setDistanceTraveled] = useState(''); // -> metadata.distanceCovered
   const [elevationGain, setElevationGain] = useState('');
   const [duration, setDuration] = useState('');
+  const [avgSpeed, setAvgSpeed] = useState('');
+  // Marine subset
+  const [waveHeight, setWaveHeight] = useState('');
+  const [seaState, setSeaState] = useState('');
+  const [waterTemp, setWaterTemp] = useState('');
+  const [tidalState, setTidalState] = useState('');
+  const [heading, setHeading] = useState('');
+  const [currentSpeed, setCurrentSpeed] = useState('');
+  const [sailConfig, setSailConfig] = useState('');
 
   // Draft recovery
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -348,12 +352,7 @@ export default function CreateScreen() {
 
       const safeFloat = (s: string) => { const n = parseFloat(s); return Number.isFinite(n) ? n : undefined; };
 
-      if (typeValue === 'standard' || typeValue === 'photo') {
-        if (weather.trim()) metadata.weather = weather.trim();
-        if (mood.trim()) metadata.mood = mood.trim();
-        const dist = safeFloat(distanceTraveled); if (dist !== undefined) metadata.distanceTraveled = dist;
-        const exp = safeFloat(expenses); if (exp !== undefined) metadata.expenses = exp;
-      }
+      // Standard / photo carry no type-specific metadata (web retired weather/mood/distance/expenses)
       if (typeValue === 'video' && videoUrl.trim()) {
         metadata.videoUrl = videoUrl.trim();
       }
@@ -362,9 +361,18 @@ export default function CreateScreen() {
         const hum = safeFloat(humidity); if (hum !== undefined) metadata.humidity = hum;
         const wind = safeFloat(windSpeed); if (wind !== undefined) metadata.windSpeed = wind;
         const pres = safeFloat(pressure); if (pres !== undefined) metadata.pressure = pres;
+        const distCov = safeFloat(distanceTraveled); if (distCov !== undefined) metadata.distanceCovered = distCov;
         const elev = safeFloat(elevationGain); if (elev !== undefined) metadata.elevationGain = elev;
         const dur = safeFloat(duration); if (dur !== undefined) metadata.duration = dur;
-        const distCov = safeFloat(distanceTraveled); if (distCov !== undefined) metadata.distanceCovered = distCov;
+        const avg = safeFloat(avgSpeed); if (avg !== undefined) metadata.avgSpeed = avg;
+        // Marine subset
+        const wave = safeFloat(waveHeight); if (wave !== undefined) metadata.waveHeight = wave;
+        if (seaState.trim()) metadata.seaState = seaState.trim();
+        const wTemp = safeFloat(waterTemp); if (wTemp !== undefined) metadata.waterTemperature = wTemp;
+        if (tidalState.trim()) metadata.tidalState = tidalState.trim();
+        const head = safeFloat(heading); if (head !== undefined) metadata.heading = head;
+        const cur = safeFloat(currentSpeed); if (cur !== undefined) metadata.currentSpeed = cur;
+        if (sailConfig.trim()) metadata.sailConfiguration = sailConfig.trim();
       }
 
       const entryData: Record<string, unknown> = {
@@ -412,8 +420,9 @@ export default function CreateScreen() {
   }, [
     title, body, location, visibility, selectedExpedition, selectedWaypointId, lat, lon, dateStr,
     photos, coverIndex, entryType, commentsEnabled, isMilestone, draftId,
-    weather, mood, distanceTraveled, expenses,
-    temperature, humidity, windSpeed, pressure, elevationGain, duration,
+    videoUrl,
+    temperature, humidity, windSpeed, pressure, distanceTraveled, elevationGain, duration, avgSpeed,
+    waveHeight, seaState, waterTemp, tidalState, heading, currentSpeed, sailConfig,
     router,
   ]);
 
@@ -429,16 +438,22 @@ export default function CreateScreen() {
     setEntryType(0);
     setCommentsEnabled(true);
     setIsMilestone(false);
-    setWeather('');
-    setMood('');
-    setDistanceTraveled('');
-    setExpenses('');
+    setVideoUrl('');
     setTemperature('');
     setHumidity('');
     setWindSpeed('');
     setPressure('');
+    setDistanceTraveled('');
     setElevationGain('');
     setDuration('');
+    setAvgSpeed('');
+    setWaveHeight('');
+    setSeaState('');
+    setWaterTemp('');
+    setTidalState('');
+    setHeading('');
+    setCurrentSpeed('');
+    setSailConfig('');
     setDraftId(null);
     setDraftChecked(false);
     setSelectedExpedition(null);
@@ -691,28 +706,7 @@ export default function CreateScreen() {
             )}
           </View>
 
-          {/* Type-specific metadata */}
-          {(typeValue === 'standard' || typeValue === 'photo') && (
-            <View style={styles.fieldGroup}>
-              <SectionDivider title="METADATA" />
-              <View style={styles.metaRow}>
-                <View style={styles.metaField}>
-                  <HTextField label="WEATHER" placeholder="Sunny, Rainy..." value={weather} onChangeText={setWeather} />
-                </View>
-                <View style={styles.metaField}>
-                  <HTextField label="MOOD" placeholder="Energetic..." value={mood} onChangeText={setMood} />
-                </View>
-              </View>
-              <View style={styles.metaRow}>
-                <View style={styles.metaField}>
-                  <HTextField label="DISTANCE (KM)" placeholder="0" value={distanceTraveled} onChangeText={setDistanceTraveled} keyboardType="decimal-pad" />
-                </View>
-                <View style={styles.metaField}>
-                  <HTextField label="EXPENSES" placeholder="0.00" value={expenses} onChangeText={setExpenses} keyboardType="decimal-pad" />
-                </View>
-              </View>
-            </View>
-          )}
+          {/* Standard/photo carry no type-specific metadata block (retired in web) */}
 
           {typeValue === 'video' && (
             <View style={styles.fieldGroup}>
@@ -758,6 +752,39 @@ export default function CreateScreen() {
               <View style={styles.metaRow}>
                 <View style={styles.metaField}>
                   <HTextField label="DURATION (MIN)" placeholder="0" value={duration} onChangeText={setDuration} keyboardType="decimal-pad" />
+                </View>
+                <View style={styles.metaField}>
+                  <HTextField label="AVG SPEED (KM/H)" placeholder="0" value={avgSpeed} onChangeText={setAvgSpeed} keyboardType="decimal-pad" />
+                </View>
+              </View>
+              <SectionDivider title="MARINE" />
+              <View style={styles.metaRow}>
+                <View style={styles.metaField}>
+                  <HTextField label="WAVE HEIGHT (M)" placeholder="0" value={waveHeight} onChangeText={setWaveHeight} keyboardType="decimal-pad" />
+                </View>
+                <View style={styles.metaField}>
+                  <HTextField label="SEA STATE" placeholder="Calm, Choppy..." value={seaState} onChangeText={setSeaState} />
+                </View>
+              </View>
+              <View style={styles.metaRow}>
+                <View style={styles.metaField}>
+                  <HTextField label={"WATER TEMP. (°C)"} placeholder="0" value={waterTemp} onChangeText={setWaterTemp} keyboardType="decimal-pad" />
+                </View>
+                <View style={styles.metaField}>
+                  <HTextField label="TIDAL STATE" placeholder="Ebb, Flood..." value={tidalState} onChangeText={setTidalState} />
+                </View>
+              </View>
+              <View style={styles.metaRow}>
+                <View style={styles.metaField}>
+                  <HTextField label={"HEADING (°)"} placeholder="0" value={heading} onChangeText={setHeading} keyboardType="decimal-pad" />
+                </View>
+                <View style={styles.metaField}>
+                  <HTextField label="CURRENT (KM/H)" placeholder="0" value={currentSpeed} onChangeText={setCurrentSpeed} keyboardType="decimal-pad" />
+                </View>
+              </View>
+              <View style={styles.metaRow}>
+                <View style={styles.metaField}>
+                  <HTextField label="SAIL CONFIG" placeholder="Main + Genoa..." value={sailConfig} onChangeText={setSailConfig} />
                 </View>
                 <View style={styles.metaField} />
               </View>
