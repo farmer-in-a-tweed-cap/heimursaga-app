@@ -1308,7 +1308,7 @@ Remember: Your sponsors and followers are reading this to understand your journe
 
                   <div>
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                      ESSAY NARRATIVE
+                      PHOTO NARRATIVE
                       <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
                     </label>
                     <textarea
