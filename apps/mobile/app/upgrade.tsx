@@ -72,6 +72,7 @@ export default function UpgradeScreen() {
   const [products, setProducts] = useState<ProductSubscription[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   // Billing period: 0=monthly, 1=annual
   const [billingPeriod, setBillingPeriod] = useState(0);
@@ -223,6 +224,60 @@ export default function UpgradeScreen() {
     }
   }, [billingPeriod, connected, products.length]);
 
+  // ─── Restore purchases (Guideline 3.1.1) ───
+
+  const handleRestorePurchases = useCallback(async () => {
+    if (!iap) {
+      Alert.alert('Store Unavailable', 'Could not connect to the app store. Please try again.');
+      return;
+    }
+    setRestoring(true);
+    try {
+      const purchases = await iap.getAvailablePurchases();
+      const sub = purchases.find(
+        (p) => p.productId === MONTHLY_ID || p.productId === ANNUAL_ID,
+      );
+      if (!sub) {
+        Alert.alert(
+          'Nothing to Restore',
+          'No previous Explorer Pro purchases were found on this Apple ID.',
+        );
+        return;
+      }
+      let receiptData: string | null | undefined;
+      try {
+        receiptData = Platform.OS === 'ios'
+          ? await iap.getReceiptIOS()
+          : sub.purchaseToken;
+      } catch (err) {
+        if (__DEV__) console.warn('[IAP] getReceiptIOS error (restore):', err);
+      }
+      if (!receiptData) {
+        Alert.alert('Restore Failed', 'Could not retrieve your purchase receipt.');
+        return;
+      }
+      await api.post('/plan/upgrade/apple', {
+        receiptData,
+        productId: sub.productId,
+        platform: Platform.OS,
+        transactionId: sub.id,
+      });
+      await refreshUser();
+      Alert.alert(
+        'Purchases Restored',
+        'Your Explorer Pro subscription has been restored.',
+      );
+    } catch (err) {
+      const msg = err instanceof ApiError
+        ? err.message
+        : 'Failed to restore purchases. Please try again or contact support.';
+      Alert.alert('Restore Error', msg);
+      if (__DEV__) console.error('[IAP] restore error:', err);
+    } finally {
+      setRestoring(false);
+    }
+  }, [refreshUser]);
+
   // ─── Derive pricing from store products ───
 
   const monthlyProduct = products.find(p => p.id === MONTHLY_ID);
@@ -344,6 +399,13 @@ export default function UpgradeScreen() {
                   ? 'LOADING...'
                   : `SUBSCRIBE ${activePrice}${activePeriod.toUpperCase()}`}
             </HButton>
+            <Text
+              accessibilityRole="button"
+              style={[styles.restoreLink, { color: brandColors.copper }]}
+              onPress={restoring ? undefined : handleRestorePurchases}
+            >
+              {restoring ? 'RESTORING…' : 'RESTORE PURCHASES'}
+            </Text>
           </View>
 
           {/* Core Features */}
@@ -466,6 +528,16 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   subscribeWrap: { marginVertical: 16 },
+  restoreLink: {
+    fontFamily: mono,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.7,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
+    marginTop: 14,
+    paddingVertical: 8,
+  },
   featuresGrid: { gap: 10 },
   featureCard: {
     borderWidth: borders.thick,
