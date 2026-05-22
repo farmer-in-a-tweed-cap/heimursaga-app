@@ -653,8 +653,9 @@ export default function CreateScreen() {
             />
           </View>
 
-          {/* Location — only for standalone entries; expedition entries use waypoint */}
-          {!selectedExpedition && (
+          {/* Location: standalone entries pick on the map (sets coordinates);
+              expedition entries derive it from the waypoint but keep it editable */}
+          {!selectedExpedition ? (
             <View style={styles.fieldGroup}>
               <Text style={[styles.label, { color: colors.textSecondary }]}>LOCATION</Text>
               <Pressable
@@ -680,6 +681,13 @@ export default function CreateScreen() {
                 <Text style={styles.locationChange}>{location ? 'CHANGE' : 'SET'}</Text>
               </Pressable>
             </View>
+          ) : (
+            <HTextField
+              label="LOCATION"
+              placeholder="Location"
+              value={location}
+              onChangeText={setLocation}
+            />
           )}
 
           {/* PHOTO type: photo upload appears BEFORE the narrative */}

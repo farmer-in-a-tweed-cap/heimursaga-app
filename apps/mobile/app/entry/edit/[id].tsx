@@ -416,8 +416,9 @@ export default function EditEntryScreen() {
             />
           </View>
 
-          {/* Location — only for standalone entries */}
-          {!isExpeditionEntry && (
+          {/* Location: standalone entries pick on the map; expedition entries
+              derive it from the waypoint but keep it editable */}
+          {!isExpeditionEntry ? (
             <View style={styles.fieldGroup}>
               <Text style={[styles.label, { color: colors.textSecondary }]}>LOCATION</Text>
               <Pressable
@@ -443,6 +444,13 @@ export default function EditEntryScreen() {
                 <Text style={styles.locationChange}>{location ? 'CHANGE' : 'SET'}</Text>
               </Pressable>
             </View>
+          ) : (
+            <HTextField
+              label="LOCATION"
+              placeholder="Location"
+              value={location}
+              onChangeText={setLocation}
+            />
           )}
 
           {/* Content */}
