@@ -14,7 +14,6 @@ import { MetadataGrid } from '@/components/ui/MetadataGrid';
 import { SectionDivider } from '@/components/ui/SectionDivider';
 import { commentsApi, bookmarksApi, ApiError } from '@/services/api';
 import { Svg, Path, Circle } from 'react-native-svg';
-import { QuickSponsorButton } from '@/components/ui/QuickSponsorButton';
 import { TopoBackground } from '@/components/ui/TopoBackground';
 import { mono, heading, colors as brandColors, borders } from '@/theme/tokens';
 import HeimuMapView, { type HeimuMapProps, type WaypointMarker } from '@/components/map/HeimuMap';
@@ -320,16 +319,10 @@ export default function EntryDetailScreen() {
           </View>
         )}
 
-        {/* Quick Sponsor */}
-        {entry.author?.creator && entry.author?.stripeAccountConnected && user?.username !== entry.author.username && (
-          <View style={styles.quickSponsorWrap}>
-            <QuickSponsorButton
-              entryId={entry.id}
-              authorUsername={entry.author.username}
-              onSuccess={refetchEntry}
-            />
-          </View>
-        )}
+        {/* Quick Sponsor removed for App Store review — Apple Guideline 3.2.1:
+            a non-IAP person-to-person monetary gift must be 100% to the
+            receiver, but quick-sponsor takes a 10% platform fee. Re-add the
+            <QuickSponsorButton> here once it is fee-free (100% to creator). */}
 
         {/* Notes */}
         {entry.commentsEnabled !== false && (
