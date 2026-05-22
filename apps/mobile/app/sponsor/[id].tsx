@@ -180,7 +180,7 @@ export default function SponsorScreen() {
         <View style={styles.content}>
           {/* Header */}
           <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: colors.text }]}>Support This Expedition</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Sponsor This Expedition</Text>
             <View style={[styles.titleLine, { backgroundColor: colors.border }]} />
           </View>
 
@@ -267,6 +267,9 @@ export default function SponsorScreen() {
             <View style={styles.fieldGroup}>
               <Text style={[styles.label, { color: colors.textSecondary }]}>SELECT TIER</Text>
               <View style={[styles.labelLine, { backgroundColor: colors.border }]} />
+              <Text style={[styles.perkNote, { color: colors.textTertiary }]}>
+                Your sponsorship funds this expedition. Expedition updates and early access are shared at the explorer's discretion and are not guaranteed.
+              </Text>
               {tiersLoading ? (
                 <ActivityIndicator color={brandColors.copper} style={{ paddingVertical: 16 }} />
               ) : monthlyTiers.length === 0 ? (
@@ -303,7 +306,7 @@ export default function SponsorScreen() {
                     <View style={[styles.perksContainer, { borderTopColor: `${colors.border}60` }]}>
                       {getPerksForSlot('MONTHLY', tier.priority ?? 1).map((perk, i) => (
                         <View key={i} style={styles.perkRow}>
-                          <Text style={styles.perkCheck}>*</Text>
+                          <Text style={[styles.perkCheck, { color: colors.textTertiary }]}>{'•'}</Text>
                           <Text style={[styles.perkText, { color: colors.textSecondary }]}>{perk}</Text>
                         </View>
                       ))}
@@ -317,10 +320,13 @@ export default function SponsorScreen() {
           {/* Perks summary for one-time */}
           {paymentType === 0 && (
             <View style={[styles.perksBox, { borderColor: brandColors.blue }]}>
-              <Text style={[styles.perksBoxTitle, { color: brandColors.blue }]}>YOUR PERKS:</Text>
+              <Text style={[styles.perksBoxTitle, { color: brandColors.blue }]}>SPONSOR RECOGNITION PERKS</Text>
+              <Text style={[styles.perkNote, { color: colors.textTertiary }]}>
+                Your sponsorship funds this expedition. Expedition updates and early access are shared at the explorer's discretion and are not guaranteed.
+              </Text>
               {getPerksForSlot('ONE_TIME', activeAmount >= 75 ? 3 : activeAmount >= 25 ? 2 : 1).map((perk, i) => (
                 <View key={i} style={styles.perkRow}>
-                  <Text style={styles.perkCheck}>*</Text>
+                  <Text style={[styles.perkCheck, { color: colors.textTertiary }]}>{'•'}</Text>
                   <Text style={[styles.perkText, { color: colors.text }]}>{perk}</Text>
                 </View>
               ))}
@@ -424,6 +430,7 @@ const styles = StyleSheet.create({
   perkText: { fontFamily: mono, fontSize: 10, flex: 1 },
   perksBox: { borderWidth: 2, padding: 12, marginBottom: 16 },
   perksBoxTitle: { fontFamily: mono, fontSize: 11, fontWeight: '700', marginBottom: 6 },
+  perkNote: { fontFamily: mono, fontSize: 10, lineHeight: 14, marginBottom: 8 },
   messageInput: {
     borderWidth: borders.thick,
     padding: 12,
