@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
-  ActivityIndicator, Alert, Modal, Image, Platform, Keyboard, Linking,
+  ActivityIndicator, Alert, Modal, KeyboardAvoidingView, Image, Platform, Keyboard, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -1600,7 +1600,10 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
             animationType="fade"
             onRequestClose={() => setSelectedWpIdx(null)}
           >
-            <View style={styles.modalOverlay}>
+            <KeyboardAvoidingView
+              style={styles.modalOverlay}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
               <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 {/* Header */}
                 <View style={[styles.modalHeader, { borderBottomColor: colors.borderThin }]}>
@@ -1677,7 +1680,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                   </TouchableOpacity>
                 </View>
               </View>
-            </View>
+            </KeyboardAvoidingView>
           </Modal>
         </View>
       )}

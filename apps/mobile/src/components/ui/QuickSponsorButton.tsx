@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, Pressable, Alert, StyleSheet, Modal, ActivityIndicator,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { CardField, useStripe } from '@stripe/stripe-react-native';
 import { useRouter } from 'expo-router';
@@ -190,7 +191,10 @@ export function QuickSponsorButton({ entryId, authorUsername, onSuccess }: Quick
         animationType="fade"
         onRequestClose={() => { setShowCardModal(false); setClientSecret(null); }}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {/* Header */}
             <View style={styles.modalHeader}>
@@ -253,7 +257,7 @@ export function QuickSponsorButton({ entryId, authorUsername, onSuccess }: Quick
               </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </>
   );
