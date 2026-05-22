@@ -373,7 +373,31 @@ export function useDebriefMode({
       return;
     }
 
-    // Short-to-medium distances (<200km): step-based animation along route
+    // Very short hops (<2km): skip the step animation and zoom dip — they
+    // feel jerky and over-engineered when the start and end are basically
+    // the same spot. A single fast easeTo reads better. Zoom in tighter
+    // for the tiniest hops so the two markers don't visually overlap.
+    if (segDistKm < 2) {
+      setDebriefDistance(distEnd);
+      const currentZoom = map.getZoom();
+      const tightZoom = segDistKm < 0.3 ? 17 : segDistKm < 0.8 ? 16 : 15;
+      const finalZoom = Math.max(currentZoom, tightZoom);
+      const duration = segDistKm < 0.3 ? 600 : segDistKm < 0.8 ? 900 : 1200;
+
+      map.easeTo({
+        center: [stop.coords.lng, stop.coords.lat],
+        zoom: finalZoom,
+        duration,
+      });
+
+      (mapRef.current as any)._debriefCleanup = () => {
+        map.stop();
+      };
+      prevDebriefIndexRef.current = index;
+      return;
+    }
+
+    // Short-to-medium distances (2km–200km): step-based animation along route
     const cumDist = buildCumulativeDistances(segment);
     const totalSegLen = cumDist[cumDist.length - 1];
     const startZoom = map.getZoom();
