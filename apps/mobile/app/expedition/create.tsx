@@ -205,6 +205,41 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
   const allRouteResultsRef = useRef<POIResult[]>([]);
   const routeSearchAbortRef = useRef<AbortController | null>(null);
 
+  // Map geocoder (place search) state
+  const [geoQuery, setGeoQuery] = useState('');
+  const [geoResults, setGeoResults] = useState<{ place_name: string; center: [number, number] }[]>([]);
+  const [geoSearching, setGeoSearching] = useState(false);
+  const geoTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const handleGeoSearch = useCallback((text: string) => {
+    setGeoQuery(text);
+    if (geoTimer.current) clearTimeout(geoTimer.current);
+    if (!text.trim()) { setGeoResults([]); return; }
+    geoTimer.current = setTimeout(async () => {
+      if (!MAPBOX_TOKEN) return;
+      setGeoSearching(true);
+      try {
+        const res = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(text)}.json?access_token=${MAPBOX_TOKEN}&limit=5`,
+        );
+        if (!res.ok) { setGeoResults([]); return; }
+        const data = await res.json();
+        setGeoResults(data.features ?? []);
+      } catch { setGeoResults([]); }
+      finally { setGeoSearching(false); }
+    }, 400);
+  }, []);
+
+  const handleGeoSelect = useCallback(
+    (result: { place_name: string; center: [number, number] }) => {
+      mapRef.current?.flyTo(result.center, 11);
+      setGeoQuery('');
+      setGeoResults([]);
+      Keyboard.dismiss();
+    },
+    [],
+  );
+
   // Step 3 state
   const [fundingEnabled, setFundingEnabled] = useState(false);
   const [fundingGoal, setFundingGoal] = useState('');
@@ -280,6 +315,21 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
             };
           });
           setWaypoints(mapped);
+          // Fit the camera to the loaded route once (edit mode only).
+          const pts = mapped.filter((wp) => wp.lng != null && wp.lat != null);
+          if (pts.length >= 2) {
+            setInitialBounds({
+              ne: [
+                Math.max(...pts.map((c) => c.lng!)),
+                Math.max(...pts.map((c) => c.lat!)),
+              ],
+              sw: [
+                Math.min(...pts.map((c) => c.lng!)),
+                Math.min(...pts.map((c) => c.lat!)),
+              ],
+              padding: 60,
+            });
+          }
         }
       } catch (err) {
         const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
@@ -385,21 +435,12 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
     return result;
   }, [waypoints, isRoundTrip]);
 
-  const routeBounds = useMemo(() => {
-    const coords = waypoints.filter(wp => wp.lng != null && wp.lat != null);
-    if (coords.length < 2) return undefined;
-    return {
-      ne: [
-        Math.max(...coords.map(c => c.lng!)),
-        Math.max(...coords.map(c => c.lat!)),
-      ] as [number, number],
-      sw: [
-        Math.min(...coords.map(c => c.lng!)),
-        Math.min(...coords.map(c => c.lat!)),
-      ] as [number, number],
-      padding: 60,
-    };
-  }, [waypoints]);
+  // The camera fits the route bounds only ONCE — when an existing expedition
+  // is loaded in edit mode. It then stays undefined so dropping a new waypoint
+  // never re-fits the camera and resets the user's zoom.
+  const [initialBounds, setInitialBounds] = useState<
+    { ne: [number, number]; sw: [number, number]; padding?: number } | undefined
+  >(undefined);
 
   // ── Directions API ──────────────────────────────────────────────────────────
 
@@ -1302,7 +1343,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                 style={StyleSheet.absoluteFillObject}
                 center={[-98, 40]}
                 zoom={2}
-                bounds={routeBounds}
+                bounds={initialBounds}
                 interactive
                 waypoints={allMapMarkers}
                 routeCoords={effectiveRouteCoords}
@@ -1314,6 +1355,42 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                   if (i < routeMapMarkers.length) setSelectedWpIdx(i);
                 }}
               />
+
+              {/* Geocoder — search a place and recenter the map */}
+              <View style={styles.geoSearchWrap} pointerEvents="box-none">
+                <View style={[styles.geoSearchBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <TextInput
+                    style={[styles.geoSearchInput, { color: colors.text }]}
+                    placeholder="Search for a place..."
+                    placeholderTextColor={colors.textTertiary}
+                    value={geoQuery}
+                    onChangeText={handleGeoSearch}
+                    autoCorrect={false}
+                    returnKeyType="search"
+                  />
+                  {geoSearching && <ActivityIndicator size="small" color={brandColors.copper} />}
+                  {geoQuery.length > 0 && !geoSearching && (
+                    <TouchableOpacity onPress={() => { setGeoQuery(''); setGeoResults([]); }} hitSlop={8}>
+                      <Text style={[styles.geoClear, { color: colors.textTertiary }]}>✕</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                {geoResults.length > 0 && (
+                  <View style={[styles.geoResults, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    {geoResults.map((r) => (
+                      <TouchableOpacity
+                        key={r.place_name}
+                        style={[styles.geoResultRow, { borderBottomColor: colors.border }]}
+                        onPress={() => handleGeoSelect(r)}
+                      >
+                        <Text style={[styles.geoResultText, { color: colors.text }]} numberOfLines={2}>
+                          {r.place_name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
 
               {waypoints.length === 0 && showInstruction && (
                 <View style={styles.routeInstruction} pointerEvents="none">
@@ -2503,6 +2580,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   routeMapWrap: { flex: 1 },
+  geoSearchWrap: { position: 'absolute', top: 10, left: 10, right: 10, zIndex: 30 },
+  geoSearchBox: { flexDirection: 'row', alignItems: 'center', borderWidth: borders.thick, paddingHorizontal: 12, height: 44, gap: 8 },
+  geoSearchInput: { flex: 1, fontFamily: mono, fontSize: 13 },
+  geoClear: { fontSize: 15, fontWeight: '700' },
+  geoResults: { borderWidth: borders.thick, borderTopWidth: 0, maxHeight: 220 },
+  geoResultRow: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1 },
+  geoResultText: { fontFamily: mono, fontSize: 12 },
   routeInstruction: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',

@@ -88,9 +88,19 @@ export interface HeimuMapRef {
 
 // ─── Zoom-sensitive marker clustering ────────────────────────────────────────
 
-/** Cluster markers that overlap at the given zoom level (~30px threshold). */
-export function clusterMarkers(markers: WaypointMarker[], zoom: number): WaypointMarker[] {
+/**
+ * Cluster markers that overlap at the given zoom level (~30px threshold).
+ * Above `maxClusterZoom` every marker is rendered individually — clustering
+ * at high zoom hides deliberately-placed waypoints and blocks building or
+ * viewing a highly detailed route.
+ */
+export function clusterMarkers(
+  markers: WaypointMarker[],
+  zoom: number,
+  maxClusterZoom = 12,
+): WaypointMarker[] {
   if (markers.length <= 1) return markers;
+  if (zoom > maxClusterZoom) return markers;
   // ~30 screen-pixels worth of degrees at this zoom
   const thresholdDeg = 30 * 360 / (256 * Math.pow(2, zoom));
   const thresholdSq = thresholdDeg * thresholdDeg;
