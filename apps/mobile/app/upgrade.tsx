@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { useRestorePurchases, PRODUCT_IDS, MONTHLY_ID, ANNUAL_ID } from '@/hooks/useRestorePurchases';
 import { NavBar } from '@/components/ui/NavBar';
 import { HCard } from '@/components/ui/HCard';
 import { HButton } from '@/components/ui/HButton';
@@ -26,17 +27,6 @@ try {
 type ProductSubscription = import('react-native-iap').ProductSubscription;
 type Purchase = import('react-native-iap').Purchase;
 type PurchaseError = import('react-native-iap').PurchaseError;
-
-// ─── Product IDs (must match App Store Connect / Google Play Console) ───
-
-const PRODUCT_IDS = Platform.select({
-  ios: ['com.heimursaga.pro.monthly', 'com.heimursaga.pro.annual'],
-  android: ['com.heimursaga.pro.monthly', 'com.heimursaga.pro.annual'],
-  default: [],
-});
-
-const MONTHLY_ID = 'com.heimursaga.pro.monthly';
-const ANNUAL_ID = 'com.heimursaga.pro.annual';
 
 // ─── Feature List ───
 
@@ -72,7 +62,9 @@ export default function UpgradeScreen() {
   const [products, setProducts] = useState<ProductSubscription[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
-  const [restoring, setRestoring] = useState(false);
+
+  // ─── Restore Purchases (Apple Guideline 3.1.1) ───
+  const { restore, restoring } = useRestorePurchases();
 
   // Billing period: 0=monthly, 1=annual
   const [billingPeriod, setBillingPeriod] = useState(0);
@@ -224,60 +216,6 @@ export default function UpgradeScreen() {
     }
   }, [billingPeriod, connected, products.length]);
 
-  // ─── Restore purchases (Guideline 3.1.1) ───
-
-  const handleRestorePurchases = useCallback(async () => {
-    if (!iap) {
-      Alert.alert('Store Unavailable', 'Could not connect to the app store. Please try again.');
-      return;
-    }
-    setRestoring(true);
-    try {
-      const purchases = await iap.getAvailablePurchases();
-      const sub = purchases.find(
-        (p) => p.productId === MONTHLY_ID || p.productId === ANNUAL_ID,
-      );
-      if (!sub) {
-        Alert.alert(
-          'Nothing to Restore',
-          'No previous Explorer Pro purchases were found on this Apple ID.',
-        );
-        return;
-      }
-      let receiptData: string | null | undefined;
-      try {
-        receiptData = Platform.OS === 'ios'
-          ? await iap.getReceiptIOS()
-          : sub.purchaseToken;
-      } catch (err) {
-        if (__DEV__) console.warn('[IAP] getReceiptIOS error (restore):', err);
-      }
-      if (!receiptData) {
-        Alert.alert('Restore Failed', 'Could not retrieve your purchase receipt.');
-        return;
-      }
-      await api.post('/plan/upgrade/apple', {
-        receiptData,
-        productId: sub.productId,
-        platform: Platform.OS,
-        transactionId: sub.id,
-      });
-      await refreshUser();
-      Alert.alert(
-        'Purchases Restored',
-        'Your Explorer Pro subscription has been restored.',
-      );
-    } catch (err) {
-      const msg = err instanceof ApiError
-        ? err.message
-        : 'Failed to restore purchases. Please try again or contact support.';
-      Alert.alert('Restore Error', msg);
-      if (__DEV__) console.error('[IAP] restore error:', err);
-    } finally {
-      setRestoring(false);
-    }
-  }, [refreshUser]);
-
   // ─── Derive pricing from store products ───
 
   const monthlyProduct = products.find(p => p.id === MONTHLY_ID);
@@ -319,6 +257,13 @@ export default function UpgradeScreen() {
             <HButton variant="blue" onPress={() => router.push('/settings/billing')}>
               GO TO BILLING
             </HButton>
+            <Text
+              accessibilityRole="button"
+              style={[styles.restoreLink, { color: brandColors.copper }]}
+              onPress={restoring ? undefined : restore}
+            >
+              {restoring ? 'RESTORING…' : 'RESTORE PURCHASES'}
+            </Text>
           </View>
         </View>
       </View>
@@ -402,7 +347,7 @@ export default function UpgradeScreen() {
             <Text
               accessibilityRole="button"
               style={[styles.restoreLink, { color: brandColors.copper }]}
-              onPress={restoring ? undefined : handleRestorePurchases}
+              onPress={restoring ? undefined : restore}
             >
               {restoring ? 'RESTORING…' : 'RESTORE PURCHASES'}
             </Text>

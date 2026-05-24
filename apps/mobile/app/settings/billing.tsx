@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CardField, useStripe } from '@stripe/stripe-react-native';
-import { Svg, Path, Rect } from 'react-native-svg';
+import { Svg, Path, Rect, Polyline } from 'react-native-svg';
 import { useTheme } from '@/theme/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
@@ -18,6 +18,7 @@ import {
   type PaymentMethodInfo,
 } from '@/services/api';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
+import { useRestorePurchases } from '@/hooks/useRestorePurchases';
 
 export default function BillingScreen() {
   const { colors } = useTheme();
@@ -33,6 +34,9 @@ export default function BillingScreen() {
   const [addingCard, setAddingCard] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [defaultingId, setDefaultingId] = useState<string | null>(null);
+
+  // ─── Restore Purchases (Apple Guideline 3.1.1) ───
+  const { restore, restoring } = useRestorePurchases();
 
   const fetchMethods = useCallback(async () => {
     try {
@@ -141,6 +145,28 @@ export default function BillingScreen() {
               </Text>
             </View>
           </HCard>
+
+          {/* Subscription — Restore Purchases (Apple Guideline 3.1.1) */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
+                <Polyline points="23 4 23 10 17 10" />
+                <Path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+              </Svg>
+              <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>SUBSCRIPTION</Text>
+            </View>
+            <View style={[styles.sectionLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.restoreDesc, { color: colors.textTertiary }]}>
+              If you previously subscribed to Explorer Pro on this Apple ID, restore the subscription on this device.
+            </Text>
+            <HButton
+              variant="blue"
+              onPress={restore}
+              disabled={restoring}
+            >
+              {restoring ? 'RESTORING…' : 'RESTORE PURCHASES'}
+            </HButton>
+          </View>
 
           {/* Payment Methods */}
           <View style={styles.section}>
@@ -327,6 +353,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     paddingVertical: 24,
+  },
+  restoreDesc: {
+    fontFamily: mono,
+    fontSize: 11,
+    lineHeight: 16,
+    marginBottom: 12,
   },
   // Card row
   cardRow: {
