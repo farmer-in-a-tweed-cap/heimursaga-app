@@ -2863,6 +2863,19 @@ export class ExpeditionService {
         }
       }
 
+      // Implicit-stop any active live track on this expedition. A manual
+      // location update overrides automatic tracking — running both would
+      // race indefinitely as each new ping overwrites the manual pick.
+      // See project_tracking_phase1_spec.md decision #4.
+      await this.prisma.track.updateMany({
+        where: {
+          expedition_id: expedition.id,
+          ended_at: null,
+          deleted_at: null,
+        },
+        data: { ended_at: new Date() },
+      });
+
       // Update the expedition
       await this.prisma.expedition.update({
         where: { id: expedition.id },

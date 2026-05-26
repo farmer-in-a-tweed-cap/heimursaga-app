@@ -10,46 +10,46 @@ datasource db {
 }
 
 model Explorer {
-  id                          Int                   @id @default(autoincrement())
-  email                       String                @unique @db.VarChar(50)
-  username                    String                @unique @db.VarChar(50)
+  id                          Int                    @id @default(autoincrement())
+  email                       String                 @unique @db.VarChar(50)
+  username                    String                 @unique @db.VarChar(50)
   password                    String
-  google_id                   String?               @unique @db.VarChar(40)
-  role                        String                @db.VarChar(10)
-  secondary_role              String?               @db.VarChar(40)
-  is_premium                  Boolean?              @default(false)
-  is_email_verified           Boolean?              @default(false)
-  created_at                  DateTime?             @default(now())
-  updated_at                  DateTime?             @updatedAt
-  bookmarks_count             Int?                  @default(0)
-  followers_count             Int?                  @default(0)
-  following_count             Int?                  @default(0)
-  entries_count               Int?                  @default(0)
-  stripe_customer_id          String?               @db.VarChar(40)
-  is_stripe_account_connected Boolean?              @default(false)
-  stripe_account_id           String?               @db.VarChar(40)
-  admin                       Boolean               @default(false)
-  blocked                     Boolean?              @default(false)
-  is_guide                    Boolean?              @default(false)
+  google_id                   String?                @unique @db.VarChar(40)
+  role                        String                 @db.VarChar(10)
+  secondary_role              String?                @db.VarChar(40)
+  is_premium                  Boolean?               @default(false)
+  is_email_verified           Boolean?               @default(false)
+  created_at                  DateTime?              @default(now())
+  updated_at                  DateTime?              @updatedAt
+  bookmarks_count             Int?                   @default(0)
+  followers_count             Int?                   @default(0)
+  following_count             Int?                   @default(0)
+  entries_count               Int?                   @default(0)
+  stripe_customer_id          String?                @db.VarChar(40)
+  is_stripe_account_connected Boolean?               @default(false)
+  stripe_account_id           String?                @db.VarChar(40)
+  admin                       Boolean                @default(false)
+  blocked                     Boolean?               @default(false)
+  is_guide                    Boolean?               @default(false)
   resting_since               DateTime?
-  sponsored_checkouts         Checkout[]            @relation("sponsored_checkouts")
-  explorer_checkouts          Checkout[]            @relation("explorer_checkouts")
+  sponsored_checkouts         Checkout[]             @relation("sponsored_checkouts")
+  explorer_checkouts          Checkout[]             @relation("explorer_checkouts")
   payment_methods             PaymentMethod[]
   payout_methods              PayoutMethod[]
   payouts                     Payout[]
-  entry_bookmarks             EntryBookmark[]       @relation("explorer_entry_bookmarks")
-  expedition_bookmarks        ExpeditionBookmark[]  @relation("explorer_expedition_bookmarks")
-  explorer_bookmarks_given    ExplorerBookmark[]    @relation("explorer_bookmarks_given")
-  explorer_bookmarks_received ExplorerBookmark[]    @relation("explorer_bookmarked")
-  entry_likes                 EntryLike[]           @relation("explorer_entry_likes")
+  entry_bookmarks             EntryBookmark[]        @relation("explorer_entry_bookmarks")
+  expedition_bookmarks        ExpeditionBookmark[]   @relation("explorer_expedition_bookmarks")
+  explorer_bookmarks_given    ExplorerBookmark[]     @relation("explorer_bookmarks_given")
+  explorer_bookmarks_received ExplorerBookmark[]     @relation("explorer_bookmarked")
+  entry_likes                 EntryLike[]            @relation("explorer_entry_likes")
   entries                     Entry[]
   sponsorship_tiers           SponsorshipTier[]
-  received_sponsorships       Sponsorship[]         @relation("received_sponsorships")
-  given_sponsorships          Sponsorship[]         @relation("given_sponsorships")
+  received_sponsorships       Sponsorship[]          @relation("received_sponsorships")
+  given_sponsorships          Sponsorship[]          @relation("given_sponsorships")
   expeditions                 Expedition[]
   uploads                     Upload[]
-  followers                   ExplorerFollow[]      @relation("explorer_follows_followee")
-  following                   ExplorerFollow[]      @relation("explorer_follows_follower")
+  followers                   ExplorerFollow[]       @relation("explorer_follows_followee")
+  following                   ExplorerFollow[]       @relation("explorer_follows_follower")
   notification_mentions       ExplorerNotification[] @relation("explorer_notification_mentions")
   notifications               ExplorerNotification[] @relation("explorer_notifications")
   plans                       ExplorerPlan[]
@@ -57,19 +57,19 @@ model Explorer {
   sessions                    ExplorerSession[]
   subscriptions               ExplorerSubscription[]
   waypoints                   Waypoint[]
-  sent_messages               Message[]             @relation("SentMessages")
-  received_messages           Message[]             @relation("ReceivedMessages")
+  sent_messages               Message[]              @relation("SentMessages")
+  received_messages           Message[]              @relation("ReceivedMessages")
   comments                    Comment[]
-  flags_created               Flag[]                @relation("explorer_flags_created")
-  flags_reviewed              Flag[]                @relation("explorer_flags_reviewed")
-  flags_target                Flag[]                @relation("explorer_flags_target")
-  expedition_notes            ExpeditionNote[]      @relation("explorer_expedition_notes")
-  expedition_note_replies     ExpeditionNoteReply[] @relation("explorer_expedition_note_replies")
-  voice_notes                 ExpeditionVoiceNote[] @relation("explorer_voice_notes")
-  entry_views                 EntryView[]           @relation("explorer_views")
+  flags_created               Flag[]                 @relation("explorer_flags_created")
+  flags_reviewed              Flag[]                 @relation("explorer_flags_reviewed")
+  flags_target                Flag[]                 @relation("explorer_flags_target")
+  expedition_notes            ExpeditionNote[]       @relation("explorer_expedition_notes")
+  expedition_note_replies     ExpeditionNoteReply[]  @relation("explorer_expedition_note_replies")
+  voice_notes                 ExpeditionVoiceNote[]  @relation("explorer_voice_notes")
+  entry_views                 EntryView[]            @relation("explorer_views")
   device_tokens               DeviceToken[]
-  invite_codes_created        InviteCode[]          @relation("invite_codes_created")
-  invite_codes_redeemed       InviteCode[]          @relation("invite_codes_redeemed")
+  invite_codes_created        InviteCode[]           @relation("invite_codes_created")
+  invite_codes_redeemed       InviteCode[]           @relation("invite_codes_redeemed")
   blueprint_reviews           BlueprintReview[]
 
   @@index([stripe_customer_id])
@@ -113,34 +113,34 @@ model ExplorerSession {
 }
 
 model ExplorerProfile {
-  id                           Int       @id @default(autoincrement())
-  picture                      String?   @db.VarChar(200)
-  cover_photo                  String?   @db.VarChar(200)
-  explorer_id                  Int       @unique @map("user_id")
-  created_at                   DateTime? @default(now())
-  updated_at                   DateTime? @updatedAt
-  bio                          String?   @db.VarChar(500)
-  name                         String?   @db.VarChar(50)
-  location_from                String?   @db.VarChar(200)
-  location_lives               String?   @db.VarChar(200)
-  location_from_lat            Float?
-  location_from_lon            Float?
-  location_lives_lat           Float?
-  location_lives_lon           Float?
-  location_visibility          String?   @default("hidden") @db.VarChar(25)
-  sponsors_fund                String?   @db.VarChar(500)
-  sponsors_fund_expedition_id  String?   @map("sponsors_fund_journey_id") @db.VarChar(50)
-  sponsors_fund_type           String?   @db.VarChar(20)
-  portfolio                    String?   @db.VarChar(500)
-  twitter                      String?   @db.VarChar(100)
-  instagram                    String?   @db.VarChar(100)
-  youtube                      String?   @db.VarChar(100)
-  website                      String?   @db.VarChar(200)
-  equipment                    Json?     @default("[]")
-  notification_preferences     Json?     @default("{}")
-  phone_number                 String?   @db.VarChar(30)
-  preferred_contact_method     String?   @db.VarChar(20)
-  explorer                     Explorer  @relation(fields: [explorer_id], references: [id], onDelete: Cascade)
+  id                          Int       @id @default(autoincrement())
+  picture                     String?   @db.VarChar(200)
+  cover_photo                 String?   @db.VarChar(200)
+  explorer_id                 Int       @unique @map("user_id")
+  created_at                  DateTime? @default(now())
+  updated_at                  DateTime? @updatedAt
+  bio                         String?   @db.VarChar(500)
+  name                        String?   @db.VarChar(50)
+  location_from               String?   @db.VarChar(200)
+  location_lives              String?   @db.VarChar(200)
+  location_from_lat           Float?
+  location_from_lon           Float?
+  location_lives_lat          Float?
+  location_lives_lon          Float?
+  location_visibility         String?   @default("hidden") @db.VarChar(25)
+  sponsors_fund               String?   @db.VarChar(500)
+  sponsors_fund_expedition_id String?   @map("sponsors_fund_journey_id") @db.VarChar(50)
+  sponsors_fund_type          String?   @db.VarChar(20)
+  portfolio                   String?   @db.VarChar(500)
+  twitter                     String?   @db.VarChar(100)
+  instagram                   String?   @db.VarChar(100)
+  youtube                     String?   @db.VarChar(100)
+  website                     String?   @db.VarChar(200)
+  equipment                   Json?     @default("[]")
+  notification_preferences    Json?     @default("{}")
+  phone_number                String?   @db.VarChar(30)
+  preferred_contact_method    String?   @db.VarChar(20)
+  explorer                    Explorer  @relation(fields: [explorer_id], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")
 }
@@ -350,11 +350,11 @@ model Comment {
 
 // Track unique viewers for entries
 model EntryView {
-  id         Int       @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   entry_id   Int
-  viewer_id  Int?      // Null for anonymous viewers
-  viewer_ip  String?   @db.VarChar(45) // IPv6 can be up to 45 chars
-  created_at DateTime  @default(now())
+  viewer_id  Int? // Null for anonymous viewers
+  viewer_ip  String?  @db.VarChar(45) // IPv6 can be up to 45 chars
+  created_at DateTime @default(now())
 
   entry  Entry     @relation("entry_views", fields: [entry_id], references: [id], onDelete: Cascade)
   viewer Explorer? @relation("explorer_views", fields: [viewer_id], references: [id], onDelete: Cascade)
@@ -369,98 +369,102 @@ model EntryView {
 }
 
 model Waypoint {
-  id          Int                   @id @default(autoincrement())
+  id          Int                  @id @default(autoincrement())
   lat         Float
   lon         Float
-  elevation_m Float?                // metres above sea level, auto-populated from Open Meteo on create/sync
-  public      Boolean?              @default(true)
-  created_at  DateTime?             @default(now())
-  updated_at  DateTime?             @updatedAt
+  elevation_m Float? // metres above sea level, auto-populated from Open Meteo on create/sync
+  public      Boolean?             @default(true)
+  created_at  DateTime?            @default(now())
+  updated_at  DateTime?            @updatedAt
   deleted_at  DateTime?
-  description String?               @db.Text
-  title       String?               @db.VarChar(200)
-  location    String?               @db.VarChar(150)
+  description String?              @db.Text
+  title       String?              @db.VarChar(200)
+  location    String?              @db.VarChar(150)
   date        DateTime?
   author_id   Int?
   entries     Entry[]
-  expeditions ExpeditionWaypoint[]  @relation("waypoint_expeditions")
-  author      Explorer?             @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  expeditions ExpeditionWaypoint[] @relation("waypoint_expeditions")
+  author      Explorer?            @relation(fields: [author_id], references: [id], onDelete: Cascade)
 
   @@index([author_id])
   @@map("waypoints")
 }
 
 model Expedition {
-  id             Int                  @id @default(autoincrement())
-  public_id      String               @unique @db.VarChar(14)
-  slug           String?              @unique @db.VarChar(120)
-  title          String               @db.VarChar(100)
-  description    String?              @db.VarChar(500)
-  public         Boolean?             @default(true)
-  visibility     String?              @default("public") @db.VarChar(10) // 'public', 'off-grid', 'private'
-  author_id      Int
-  created_at     DateTime?            @default(now())
-  updated_at     DateTime?            @updatedAt
-  deleted_at     DateTime?
-  cancelled_at        DateTime?
-  cancellation_reason String?              @db.VarChar(500)
-  delayed_at          DateTime?
-  original_start_date DateTime?
-  status         String?              @default("planned") @db.VarChar(20) // draft, planned, active, completed, cancelled
-  start_date     DateTime?
-  end_date       DateTime?
-  cover_image    String?              @db.VarChar(250)
-  category       String?              @db.VarChar(50) // hiking, cycling, sailing, etc.
-  region         String?              @db.VarChar(100) // Geographic region, e.g. "Pacific Northwest", "Alps"
-  location_name  String?              @db.VarChar(200) // Human-readable location, e.g. "Yosemite Valley, California, USA"
-  country_code   String?              @db.VarChar(2)   // ISO 3166-1 alpha-2 country code
-  country_name   String?              @db.VarChar(100)  // Full country name
-  state_province String?              @db.VarChar(100)  // Admin level 1 (state/province/region)
-  tags           String?              // JSON array of tags, e.g. ["wilderness", "solo", "winter"]
-  is_round_trip  Boolean?             @default(false) // Route returns to starting point
-  route_mode     String?              @db.VarChar(20) // straight, walking, cycling, driving, mixed
-  route_geometry        String?              @db.Text        // JSON-encoded [[lng,lat],...] from Mapbox Directions API
-  route_leg_modes       String?              @db.Text        // JSON-encoded per-leg route modes for mixed routes
-  route_distance_km     Float?               // Total route distance in km (stored by expedition builder)
-  elevation_min_m       Float?               // Lowest elevation on route in meters
-  elevation_max_m       Float?               // Highest elevation on route in meters
-  elevation_gain_m      Float?               // Total cumulative ascent in meters
-  estimated_duration_h  Float?               // Estimated route duration in hours
-  route_obstacles       String?              @db.Text        // JSON-encoded waterway obstacles [{lat,lon,type,name}]
-  route_export_allowed  Boolean?             @default(true)  // Whether non-owners (viewers, adopters) can download the route as GPX
-  current_location_type       String?              @db.VarChar(10) // 'waypoint' or 'entry'
-  current_location_id         String?              @db.VarChar(20) // waypoint ID or entry public_id
-  current_location_visibility String?              @default("public") @db.VarChar(10) // 'public', 'sponsors', or 'private'
-  goal                    Int?                 @default(0) // funding goal in cents
-  raised                  Int?                 @default(0) // amount raised in cents
-  notes_access_threshold  Int?                 @default(0) // minimum cumulative sponsorship (cents) for Expedition Notes access
-  notes_visibility        String?              @default("public") @db.VarChar(10) // "public" or "sponsor"
-  early_access_enabled    Boolean?             @default(false) // Enable early entry access for qualifying sponsors
-  sponsors_count  Int?                 @default(0)
-  entries_count   Int?                 @default(0)
-  bookmarks_count Int?                 @default(0)
-  is_blueprint    Boolean?             @default(false)
-  blueprint_id    Int?
-  is_route_locked Boolean?             @default(false)
-  mode            String?              @db.VarChar(20) // hike, paddle, bike, sail, drive, mixed
-  vessel_name     String?              @db.VarChar(100)
-  vessel_type     String?              @db.VarChar(20) // monohull, catamaran, trimaran, other
-  vessel_length_m Float?
-  vessel_draft_m  Float?
-  vessel_crew_size Int?
-  adoptions_count Int?                 @default(0)
-  average_rating  Float?
-  ratings_count   Int?                 @default(0)
-  waypoints       ExpeditionWaypoint[] @relation("expedition_waypoints")
-  entries         Entry[]
-  bookmarks       ExpeditionBookmark[] @relation("expedition_bookmarks")
-  notes           ExpeditionNote[]     @relation("expedition_notes")
-  voice_notes     ExpeditionVoiceNote[] @relation("expedition_voice_notes")
-  author          Explorer             @relation(fields: [author_id], references: [id], onDelete: Cascade)
-  flags           Flag[]               @relation("expedition_flags")
-  source_blueprint Expedition?         @relation("blueprint_adoptions", fields: [blueprint_id], references: [id], onDelete: SetNull)
-  adoptions       Expedition[]         @relation("blueprint_adoptions")
-  reviews         BlueprintReview[]    @relation("blueprint_reviews")
+  id                          Int                   @id @default(autoincrement())
+  public_id                   String                @unique @db.VarChar(14)
+  slug                        String?               @unique @db.VarChar(120)
+  title                       String                @db.VarChar(100)
+  description                 String?               @db.VarChar(500)
+  public                      Boolean?              @default(true)
+  visibility                  String?               @default("public") @db.VarChar(10) // 'public', 'off-grid', 'private'
+  author_id                   Int
+  created_at                  DateTime?             @default(now())
+  updated_at                  DateTime?             @updatedAt
+  deleted_at                  DateTime?
+  cancelled_at                DateTime?
+  cancellation_reason         String?               @db.VarChar(500)
+  delayed_at                  DateTime?
+  original_start_date         DateTime?
+  status                      String?               @default("planned") @db.VarChar(20) // draft, planned, active, completed, cancelled
+  start_date                  DateTime?
+  end_date                    DateTime?
+  cover_image                 String?               @db.VarChar(250)
+  category                    String?               @db.VarChar(50) // hiking, cycling, sailing, etc.
+  region                      String?               @db.VarChar(100) // Geographic region, e.g. "Pacific Northwest", "Alps"
+  location_name               String?               @db.VarChar(200) // Human-readable location, e.g. "Yosemite Valley, California, USA"
+  country_code                String?               @db.VarChar(2) // ISO 3166-1 alpha-2 country code
+  country_name                String?               @db.VarChar(100) // Full country name
+  state_province              String?               @db.VarChar(100) // Admin level 1 (state/province/region)
+  tags                        String? // JSON array of tags, e.g. ["wilderness", "solo", "winter"]
+  is_round_trip               Boolean?              @default(false) // Route returns to starting point
+  route_mode                  String?               @db.VarChar(20) // straight, walking, cycling, driving, mixed
+  route_geometry              String?               @db.Text // JSON-encoded [[lng,lat],...] from Mapbox Directions API
+  route_leg_modes             String?               @db.Text // JSON-encoded per-leg route modes for mixed routes
+  route_distance_km           Float? // Total route distance in km (stored by expedition builder)
+  elevation_min_m             Float? // Lowest elevation on route in meters
+  elevation_max_m             Float? // Highest elevation on route in meters
+  elevation_gain_m            Float? // Total cumulative ascent in meters
+  estimated_duration_h        Float? // Estimated route duration in hours
+  route_obstacles             String?               @db.Text // JSON-encoded waterway obstacles [{lat,lon,type,name}]
+  route_export_allowed        Boolean?              @default(true) // Whether non-owners (viewers, adopters) can download the route as GPX
+  current_location_type       String?               @db.VarChar(15) // 'waypoint' | 'entry' | 'live_track'
+  current_location_id         String?               @db.VarChar(30) // waypoint ID, entry public_id, or TrackPoint id
+  current_location_visibility String?               @default("public") @db.VarChar(10) // pin visibility: 'public', 'sponsors', or 'private'
+  live_track_visibility       String?               @default("private") @db.VarChar(10) // polyline visibility — independent from pin; defaults private
+  planned_polyline            Json? // GeoJSON LineString; Phase 2 populates from route-import.util.ts
+  snap_radius_m               Int?                  @default(300) // meters; Phase 2 uses for auto-snap to waypoints
+  goal                        Int?                  @default(0) // funding goal in cents
+  raised                      Int?                  @default(0) // amount raised in cents
+  notes_access_threshold      Int?                  @default(0) // minimum cumulative sponsorship (cents) for Expedition Notes access
+  notes_visibility            String?               @default("public") @db.VarChar(10) // "public" or "sponsor"
+  early_access_enabled        Boolean?              @default(false) // Enable early entry access for qualifying sponsors
+  sponsors_count              Int?                  @default(0)
+  entries_count               Int?                  @default(0)
+  bookmarks_count             Int?                  @default(0)
+  is_blueprint                Boolean?              @default(false)
+  blueprint_id                Int?
+  is_route_locked             Boolean?              @default(false)
+  mode                        String?               @db.VarChar(20) // hike, paddle, bike, sail, drive, mixed
+  vessel_name                 String?               @db.VarChar(100)
+  vessel_type                 String?               @db.VarChar(20) // monohull, catamaran, trimaran, other
+  vessel_length_m             Float?
+  vessel_draft_m              Float?
+  vessel_crew_size            Int?
+  adoptions_count             Int?                  @default(0)
+  average_rating              Float?
+  ratings_count               Int?                  @default(0)
+  waypoints                   ExpeditionWaypoint[]  @relation("expedition_waypoints")
+  entries                     Entry[]
+  bookmarks                   ExpeditionBookmark[]  @relation("expedition_bookmarks")
+  notes                       ExpeditionNote[]      @relation("expedition_notes")
+  voice_notes                 ExpeditionVoiceNote[] @relation("expedition_voice_notes")
+  tracks                      Track[]
+  author                      Explorer              @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  flags                       Flag[]                @relation("expedition_flags")
+  source_blueprint            Expedition?           @relation("blueprint_adoptions", fields: [blueprint_id], references: [id], onDelete: SetNull)
+  adoptions                   Expedition[]          @relation("blueprint_adoptions")
+  reviews                     BlueprintReview[]     @relation("blueprint_reviews")
 
   @@index([public_id])
   @@index([author_id])
@@ -474,29 +478,29 @@ model Expedition {
 }
 
 model ExpeditionNote {
-  id             Int                    @id @default(autoincrement())
-  expedition_id  Int
-  author_id      Int
-  text           String                 @db.VarChar(500)
-  created_at     DateTime?              @default(now())
-  deleted_at     DateTime?
-  expedition     Expedition             @relation("expedition_notes", fields: [expedition_id], references: [id], onDelete: Cascade)
-  author         Explorer               @relation("explorer_expedition_notes", fields: [author_id], references: [id], onDelete: Cascade)
-  replies        ExpeditionNoteReply[]  @relation("note_replies")
+  id            Int                   @id @default(autoincrement())
+  expedition_id Int
+  author_id     Int
+  text          String                @db.VarChar(500)
+  created_at    DateTime?             @default(now())
+  deleted_at    DateTime?
+  expedition    Expedition            @relation("expedition_notes", fields: [expedition_id], references: [id], onDelete: Cascade)
+  author        Explorer              @relation("explorer_expedition_notes", fields: [author_id], references: [id], onDelete: Cascade)
+  replies       ExpeditionNoteReply[] @relation("note_replies")
 
   @@index([expedition_id])
   @@map("expedition_notes")
 }
 
 model ExpeditionVoiceNote {
-  id               Int       @id @default(autoincrement())
-  public_id        String    @unique @default(cuid())
+  id               Int        @id @default(autoincrement())
+  public_id        String     @unique @default(cuid())
   expedition_id    Int
   author_id        Int
   audio_url        String
   duration_seconds Int
-  caption          String?   @db.VarChar(200)
-  created_at       DateTime  @default(now())
+  caption          String?    @db.VarChar(200)
+  created_at       DateTime   @default(now())
   expedition       Expedition @relation("expedition_voice_notes", fields: [expedition_id], references: [id], onDelete: Cascade)
   author           Explorer   @relation("explorer_voice_notes", fields: [author_id], references: [id], onDelete: Cascade)
 
@@ -509,7 +513,7 @@ model BlueprintReview {
   public_id    String     @unique @db.VarChar(14)
   blueprint_id Int
   explorer_id  Int        @map("user_id")
-  rating       Int        // 1-5
+  rating       Int // 1-5
   text         String?    @db.VarChar(2000)
   created_at   DateTime   @default(now())
   updated_at   DateTime   @updatedAt
@@ -524,14 +528,14 @@ model BlueprintReview {
 }
 
 model ExpeditionNoteReply {
-  id          Int            @id @default(autoincrement())
-  note_id     Int
-  author_id   Int
-  text        String         @db.VarChar(500)
-  created_at  DateTime?      @default(now())
-  deleted_at  DateTime?
-  note        ExpeditionNote @relation("note_replies", fields: [note_id], references: [id], onDelete: Cascade)
-  author      Explorer       @relation("explorer_expedition_note_replies", fields: [author_id], references: [id], onDelete: Cascade)
+  id         Int            @id @default(autoincrement())
+  note_id    Int
+  author_id  Int
+  text       String         @db.VarChar(500)
+  created_at DateTime?      @default(now())
+  deleted_at DateTime?
+  note       ExpeditionNote @relation("note_replies", fields: [note_id], references: [id], onDelete: Cascade)
+  author     Explorer       @relation("explorer_expedition_note_replies", fields: [author_id], references: [id], onDelete: Cascade)
 
   @@map("expedition_note_replies")
 }
@@ -764,14 +768,14 @@ model ExplorerNotification {
 }
 
 model DeviceToken {
-  id           Int       @id @default(autoincrement())
-  explorer_id  Int       @map("user_id")
-  token        String    @db.VarChar(200)
-  platform     String    @db.VarChar(10) // ios, android
-  active       Boolean   @default(true)
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
-  explorer     Explorer  @relation(fields: [explorer_id], references: [id], onDelete: Cascade)
+  id          Int      @id @default(autoincrement())
+  explorer_id Int      @map("user_id")
+  token       String   @db.VarChar(200)
+  platform    String   @db.VarChar(10) // ios, android
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  explorer    Explorer @relation(fields: [explorer_id], references: [id], onDelete: Cascade)
 
   @@unique([explorer_id, token])
   @@index([explorer_id])
@@ -843,11 +847,57 @@ enum CheckoutStatus {
 
 // Track processed Stripe webhook events to prevent duplicate processing
 model ProcessedWebhookEvent {
-  id             Int      @id @default(autoincrement())
-  stripe_event_id String  @unique @db.VarChar(100)
-  event_type     String   @db.VarChar(100)
-  processed_at   DateTime @default(now())
+  id              Int      @id @default(autoincrement())
+  stripe_event_id String   @unique @db.VarChar(100)
+  event_type      String   @db.VarChar(100)
+  processed_at    DateTime @default(now())
 
   @@index([stripe_event_id])
   @@map("processed_webhook_events")
+}
+
+// Live tracking session. One row per start-to-stop interval. The expedition's
+// current_location may point at the latest TrackPoint of an active Track
+// (current_location_type = 'live_track'). When the track ends, the pin stays
+// frozen at the final point until manually re-pinned.
+model Track {
+  id                Int       @id @default(autoincrement())
+  expedition_id     Int
+  source            String    @db.VarChar(20) // 'mobile' in Phase 1; 'spot' | 'inreach' in V2
+  source_device_id  String?   @db.VarChar(60) // phone install UUID, tracker IMEI, etc.
+  started_at        DateTime  @default(now())
+  ended_at          DateTime? // null while active
+  last_heartbeat_at DateTime? // separate from latest point's recorded_at — used to detect "tracking is on but stationary"
+  created_at        DateTime? @default(now())
+  updated_at        DateTime? @updatedAt
+  deleted_at        DateTime?
+
+  expedition Expedition   @relation(fields: [expedition_id], references: [id], onDelete: Cascade)
+  points     TrackPoint[]
+
+  @@index([expedition_id, ended_at])
+  @@index([source_device_id, ended_at])
+  @@map("tracks")
+}
+
+// Individual GPS ping. BigInt id because volume is high (~1/min for long
+// expeditions). Unique partial index on (track_id, client_uuid) is created
+// by the migration SQL — Prisma can't express WHERE clauses on @@unique.
+model TrackPoint {
+  id          BigInt   @id @default(autoincrement())
+  track_id    Int
+  recorded_at DateTime // device clock at sample time
+  received_at DateTime @default(now()) // server clock at ingest
+  lat         Float
+  lon         Float
+  accuracy_m  Float?
+  speed_mps   Float?
+  altitude_m  Float?
+  battery_pct Int?
+  client_uuid String?  @db.VarChar(40) // idempotency key for offline-buffer batch retries
+
+  track Track @relation(fields: [track_id], references: [id], onDelete: Cascade)
+
+  @@index([track_id, recorded_at])
+  @@map("track_points")
 }

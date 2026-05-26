@@ -29,6 +29,7 @@ import { RoutingModule } from '@/modules/routing';
 import { SearchModule } from '@/modules/search';
 import { SponsorModule } from '@/modules/sponsor';
 import { StripeModule } from '@/modules/stripe';
+import { TrackModule } from '@/modules/track';
 import { UploadModule } from '@/modules/upload';
 import { WeatherModule } from '@/modules/weather';
 
@@ -82,6 +83,7 @@ import { AppService } from './app.service';
     ExpeditionModule,
     ExpeditionNoteModule,
     ExpeditionVoiceNoteModule,
+    TrackModule,
     NotificationModule,
     SearchModule,
     RecaptchaModule,

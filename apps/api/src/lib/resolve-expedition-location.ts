@@ -28,6 +28,7 @@ export async function resolveExpeditionLocations(
   // Group by type
   const waypointIds: number[] = [];
   const entryPublicIds: string[] = [];
+  const trackPointIds: bigint[] = [];
 
   for (const ref of references) {
     if (ref.type === 'waypoint') {
@@ -35,6 +36,14 @@ export async function resolveExpeditionLocations(
       if (!isNaN(parsed)) waypointIds.push(parsed);
     } else if (ref.type === 'entry') {
       entryPublicIds.push(ref.id);
+    } else if (ref.type === 'live_track') {
+      // BigInt parse defensively — invalid strings (e.g. stale data) just
+      // miss the lookup rather than throw.
+      try {
+        trackPointIds.push(BigInt(ref.id));
+      } catch {
+        /* ignore */
+      }
     }
   }
 
@@ -76,6 +85,22 @@ export async function resolveExpeditionLocations(
           countryCode: entry.country_code || undefined,
         });
       }
+    }
+  }
+
+  // Batch fetch live track points. Name is a placeholder — Phase 1 displays
+  // coordinates rather than a reverse-geocoded label.
+  if (trackPointIds.length > 0) {
+    const points = await prisma.trackPoint.findMany({
+      where: { id: { in: trackPointIds } },
+      select: { id: true, lat: true, lon: true },
+    });
+    for (const p of points) {
+      result.set(`live_track:${p.id}`, {
+        lat: p.lat,
+        lon: p.lon,
+        name: 'Live position',
+      });
     }
   }
 
