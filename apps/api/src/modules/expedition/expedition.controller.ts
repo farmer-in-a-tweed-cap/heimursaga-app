@@ -29,6 +29,7 @@ import {
   ExpeditionCompleteDto,
   ExpeditionCreateDto,
   ExpeditionParamDto,
+  ExpeditionUpdateLiveTrackVisibilityDto,
   ExpeditionUpdateLocationDto,
   ExpeditionWaypointParamDto,
   WaypointCreateDto,
@@ -246,6 +247,20 @@ export class ExpeditionController {
     @Body() body: ExpeditionUpdateLocationDto,
   ) {
     return await this.expeditionService.updateExpeditionLocation({
+      query: { id: param.trip_id },
+      payload: body,
+      session,
+    });
+  }
+
+  @Patch(':trip_id/live-track-visibility')
+  @HttpCode(HttpStatus.OK)
+  async updateLiveTrackVisibility(
+    @Session() session: ISession,
+    @Param() param: ExpeditionParamDto,
+    @Body() body: ExpeditionUpdateLiveTrackVisibilityDto,
+  ) {
+    return await this.expeditionService.updateLiveTrackVisibility({
       query: { id: param.trip_id },
       payload: body,
       session,

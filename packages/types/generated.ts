@@ -1066,9 +1066,10 @@ export interface ITripDetail {
   elevationMaxM?: number;
   elevationGainM?: number;
   estimatedDurationH?: number;
-  currentLocationSource?: 'waypoint' | 'entry';
+  currentLocationSource?: 'waypoint' | 'entry' | 'live_track';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
+  liveTrackVisibility?: 'public' | 'sponsors' | 'private';
   goal?: number;
   raised?: number;
   sponsorsCount?: number;
@@ -1258,9 +1259,10 @@ export interface ITripUpdatePayload {
   vesselLengthM?: number;
   vesselDraftM?: number;
   vesselCrewSize?: number;
-  currentLocationSource?: 'waypoint' | 'entry';
+  currentLocationSource?: 'waypoint' | 'entry' | 'live_track';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
+  liveTrackVisibility?: 'public' | 'sponsors' | 'private';
 }
 
 // search

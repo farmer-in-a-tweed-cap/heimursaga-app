@@ -1,6 +1,6 @@
 import { type Ref } from 'react';
 import Link from 'next/link';
-import { Users, Maximize2, Loader2, Lock, EyeOff, XCircle, ShieldAlert, MapPin } from 'lucide-react';
+import { Users, Maximize2, Loader2, Lock, EyeOff, XCircle, ShieldAlert, MapPin, Globe } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { CoverPhotoFallback } from '@/app/components/CoverPhotoFallback';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
@@ -46,9 +46,33 @@ interface HeroBannerProps {
     lastPointAt: string | null;
     heartbeatAt: string | null;
   } | null;
-  /** Anchor for the "Support" CTA on the badge, e.g. "#sponsor". */
+  /** Anchor for the "Sponsor this expedition" CTA on the badge, e.g. "#sponsor". */
   sponsorHref?: string;
+  /**
+   * Owner-only polyline visibility. Click cycles through public → sponsors
+   * → private. Calls `onLiveTrackVisibilityChange` with the new value; the
+   * parent persists + refetches.
+   */
+  liveTrackVisibility?: 'public' | 'sponsors' | 'private';
+  onLiveTrackVisibilityChange?: (
+    next: 'public' | 'sponsors' | 'private',
+  ) => Promise<void> | void;
 }
+
+const VISIBILITY_CYCLE: Record<
+  'public' | 'sponsors' | 'private',
+  'public' | 'sponsors' | 'private'
+> = {
+  public: 'sponsors',
+  sponsors: 'private',
+  private: 'public',
+};
+
+const VISIBILITY_LABEL: Record<'public' | 'sponsors' | 'private', string> = {
+  public: 'PUBLIC',
+  sponsors: 'SPONSORS',
+  private: 'PRIVATE',
+};
 
 export function HeroBanner({
   expedition,
@@ -78,6 +102,8 @@ export function HeroBanner({
   onAdopt,
   liveTrack,
   sponsorHref,
+  liveTrackVisibility,
+  onLiveTrackVisibilityChange,
 }: HeroBannerProps) {
   return (
     <div
@@ -366,7 +392,7 @@ export function HeroBanner({
               returns timestamp data (active or recently-stopped tracks). */}
           {liveTrack && (liveTrack.lastPointAt || liveTrack.heartbeatAt) && (
             <div
-              className="w-full bg-[#202020]/80 px-6 py-2 flex items-center justify-center pointer-events-auto text-white"
+              className="w-full bg-[#202020]/80 px-6 py-2 flex items-center justify-center gap-3 pointer-events-auto text-white"
               onClick={(e) => e.stopPropagation()}
             >
               <LiveTrackBadge
@@ -375,6 +401,28 @@ export function HeroBanner({
                 isActive={liveTrack.isActive}
                 sponsorHref={sponsorHref}
               />
+              {/* Owner-only polyline visibility cycler. Click to advance:
+                  public → sponsors → private → public. The polyline is
+                  hidden from non-owners when set to 'private' (the
+                  default). */}
+              {isOwner && liveTrackVisibility && onLiveTrackVisibilityChange && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void onLiveTrackVisibilityChange(
+                      VISIBILITY_CYCLE[liveTrackVisibility],
+                    );
+                  }}
+                  title="Click to change track visibility"
+                  className="inline-flex items-center gap-1.5 border border-white/30 px-2 py-0.5 text-[10px] font-bold font-mono uppercase tracking-wider hover:bg-white/10 transition-colors"
+                >
+                  {liveTrackVisibility === 'public' && <Globe className="w-3 h-3" />}
+                  {liveTrackVisibility === 'sponsors' && <Users className="w-3 h-3" />}
+                  {liveTrackVisibility === 'private' && <Lock className="w-3 h-3" />}
+                  <span>Track: {VISIBILITY_LABEL[liveTrackVisibility]}</span>
+                </button>
+              )}
             </div>
           )}
 

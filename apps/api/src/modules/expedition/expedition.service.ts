@@ -997,6 +997,7 @@ export class ExpeditionService {
             current_location_type: true,
             current_location_id: true,
             current_location_visibility: true,
+            live_track_visibility: true,
             goal: true,
             raised: true,
             notes_access_threshold: true,
@@ -1159,6 +1160,7 @@ export class ExpeditionService {
         current_location_type,
         current_location_id,
         current_location_visibility,
+        live_track_visibility,
         goal,
         raised,
         notes_access_threshold,
@@ -1429,7 +1431,14 @@ export class ExpeditionService {
         currentLocationVisibility:
           (current_location_visibility as 'public' | 'sponsors' | 'private') ||
           'public',
-        currentLocationSource: undefined as 'waypoint' | 'entry' | undefined,
+        liveTrackVisibility:
+          (live_track_visibility as 'public' | 'sponsors' | 'private') ||
+          'private',
+        currentLocationSource: undefined as
+          | 'waypoint'
+          | 'entry'
+          | 'live_track'
+          | undefined,
         currentLocationId: undefined as string | undefined,
         goal: integerToDecimal(goal ?? 0),
         raised: oneTimeTotal,
@@ -1742,7 +1751,8 @@ export class ExpeditionService {
 
       if (canSeeLocation) {
         response.currentLocationSource =
-          (current_location_type as 'waypoint' | 'entry') || undefined;
+          (current_location_type as 'waypoint' | 'entry' | 'live_track') ||
+          undefined;
         response.currentLocationId = current_location_id || undefined;
       }
 
@@ -2883,6 +2893,47 @@ export class ExpeditionService {
       });
 
       await this.checkAndUpdateRestingStatus(explorerId);
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async updateLiveTrackVisibility({
+    session,
+    query,
+    payload,
+  }: ISessionQueryWithPayload<
+    { id: string },
+    { visibility: 'public' | 'sponsors' | 'private' }
+  >): Promise<void> {
+    try {
+      const { id } = query;
+      const { explorerId } = session;
+      if (!explorerId) throw new ServiceForbiddenException();
+
+      const { visibility } = payload;
+      if (!['public', 'sponsors', 'private'].includes(visibility)) {
+        throw new ServiceException(
+          'visibility must be "public", "sponsors", or "private"',
+          400,
+        );
+      }
+
+      const expedition = await this.prisma.expedition
+        .findFirstOrThrow({
+          where: { ...idOrSlug(id), author_id: explorerId, deleted_at: null },
+          select: { id: true },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('expedition not found');
+        });
+
+      await this.prisma.expedition.update({
+        where: { id: expedition.id },
+        data: { live_track_visibility: visibility },
+      });
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;

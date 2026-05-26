@@ -467,6 +467,12 @@ export class ExpeditionUpdateLocationDto {
   visibility?: 'public' | 'off-grid' | 'private'; // 'public' | 'sponsors' | 'private'
 }
 
+export class ExpeditionUpdateLiveTrackVisibilityDto {
+  @ApiProperty({ required: true, enum: ['public', 'sponsors', 'private'] })
+  @IsIn(['public', 'sponsors', 'private'])
+  visibility: 'public' | 'sponsors' | 'private';
+}
+
 export class WaypointCreateDto implements IWaypointCreatePayload {
   @ApiProperty({ required: true })
   @IsNumber()

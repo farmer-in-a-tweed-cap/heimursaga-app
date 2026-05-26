@@ -1239,6 +1239,19 @@ export function ExpeditionDetailPage() {
               : null
           }
           sponsorHref={showSponsorshipSection ? '#sponsor' : undefined}
+          liveTrackVisibility={apiExpedition?.liveTrackVisibility}
+          onLiveTrackVisibilityChange={async (next) => {
+            if (!apiExpedition?.id) return;
+            try {
+              await expeditionApi.updateLiveTrackVisibility(apiExpedition.id, next);
+              const refreshed = await expeditionApi.getById(apiExpedition.id);
+              setApiExpedition(refreshed);
+              toast.success(`Track visibility set to ${next}`);
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : 'Failed to update visibility';
+              toast.error(msg);
+            }
+          }}
         />
         {/* Mobile description - shown below banner since banner has limited space */}
         {expedition.description && (

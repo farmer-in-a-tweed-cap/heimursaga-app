@@ -1159,6 +1159,14 @@ export const expeditionApi = {
     api.patch<void>(`/trips/${id}/location`, { source, locationId, visibility }),
 
   /**
+   * Update polyline visibility for live tracking (owner only). Independent
+   * from the pin's current_location_visibility — see project spec
+   * project_tracking_phase1_spec.md decisions #1 and #5.
+   */
+  updateLiveTrackVisibility: (id: string, visibility: 'public' | 'sponsors' | 'private') =>
+    api.patch<void>(`/trips/${id}/live-track-visibility`, { visibility }),
+
+  /**
    * Bookmark/unbookmark an expedition (toggle)
    */
   bookmark: (id: string) =>
