@@ -22,6 +22,8 @@ import { calculateDaysElapsed, formatDate } from '@/app/utils/dateFormat';
 import { truncateExcerpt } from '@/app/utils/truncateExcerpt';
 import { explorerApi, entryApi, expeditionApi, type ExplorerProfile, type ExplorerEntry, type ExplorerExpedition, type ExplorerFollower } from '@/app/services/api';
 import { useExplorerPageData } from '@/app/hooks/queries';
+import { useLiveTrack } from '@/app/hooks/useLiveTrack';
+import { LiveTrackBadge } from '@/app/components/expedition-detail/LiveTrackBadge';
 import { ExplorerProfileSkeleton } from '@/app/components/skeletons/PageSkeletons';
 import { ConfirmationModal } from '@/app/components/ConfirmationModal';
 import { toast } from 'sonner';
@@ -91,6 +93,13 @@ export function ExplorerProfilePage() {
   const expeditions = pageData?.expeditions ?? [];
   const followers = pageData?.followers ?? [];
   const error = queryError ? 'Failed to load profile' : (!loading && !profile ? 'Explorer not found' : null);
+
+  // Live track for the explorer's currently active expedition. Polling is
+  // gated to when an active expedition exists; otherwise the hook is a no-op.
+  const activeExpeditionId = profile?.activeExpeditionLocation?.expeditionId;
+  const { data: profileLiveTrack } = useLiveTrack(activeExpeditionId, {
+    enabled: !!activeExpeditionId,
+  });
 
   // Interaction state (synced from query data, then locally toggled)
   const [bookmarkedEntries, setBookmarkedEntries] = useState<Set<string>>(new Set());
@@ -686,7 +695,7 @@ export function ExplorerProfilePage() {
                         <span className="text-white/60 text-xs md:text-xs uppercase">From:</span>
                         <span className="font-bold truncate">{explorer.fromLocation || 'Unknown'}</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-white/60 text-xs md:text-xs uppercase">Currently:</span>
                         {explorer.onExpedition && explorer.activeExpeditionId && (
                           <Link
@@ -705,6 +714,14 @@ export function ExplorerProfilePage() {
                         {explorer.currentCoordinates && (
                           <span className="text-white/40 text-xs flex-shrink-0">({explorer.currentCoordinates})</span>
                         )}
+                        {profileLiveTrack &&
+                          (profileLiveTrack.lastPointAt || profileLiveTrack.heartbeatAt) && (
+                            <LiveTrackBadge
+                              lastPointAt={profileLiveTrack.lastPointAt}
+                              heartbeatAt={profileLiveTrack.heartbeatAt}
+                              isActive={profileLiveTrack.isActive}
+                            />
+                          )}
                       </div>
                     </>
                   )}
