@@ -128,6 +128,18 @@ export function Footer() {
               width={200}
               height={32}
             />
+            <a
+              href="https://apps.apple.com/us/app/heimursaga/id6760720283"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Download Heimursaga on the App Store"
+              className="inline-flex items-center gap-2 px-4 py-2 border border-[#616161] hover:border-[#ac6d46] text-[#b5bcc4] hover:text-[#ac6d46] transition-colors"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17.564 12.713c-.022-2.296 1.876-3.4 1.962-3.453-1.07-1.564-2.733-1.778-3.327-1.802-1.418-.144-2.767.836-3.487.836-.72 0-1.829-.815-3.005-.792-1.546.023-2.97.898-3.766 2.281-1.605 2.78-.411 6.896 1.155 9.155.764 1.107 1.677 2.351 2.873 2.306 1.151-.046 1.586-.745 2.977-.745 1.39 0 1.781.745 2.998.722 1.236-.022 2.02-1.13 2.776-2.241.875-1.284 1.235-2.526 1.257-2.59-.027-.013-2.41-.926-2.413-3.677zm-2.286-6.755c.636-.77 1.064-1.84.948-2.906-.916.037-2.024.61-2.681 1.378-.59.68-1.105 1.768-.965 2.815 1.022.079 2.062-.518 2.698-1.287z"/>
+              </svg>
+              <span className="text-xs font-mono tracking-wider">DOWNLOAD ON THE APP STORE</span>
+            </a>
             <div className="flex items-center gap-4 mb-3">
               <a href="https://youtube.com/@heimursaga" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="text-[#b5bcc4] hover:text-[#ac6d46] transition-colors">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
