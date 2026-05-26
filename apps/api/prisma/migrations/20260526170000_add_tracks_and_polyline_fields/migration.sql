@@ -5,7 +5,7 @@
 --    type and BigInt TrackPoint ids.
 -- 2) Add Track and TrackPoint tables.
 
-ALTER TABLE "expeditions"
+ALTER TABLE "trips"
   ALTER COLUMN "current_location_type" TYPE VARCHAR(15),
   ALTER COLUMN "current_location_id" TYPE VARCHAR(30),
   ADD COLUMN IF NOT EXISTS "live_track_visibility" VARCHAR(10) DEFAULT 'private',
@@ -25,7 +25,7 @@ CREATE TABLE "tracks" (
   "updated_at"        TIMESTAMP,
   "deleted_at"        TIMESTAMP,
   CONSTRAINT "tracks_expedition_id_fkey"
-    FOREIGN KEY ("expedition_id") REFERENCES "expeditions"("id") ON DELETE CASCADE
+    FOREIGN KEY ("expedition_id") REFERENCES "trips"("id") ON DELETE CASCADE
 );
 CREATE INDEX "tracks_expedition_id_ended_at_idx" ON "tracks" ("expedition_id", "ended_at");
 CREATE INDEX "tracks_source_device_id_ended_at_idx" ON "tracks" ("source_device_id", "ended_at");
