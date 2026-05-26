@@ -47,8 +47,6 @@ interface HeroBannerProps {
     lastPointAt: string | null;
     heartbeatAt: string | null;
   } | null;
-  /** Anchor for the "Sponsor this expedition" CTA on the badge, e.g. "#sponsor". */
-  sponsorHref?: string;
   /**
    * Owner-only polyline visibility. Click cycles through public → sponsors
    * → private. Calls `onLiveTrackVisibilityChange` with the new value; the
@@ -107,7 +105,6 @@ export function HeroBanner({
   onReport,
   onAdopt,
   liveTrack,
-  sponsorHref,
   liveTrackVisibility,
   onLiveTrackVisibilityChange,
   onStopTrack,
@@ -396,17 +393,18 @@ export function HeroBanner({
           )}
 
           {/* Live tracking freshness — rendered when the live-track hook
-              returns timestamp data (active or recently-stopped tracks). */}
+              returns timestamp data. Matches the current-location bar
+              styling above (same blue, same padding, same gap) so the
+              two bars read as a single block of status. */}
           {liveTrack && (liveTrack.lastPointAt || liveTrack.heartbeatAt) && (
             <div
-              className="w-full bg-[#202020]/80 px-6 py-2 flex items-center justify-center gap-3 pointer-events-auto text-white"
+              className="w-full bg-[#4676ac] px-6 py-3 flex items-center justify-center gap-4 pointer-events-auto text-white"
               onClick={(e) => e.stopPropagation()}
             >
               <LiveTrackBadge
                 lastPointAt={liveTrack.lastPointAt}
                 heartbeatAt={liveTrack.heartbeatAt}
                 isActive={liveTrack.isActive}
-                sponsorHref={sponsorHref}
               />
               {/* Owner-only polyline visibility cycler. Click to advance:
                   public → sponsors → private → public. The polyline is
@@ -422,12 +420,12 @@ export function HeroBanner({
                     );
                   }}
                   title="Click to change track visibility"
-                  className="inline-flex items-center gap-1.5 border border-white/30 px-2 py-0.5 text-[10px] font-bold font-mono uppercase tracking-wider hover:bg-white/10 transition-colors"
+                  className="inline-flex items-center gap-1.5 border border-white/40 px-3 py-1 text-xs font-bold font-mono uppercase tracking-wide hover:bg-white/15 transition-colors"
                 >
-                  {liveTrackVisibility === 'public' && <Globe className="w-3 h-3" />}
-                  {liveTrackVisibility === 'sponsors' && <Users className="w-3 h-3" />}
-                  {liveTrackVisibility === 'private' && <Lock className="w-3 h-3" />}
-                  <span>Track: {VISIBILITY_LABEL[liveTrackVisibility]}</span>
+                  {liveTrackVisibility === 'public' && <Globe className="w-3.5 h-3.5" />}
+                  {liveTrackVisibility === 'sponsors' && <Users className="w-3.5 h-3.5" />}
+                  {liveTrackVisibility === 'private' && <Lock className="w-3.5 h-3.5" />}
+                  <span>Visibility: {VISIBILITY_LABEL[liveTrackVisibility]}</span>
                 </button>
               )}
               {/* Owner-only stop control. Tracks started from mobile can be
@@ -447,9 +445,9 @@ export function HeroBanner({
                     void onStopTrack();
                   }}
                   title="Stop tracking. The last position remains as your pin."
-                  className="inline-flex items-center gap-1.5 bg-[#994040] px-2 py-0.5 text-white text-[10px] font-bold font-mono uppercase tracking-wider hover:bg-[#7a3232] transition-colors"
+                  className="inline-flex items-center gap-1.5 bg-[#994040] px-3 py-1 text-white text-xs font-bold font-mono uppercase tracking-wide hover:bg-[#7a3232] transition-colors"
                 >
-                  <XCircle className="w-3 h-3" />
+                  <XCircle className="w-3.5 h-3.5" />
                   <span>Stop tracking</span>
                 </button>
               )}

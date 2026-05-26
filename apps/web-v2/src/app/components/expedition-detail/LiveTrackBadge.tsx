@@ -8,12 +8,6 @@ interface LiveTrackBadgeProps {
   lastPointAt: string | null;
   heartbeatAt: string | null;
   isActive: boolean;
-  /**
-   * When provided and the track is active, render a small "Support" CTA
-   * linking to the expedition's sponsorship surface. Anchor URL — caller
-   * decides scrollIntoView target vs. dedicated route.
-   */
-  sponsorHref?: string;
   className?: string;
 }
 
@@ -28,7 +22,6 @@ export function LiveTrackBadge({
   lastPointAt,
   heartbeatAt,
   isActive,
-  sponsorHref,
   className,
 }: LiveTrackBadgeProps) {
   const liveAt = useMemo(() => {
@@ -59,14 +52,6 @@ export function LiveTrackBadge({
       <span className="font-mono uppercase tracking-wider">
         {isActive ? `Live · ${relative} ago` : `Last tracked ${relative} ago`}
       </span>
-      {isActive && sponsorHref && (
-        <a
-          href={sponsorHref}
-          className="ml-1 inline-flex items-center rounded-sm bg-[#ac6d46] px-2 py-0.5 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-[#955a37] transition-colors"
-        >
-          Sponsor this expedition
-        </a>
-      )}
     </div>
   );
 }

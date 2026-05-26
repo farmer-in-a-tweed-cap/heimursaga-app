@@ -179,6 +179,7 @@ export function ExpeditionDetailPage() {
     mapReady: bannerMapReady,
     polyline: liveTrack?.polyline ?? null,
   });
+
   const [pendingFlyTo, setPendingFlyTo] = useState<{ lat: number; lng: number } | null>(null);
   const [embedCopied, setEmbedCopied] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -187,6 +188,7 @@ export function ExpeditionDetailPage() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const obstacleMarkersRef = useRef<mapboxgl.Marker[]>([]);
+
 
   // Handler for waypoint click - open modal and fly to waypoint
   const handleWaypointClick = (coords: { lat: number; lng: number }) => {
@@ -1155,6 +1157,16 @@ export function ExpeditionDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modalMapReady, theme, mapLayer, nauticalOverlay, waypoints, journalEntries, apiExpedition]);
 
+  // Live-track overlay on the modal map. Declared AFTER the modal-map-init
+  // useEffect so this effect runs after the map instance is assigned to
+  // mapRef.current. The hook handles the "not yet loaded" case via a
+  // one-shot 'load' listener.
+  useLiveTrackMapLayer({
+    mapRef,
+    mapReady: modalMapReady,
+    polyline: liveTrack?.polyline ?? null,
+  });
+
   // Handle pendingFlyTo when modal is already open (clicking different waypoints)
   useEffect(() => {
     if (isMapModalOpen && pendingFlyTo && mapRef.current) {
@@ -1239,7 +1251,6 @@ export function ExpeditionDetailPage() {
                 }
               : null
           }
-          sponsorHref={showSponsorshipSection ? '#sponsor' : undefined}
           liveTrackVisibility={apiExpedition?.liveTrackVisibility}
           onLiveTrackVisibilityChange={async (next) => {
             if (!apiExpedition?.id) return;
