@@ -31,8 +31,10 @@ interface LocationMapProps {
   expeditionEntries?: Array<{ id?: string; lat: number; lng: number; title: string }>;
   expeditionRouteGeometry?: number[][];
   isRoundTrip?: boolean;
-  // Completed route overlay
-  currentLocationSource?: 'waypoint' | 'entry';
+  // Completed route overlay. 'live_track' is accepted on the prop type but
+  // does not highlight any pin — only waypoint/entry markers are drawable
+  // here. The picker UI handles 'live_track' separately.
+  currentLocationSource?: 'waypoint' | 'entry' | 'live_track';
   currentLocationId?: string;
   // Fires when marker is placed/moved — true if on completed segment
   onCompletedSegmentDrop?: (isOnCompletedSegment: boolean) => void;

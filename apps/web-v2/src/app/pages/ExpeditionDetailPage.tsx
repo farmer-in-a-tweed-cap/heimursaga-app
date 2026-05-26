@@ -35,6 +35,8 @@ import { useExpeditionSponsors } from '@/app/hooks/useExpeditionSponsors';
 import { useWeatherConditions } from '@/app/hooks/useWeatherConditions';
 import { useExpeditionNotes } from '@/app/hooks/useExpeditionNotes';
 import { useDebriefMode } from '@/app/hooks/useDebriefMode';
+import { useLiveTrack } from '@/app/hooks/useLiveTrack';
+import { useLiveTrackMapLayer } from '@/app/hooks/useLiveTrackMapLayer';
 import type { JournalEntryType } from '@/app/components/expedition-detail/types';
 
 // Mapbox configuration - token loaded from environment variable
@@ -91,6 +93,18 @@ export function ExpeditionDetailPage() {
     setIsOwnContent(isOwner);
     return () => setIsOwnContent(false);
   }, [isOwner, setIsOwnContent]);
+
+  // Live tracking — poll the latest track for any expedition that is active
+  // or has ever been tracked. Disabled for blueprints / completed-without-
+  // tracking to avoid pointless polling.
+  const liveTrackEnabled = !!(
+    apiExpedition &&
+    (apiExpedition.status === 'active' ||
+      apiExpedition.currentLocationSource === 'live_track')
+  );
+  const { data: liveTrack } = useLiveTrack(expeditionId, {
+    enabled: liveTrackEnabled,
+  });
 
   // Adopt blueprint handler
   const handleAdoptBlueprint = async () => {
@@ -154,8 +168,17 @@ export function ExpeditionDetailPage() {
   // Map & modal state
   const bannerMapContainerRef = useRef<HTMLDivElement | null>(null);
   const bannerMapRef = useRef<mapboxgl.Map | null>(null);
+  const [bannerMapReady, setBannerMapReady] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [modalMapReady, setModalMapReady] = useState(false);
+
+  // Render the live track polyline + head dot on the banner map. No-op
+  // until both the map's load event has fired and a polyline is available.
+  useLiveTrackMapLayer({
+    mapRef: bannerMapRef,
+    mapReady: bannerMapReady,
+    polyline: liveTrack?.polyline ?? null,
+  });
   const [pendingFlyTo, setPendingFlyTo] = useState<{ lat: number; lng: number } | null>(null);
   const [embedCopied, setEmbedCopied] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -614,9 +637,14 @@ export function ExpeditionDetailPage() {
         const bounds = allCoords.reduce((b, coord) => b.extend(coord), new mapboxgl.LngLatBounds(allCoords[0], allCoords[0]));
         map.fitBounds(bounds, { padding: 80, maxZoom: 14, duration: 0 });
       }
+
+      // Map fully initialized — signal downstream hooks (useLiveTrackMapLayer)
+      // that they can safely add their own sources/layers.
+      setBannerMapReady(true);
     });
 
     return () => {
+      setBannerMapReady(false);
       map.remove();
       bannerMapRef.current = null;
     };
@@ -1201,6 +1229,16 @@ export function ExpeditionDetailPage() {
           explorerProfile={explorerProfile}
           onReport={() => setReportOpen(true)}
           onAdopt={apiExpedition?.isBlueprint ? handleAdoptBlueprint : undefined}
+          liveTrack={
+            liveTrack && (liveTrack.lastPointAt || liveTrack.heartbeatAt)
+              ? {
+                  isActive: liveTrack.isActive,
+                  lastPointAt: liveTrack.lastPointAt,
+                  heartbeatAt: liveTrack.heartbeatAt,
+                }
+              : null
+          }
+          sponsorHref={showSponsorshipSection ? '#sponsor' : undefined}
         />
         {/* Mobile description - shown below banner since banner has limited space */}
         {expedition.description && (
@@ -1318,7 +1356,14 @@ export function ExpeditionDetailPage() {
         expeditionTitle={expedition.title}
         waypoints={waypoints}
         journalEntries={journalEntries}
-        currentLocationSource={expedition.currentLocationSource}
+        // Modal only picks between waypoint and entry. If the source is
+        // currently 'live_track', let the modal default to its own fallback
+        // — a save from here will implicit-stop the active track server-side.
+        currentLocationSource={
+          expedition.currentLocationSource === 'live_track'
+            ? undefined
+            : expedition.currentLocationSource
+        }
         currentLocationId={expedition.currentLocationId}
         currentLocationVisibility={expedition.currentLocationVisibility as 'public' | 'sponsors' | 'private' | undefined}
         expeditionStatus={expedition.status as 'active' | 'planned' | 'completed'}

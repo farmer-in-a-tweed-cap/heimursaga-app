@@ -952,9 +952,11 @@ export interface Expedition {
   elevationGainM?: number;
   estimatedDurationH?: number;
   totalDistanceKm?: number;
-  currentLocationSource?: 'waypoint' | 'entry';
+  currentLocationSource?: 'waypoint' | 'entry' | 'live_track';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
+  /** Polyline visibility — distinct from pin visibility. Defaults to 'private'. */
+  liveTrackVisibility?: 'public' | 'sponsors' | 'private';
   explorer?: {
     username: string;
     name?: string;
@@ -1366,6 +1368,84 @@ export const voiceNoteApi = {
 
   delete: (expeditionId: string, noteId: string) =>
     api.delete<void>(`/trips/${expeditionId}/voice-notes/${noteId}`),
+};
+
+// Live tracking types
+export interface TrackPolyline {
+  type: 'LineString';
+  coordinates: [number, number][]; // [lng, lat][]
+}
+
+export interface CurrentTrackResponse {
+  trackId: number | null;
+  polyline: TrackPolyline | null;
+  isActive: boolean;
+  lastPointAt: string | null;
+  heartbeatAt: string | null;
+  startedAt: string | null;
+  endedAt: string | null;
+}
+
+export interface TrackStartResponse {
+  trackId: number;
+  startedAt: string;
+}
+
+export interface TrackAppendResponse {
+  accepted: number;
+  rejected: number;
+  trackEnded: boolean;
+}
+
+export interface TrackPointInput {
+  recordedAt: string;
+  lat: number;
+  lon: number;
+  accuracyM?: number;
+  speedMps?: number;
+  altitudeM?: number;
+  batteryPct?: number;
+  clientUuid?: string;
+}
+
+// Live tracking API endpoints
+export const trackApi = {
+  /**
+   * Start a tracking session on an expedition (owner only). Returns 409 if
+   * the user already has an active track on any expedition.
+   */
+  start: (expeditionId: string, source: 'mobile' = 'mobile', sourceDeviceId?: string) =>
+    api.post<TrackStartResponse>(`/trips/${expeditionId}/tracks`, { source, sourceDeviceId }),
+
+  /**
+   * Append a batch of GPS points to an active track (owner only).
+   */
+  appendPoints: (expeditionId: string, trackId: number, points: TrackPointInput[]) =>
+    api.post<TrackAppendResponse>(`/trips/${expeditionId}/tracks/${trackId}/points`, { points }),
+
+  /**
+   * Heartbeat keep-alive — call every ~15 min while tracking is on but
+   * stationary, so the freshness badge doesn't claim "stale" inaccurately.
+   */
+  heartbeat: (expeditionId: string, trackId: number) =>
+    api.post<{ ok: true }>(`/trips/${expeditionId}/tracks/${trackId}/heartbeat`),
+
+  /**
+   * Stop an active track (owner only). Pin remains frozen at the final
+   * point per the Phase 1 spec.
+   */
+  stop: (expeditionId: string, trackId: number) =>
+    api.post<{ ok: true }>(`/trips/${expeditionId}/tracks/${trackId}/stop`),
+
+  /**
+   * Get the current track for an expedition. Public; visibility-gated by
+   * the expedition's live_track_visibility setting. Non-owners receive
+   * polyline points only within the expedition's active date window.
+   */
+  getCurrent: (expeditionId: string, maxPoints?: number) =>
+    api.get<CurrentTrackResponse>(
+      `/trips/${expeditionId}/tracks/current${maxPoints ? `?maxPoints=${maxPoints}` : ''}`,
+    ),
 };
 
 // Upload audio

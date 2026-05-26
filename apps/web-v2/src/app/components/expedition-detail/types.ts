@@ -64,7 +64,7 @@ export type TransformedExpedition = {
   startDate: string;
   estimatedEndDate: string;
   daysActive: number;
-  currentLocationSource?: 'waypoint' | 'entry';
+  currentLocationSource?: 'waypoint' | 'entry' | 'live_track';
   currentLocationId?: string;
   currentLocationVisibility: string;
   goal: number;

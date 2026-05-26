@@ -2065,9 +2065,13 @@ export function ExpeditionBuilderPage() {
           }
         }
 
-        // Restore current location selection
-        if (expedition.currentLocationSource) {
-          setCurrentLocationSource(expedition.currentLocationSource);
+        // Restore current location selection. 'live_track' isn't a pickable
+        // builder source (only waypoint/entry are) — fall through to default
+        // so the picker shows waypoint. If the user changes location here,
+        // the active track is implicit-stopped on save (server-side).
+        const src = expedition.currentLocationSource;
+        if (src === 'waypoint' || src === 'entry') {
+          setCurrentLocationSource(src);
         }
         if (expedition.currentLocationId) {
           setCurrentLocationId(expedition.currentLocationId);

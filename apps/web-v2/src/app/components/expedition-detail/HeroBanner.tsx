@@ -4,6 +4,7 @@ import { Users, Maximize2, Loader2, Lock, EyeOff, XCircle, ShieldAlert, MapPin }
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { CoverPhotoFallback } from '@/app/components/CoverPhotoFallback';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
+import { LiveTrackBadge } from '@/app/components/expedition-detail/LiveTrackBadge';
 import { ShareButton } from '@/app/components/ShareButton';
 import type { TransformedExpedition, CurrentLocationData } from '@/app/components/expedition-detail/types';
 import type { Expedition, ExplorerProfile } from '@/app/services/api';
@@ -34,6 +35,19 @@ interface HeroBannerProps {
   explorerProfile: ExplorerProfile | null;
   onReport?: () => void;
   onAdopt?: () => void;
+  /**
+   * Live tracking state. When present and a timestamp is available, renders
+   * a "Live · 14 min ago" freshness badge below the current-location bar.
+   * The hook that produces this (useLiveTrack) is gated to active or
+   * previously-tracked expeditions so the prop is null in most cases.
+   */
+  liveTrack?: {
+    isActive: boolean;
+    lastPointAt: string | null;
+    heartbeatAt: string | null;
+  } | null;
+  /** Anchor for the "Support" CTA on the badge, e.g. "#sponsor". */
+  sponsorHref?: string;
 }
 
 export function HeroBanner({
@@ -62,6 +76,8 @@ export function HeroBanner({
   explorerProfile,
   onReport,
   onAdopt,
+  liveTrack,
+  sponsorHref,
 }: HeroBannerProps) {
   return (
     <div
@@ -344,6 +360,22 @@ export function HeroBanner({
                 </div>
               )}
             </button>
+          )}
+
+          {/* Live tracking freshness — rendered when the live-track hook
+              returns timestamp data (active or recently-stopped tracks). */}
+          {liveTrack && (liveTrack.lastPointAt || liveTrack.heartbeatAt) && (
+            <div
+              className="w-full bg-[#202020]/80 px-6 py-2 flex items-center justify-center pointer-events-auto text-white"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <LiveTrackBadge
+                lastPointAt={liveTrack.lastPointAt}
+                heartbeatAt={liveTrack.heartbeatAt}
+                isActive={liveTrack.isActive}
+                sponsorHref={sponsorHref}
+              />
+            </div>
           )}
 
           {/* Action Bar - Always visible */}
