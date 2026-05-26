@@ -217,12 +217,37 @@ function SectionHeader({ label, count }: { label: string; count?: number }) {
   );
 }
 
+/**
+ * Pull birthDate/deathDate out of the bios.ts `lifespan` string when the
+ * shape is unambiguously a single life range. Returns nothing for duos
+ * (Burton/Speke style "1821–1890 · 1827–1864") or for entries where the
+ * date range describes an expedition rather than a lifespan (Lewis & Clark:
+ * "1804–1806 (Corps of Discovery)"). Approximate dates ("c. 1254–1324")
+ * are emitted as year-only ISO strings — schema.org accepts YYYY.
+ */
+function parseLifespan(lifespan?: string): { birthDate?: string; deathDate?: string } {
+  if (!lifespan) return {};
+  if (lifespan.includes('·')) return {};
+  if (lifespan.includes('(')) return {};
+  const match = lifespan.match(/^(?:c\.?\s*)?(\d{3,4})\s*[–-]\s*(?:c\.?\s*)?(\d{3,4})$/);
+  if (!match) return {};
+  return { birthDate: match[1], deathDate: match[2] };
+}
+
+function stripQuotes(s: string): string {
+  return s.replace(/[“”‘’""'']/g, '').trim();
+}
+
 function buildJsonLd(
   bio: ExplorerBio,
   expeditions: IHistoricalArchiveExpedition[],
   pageUrl: string,
 ): object {
   const personId = `${pageUrl}#person`;
+  const sourceLicense =
+    bio.source === 'britannica-11'
+      ? 'https://creativecommons.org/publicdomain/mark/1.0/'
+      : 'https://creativecommons.org/licenses/by-sa/4.0/';
   return {
     '@context': 'https://schema.org',
     '@graph': [
@@ -241,7 +266,18 @@ function buildJsonLd(
         name: bio.shortName,
         description: bio.knownFor,
         url: pageUrl,
-        sameAs: bio.source === 'wikipedia' ? [bio.sourceUrl] : undefined,
+        ...parseLifespan(bio.lifespan),
+        sameAs: [bio.sourceUrl],
+        subjectOf: {
+          '@type': 'Article',
+          name: stripQuotes(bio.sourceTitle),
+          url: bio.sourceUrl,
+          isPartOf: {
+            '@type': 'CreativeWork',
+            name: citationLabelFor(bio.source),
+          },
+          license: sourceLicense,
+        },
       },
       {
         '@type': 'ItemList',

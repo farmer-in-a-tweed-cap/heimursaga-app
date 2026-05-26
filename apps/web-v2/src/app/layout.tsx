@@ -114,10 +114,24 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify({
             '@context': 'https://schema.org',
-            '@type': 'WebSite',
-            name: 'Heimursaga',
-            url: 'https://heimursaga.com',
-            description: 'Global expedition documentation and sponsorship platform',
+            '@graph': [
+              {
+                '@type': 'WebSite',
+                '@id': 'https://heimursaga.com/#website',
+                url: 'https://heimursaga.com',
+                name: 'Heimursaga',
+                description: 'Global expedition documentation and sponsorship platform',
+                inLanguage: 'en',
+                publisher: { '@id': 'https://heimursaga.com/#organization' },
+              },
+              {
+                '@type': 'Organization',
+                '@id': 'https://heimursaga.com/#organization',
+                name: 'Heimursaga',
+                url: 'https://heimursaga.com',
+                logo: 'https://heimursaga.com/logo-lg-light.svg',
+              },
+            ],
           }) }}
         />
       </head>
