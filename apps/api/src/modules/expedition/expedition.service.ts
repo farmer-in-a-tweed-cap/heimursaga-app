@@ -2660,6 +2660,19 @@ export class ExpeditionService {
         },
       });
 
+      // Finalize any active live-tracking session — a completed expedition
+      // shouldn't accept further pings, and the freshness badge would lie
+      // ("Live · 14m ago") if the track sat open. The pin stays frozen at
+      // the final TrackPoint per the Phase 1 spec.
+      await this.prisma.track.updateMany({
+        where: {
+          expedition_id: expedition.id,
+          ended_at: null,
+          deleted_at: null,
+        },
+        data: { ended_at: new Date() },
+      });
+
       // Emit completion event for sponsor notifications
       this.eventService.trigger({
         event: EVENTS.EXPEDITION_COMPLETED,
@@ -2732,6 +2745,17 @@ export class ExpeditionService {
         // Another concurrent request already cancelled this expedition.
         return;
       }
+
+      // Finalize any active live-tracking session for the same reason as
+      // completeExpedition — see comment there.
+      await this.prisma.track.updateMany({
+        where: {
+          expedition_id: expedition.id,
+          ended_at: null,
+          deleted_at: null,
+        },
+        data: { ended_at: new Date() },
+      });
 
       // Emit cancellation event for sponsor refunds and notifications
       this.eventService.trigger({
