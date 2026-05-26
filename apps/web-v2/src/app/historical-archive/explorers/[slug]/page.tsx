@@ -258,7 +258,11 @@ function buildJsonLd(
         name: `${bio.shortName} — Expedition Journals`,
         description: bio.prose.slice(0, 240),
         inLanguage: 'en',
-        about: { '@id': personId },
+        // `mainEntity` is required for Google's ProfilePage rich-result
+        // schema (developers.google.com/search/docs/appearance/structured-data/profile-page).
+        // Using `about` instead trips a "Missing field 'mainEntity'" critical
+        // error in the Rich Results Test.
+        mainEntity: { '@id': personId },
       },
       {
         '@type': 'Person',
@@ -268,8 +272,13 @@ function buildJsonLd(
         url: pageUrl,
         ...parseLifespan(bio.lifespan),
         sameAs: [bio.sourceUrl],
+        // `CreativeWork` (not `Article`) — the intent is "cited source of
+        // record," not a primary article to surface as a rich-result snippet.
+        // Using `Article` here triggers optional-field warnings (headline,
+        // author, image) that we can't satisfy from public-domain Britannica
+        // / Wikipedia source pages.
         subjectOf: {
-          '@type': 'Article',
+          '@type': 'CreativeWork',
           name: stripQuotes(bio.sourceTitle),
           url: bio.sourceUrl,
           isPartOf: {
