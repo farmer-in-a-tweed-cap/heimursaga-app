@@ -42,6 +42,7 @@ interface HeroBannerProps {
    * previously-tracked expeditions so the prop is null in most cases.
    */
   liveTrack?: {
+    trackId: number | null;
     isActive: boolean;
     lastPointAt: string | null;
     heartbeatAt: string | null;
@@ -57,6 +58,11 @@ interface HeroBannerProps {
   onLiveTrackVisibilityChange?: (
     next: 'public' | 'sponsors' | 'private',
   ) => Promise<void> | void;
+  /**
+   * Owner-only stop control. Called when the owner clicks Stop on an
+   * active track. The parent persists + refetches.
+   */
+  onStopTrack?: () => Promise<void> | void;
 }
 
 const VISIBILITY_CYCLE: Record<
@@ -104,6 +110,7 @@ export function HeroBanner({
   sponsorHref,
   liveTrackVisibility,
   onLiveTrackVisibilityChange,
+  onStopTrack,
 }: HeroBannerProps) {
   return (
     <div
@@ -421,6 +428,29 @@ export function HeroBanner({
                   {liveTrackVisibility === 'sponsors' && <Users className="w-3 h-3" />}
                   {liveTrackVisibility === 'private' && <Lock className="w-3 h-3" />}
                   <span>Track: {VISIBILITY_LABEL[liveTrackVisibility]}</span>
+                </button>
+              )}
+              {/* Owner-only stop control. Tracks started from mobile can be
+                  stopped from the web — the pin stays frozen at the last
+                  point per the Phase 1 spec. */}
+              {isOwner && liveTrack.isActive && onStopTrack && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (
+                      typeof window !== 'undefined' &&
+                      !window.confirm('Stop tracking? The pin stays at the last position; you can re-pin manually anytime.')
+                    ) {
+                      return;
+                    }
+                    void onStopTrack();
+                  }}
+                  title="Stop tracking. The last position remains as your pin."
+                  className="inline-flex items-center gap-1.5 bg-[#994040] px-2 py-0.5 text-white text-[10px] font-bold font-mono uppercase tracking-wider hover:bg-[#7a3232] transition-colors"
+                >
+                  <XCircle className="w-3 h-3" />
+                  <span>Stop tracking</span>
                 </button>
               )}
             </div>

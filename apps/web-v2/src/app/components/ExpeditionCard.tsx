@@ -43,7 +43,7 @@ interface ExpeditionCardProps {
   imageUrl: string;
   location?: string; // Deprecated - use currentLocationSource/Id
   coordinates?: string; // Deprecated - use currentLocationSource/Id
-  currentLocationSource?: 'waypoint' | 'entry';
+  currentLocationSource?: 'waypoint' | 'entry' | 'live_track';
   currentLocationId?: string;
   waypoints?: Waypoint[];
   journalEntriesArray?: JournalEntry[];

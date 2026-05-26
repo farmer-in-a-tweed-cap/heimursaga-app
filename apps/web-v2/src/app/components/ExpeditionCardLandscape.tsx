@@ -29,7 +29,7 @@ interface ExpeditionCardLandscapeProps {
   location?: string; // Deprecated
   region?: string;
   locationName?: string;
-  currentLocationSource?: 'waypoint' | 'entry';
+  currentLocationSource?: 'waypoint' | 'entry' | 'live_track';
   currentLocationId?: string;
   waypoints?: Waypoint[];
   journalEntriesData?: JournalEntry[];

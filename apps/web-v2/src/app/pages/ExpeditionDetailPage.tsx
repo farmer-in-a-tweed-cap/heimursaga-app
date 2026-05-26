@@ -15,7 +15,7 @@ import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { usePageOwner } from '@/app/context/PageOwnerContext';
 import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
 import { ExpeditionManagementModal } from '@/app/components/ExpeditionManagementModal';
-import { expeditionApi, explorerApi, sponsorshipApi, type ExplorerProfile, type SponsorshipTierFull, type BlueprintReview } from '@/app/services/api';
+import { expeditionApi, explorerApi, sponsorshipApi, trackApi, type ExplorerProfile, type SponsorshipTierFull, type BlueprintReview } from '@/app/services/api';
 import { useExplorerProfileQuery, useExplorerTiersQuery, useBlueprintReviewsQuery } from '@/app/hooks/queries';
 import { ExpeditionDetailSkeleton } from '@/app/components/skeletons/PageSkeletons';
 import { ReportModal } from '@/app/components/ReportModal';
@@ -1232,6 +1232,7 @@ export function ExpeditionDetailPage() {
           liveTrack={
             liveTrack && (liveTrack.lastPointAt || liveTrack.heartbeatAt)
               ? {
+                  trackId: liveTrack.trackId,
                   isActive: liveTrack.isActive,
                   lastPointAt: liveTrack.lastPointAt,
                   heartbeatAt: liveTrack.heartbeatAt,
@@ -1249,6 +1250,18 @@ export function ExpeditionDetailPage() {
               toast.success(`Track visibility set to ${next}`);
             } catch (err) {
               const msg = err instanceof Error ? err.message : 'Failed to update visibility';
+              toast.error(msg);
+            }
+          }}
+          onStopTrack={async () => {
+            if (!apiExpedition?.id || !liveTrack?.trackId) return;
+            try {
+              await trackApi.stop(apiExpedition.id, liveTrack.trackId);
+              const refreshed = await expeditionApi.getById(apiExpedition.id);
+              setApiExpedition(refreshed);
+              toast.success('Tracking stopped');
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : 'Failed to stop tracking';
               toast.error(msg);
             }
           }}
