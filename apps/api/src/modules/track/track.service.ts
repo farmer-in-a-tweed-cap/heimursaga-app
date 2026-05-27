@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
+import { idOrSlug } from '@/lib/slug';
+
 import {
   ServiceException,
   ServiceExceptionStatus,
@@ -8,7 +10,6 @@ import {
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import { ISession } from '@/common/interfaces';
-import { idOrSlug } from '@/lib/slug';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
@@ -19,9 +20,26 @@ import { TrackPointInputDto, TrackStartDto } from './track.dto';
 // polyline free of urban-canyon spikes.
 const MAX_ACCURACY_M = 200;
 
+// Reject ingest points whose recorded_at is further than this from server
+// time. Prevents (a) backdated points poisoning the non-owner date-window
+// trim and (b) a misbehaving client filling disk with arbitrary historical
+// rows. The mobile uploader's offline buffer is sized so a multi-day
+// reconnect still falls inside this window.
+const RECORDED_AT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 // Default point cap on the public live-track read. Phase 1.5 will replace
 // the stride-simplifier with Douglas-Peucker.
 const DEFAULT_MAX_POINTS = 500;
+
+// Sponsorship statuses that grant a viewer access to 'sponsors'-gated
+// content. Mirrors expedition.service.ts:resolveExpeditionLocations
+// sponsor check so the two visibility surfaces agree.
+const ACTIVE_SPONSORSHIP_STATUSES = [
+  'active',
+  'confirmed',
+  'ACTIVE',
+  'CONFIRMED',
+];
 
 @Injectable()
 export class TrackService {
@@ -155,14 +173,20 @@ export class TrackService {
         };
       }
 
-      const filtered = points.filter(
-        (p) => p.accuracyM == null || p.accuracyM <= MAX_ACCURACY_M,
-      );
-      const accuracyRejected = points.length - filtered.length;
+      // Drop low-accuracy spikes AND timestamps outside the sanity window.
+      // Both filters happen pre-insert so bad data never hits the DB.
+      const now = Date.now();
+      const filtered = points.filter((p) => {
+        const t = new Date(p.recordedAt).getTime();
+        if (isNaN(t) || Math.abs(t - now) > RECORDED_AT_WINDOW_MS) return false;
+        if (p.accuracyM != null && p.accuracyM > MAX_ACCURACY_M) return false;
+        return true;
+      });
+      const preInsertRejected = points.length - filtered.length;
       if (filtered.length === 0) {
         return {
           accepted: 0,
-          rejected: accuracyRejected,
+          rejected: preInsertRejected,
           trackEnded: false,
         };
       }
@@ -186,8 +210,15 @@ export class TrackService {
       });
 
       // Promote the latest point to current_location. Done as a second
-      // query because we need the new TrackPoint's id, which createMany
-      // doesn't return.
+      // query because createMany doesn't return inserted ids.
+      //
+      // Race note: if a concurrent appendBatch on the same track inserts
+      // a newer point between our createMany and this findFirst, we'll
+      // pick up that newer point and set current_location_id to it. That's
+      // a last-writer-wins outcome but the value is always a valid recent
+      // TrackPoint of this track — never corrupt. The mobile uploader
+      // serializes per-track requests so concurrent appendBatch is rare
+      // in practice; revisit if multi-device concurrent ingest ships.
       const latest = await this.prisma.trackPoint.findFirst({
         where: { track_id: track.id },
         orderBy: { recorded_at: 'desc' },
@@ -206,7 +237,7 @@ export class TrackService {
 
       return {
         accepted: insertResult.count,
-        rejected: accuracyRejected + (filtered.length - insertResult.count),
+        rejected: preInsertRejected + (filtered.length - insertResult.count),
         trackEnded: false,
       };
     } catch (e: any) {
@@ -323,10 +354,26 @@ export class TrackService {
 
       const isOwner = viewerId === expedition.author_id;
 
-      // Visibility gate. 'sponsors' is treated as 'public' until a
-      // sponsor-aware viewer check is wired in (see Phase 1 follow-up).
+      // Visibility gate. Three states, evaluated in priority order:
+      //   - 'public': anyone (including logged-out viewers) can see
+      //   - 'sponsors': owner or an active/confirmed sponsor of the explorer
+      //   - 'private': owner only (the default)
       const polylineVisibility = expedition.live_track_visibility || 'private';
-      if (!isOwner && polylineVisibility === 'private') {
+      let canSee = isOwner;
+      if (!canSee && polylineVisibility === 'public') {
+        canSee = true;
+      } else if (!canSee && polylineVisibility === 'sponsors' && viewerId) {
+        const sponsorshipCount = await this.prisma.sponsorship.count({
+          where: {
+            sponsor_id: viewerId,
+            sponsored_explorer_id: expedition.author_id,
+            deleted_at: null,
+            status: { in: ACTIVE_SPONSORSHIP_STATUSES },
+          },
+        });
+        canSee = sponsorshipCount > 0;
+      }
+      if (!canSee) {
         return {
           trackId: null,
           polyline: null,
@@ -368,8 +415,7 @@ export class TrackService {
       };
       if (!isOwner) {
         const windowStart = expedition.start_date ?? track.started_at;
-        const windowEnd =
-          expedition.end_date ?? (track.ended_at ?? new Date());
+        const windowEnd = expedition.end_date ?? track.ended_at ?? new Date();
         pointsWhere.recorded_at = { gte: windowStart, lte: windowEnd };
       }
 
@@ -379,7 +425,9 @@ export class TrackService {
         select: { lat: true, lon: true, recorded_at: true },
       });
 
-      const simplified = simplifyByStride(points, cap);
+      // Hard cap at `cap` — simplifyByStride may otherwise return cap+1
+      // when total points isn't evenly divisible by the stride.
+      const simplified = simplifyByStride(points, cap).slice(0, cap);
       const coordinates: [number, number][] = simplified.map((p) => [
         p.lon,
         p.lat,

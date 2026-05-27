@@ -63,13 +63,18 @@ interface HeroBannerProps {
   onStopTrack?: () => Promise<void> | void;
 }
 
+// Opt-up direction per Phase 1 spec decision #1: starting from the safe
+// 'private' default, each click should EXPAND the audience (private →
+// sponsors → public), then loop back. The reverse direction would let
+// a single accidental click from the default jump straight to public,
+// which is the opposite of the spec's "consciously opt up" goal.
 const VISIBILITY_CYCLE: Record<
   'public' | 'sponsors' | 'private',
   'public' | 'sponsors' | 'private'
 > = {
-  public: 'sponsors',
-  sponsors: 'private',
-  private: 'public',
+  private: 'sponsors',
+  sponsors: 'public',
+  public: 'private',
 };
 
 const VISIBILITY_LABEL: Record<'public' | 'sponsors' | 'private', string> = {

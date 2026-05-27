@@ -28,7 +28,11 @@ import { dateformat } from '@/lib/date-format';
 import { integerToDecimal, normalizeText } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 import { resolveExpeditionLocations } from '@/lib/resolve-expedition-location';
-import { buildExpeditionSlugBase, ensureUniqueSlug, idOrSlug } from '@/lib/slug';
+import {
+  buildExpeditionSlugBase,
+  ensureUniqueSlug,
+  idOrSlug,
+} from '@/lib/slug';
 import { getStaticMediaUrl } from '@/lib/upload';
 import { matchRoles, sortByDate } from '@/lib/utils';
 
@@ -1431,9 +1435,14 @@ export class ExpeditionService {
         currentLocationVisibility:
           (current_location_visibility as 'public' | 'sponsors' | 'private') ||
           'public',
+        // Owner-only field. Strip for non-owners — the polyline endpoint
+        // already enforces visibility server-side, so non-owners don't
+        // need to know the owner's privacy setting.
         liveTrackVisibility:
-          (live_track_visibility as 'public' | 'sponsors' | 'private') ||
-          'private',
+          !!explorerId && explorerId === expedition.author_id
+            ? (live_track_visibility as 'public' | 'sponsors' | 'private') ||
+              'private'
+            : undefined,
         currentLocationSource: undefined as
           | 'waypoint'
           | 'entry'
@@ -2178,7 +2187,9 @@ export class ExpeditionService {
           );
         }
       }
-      const updateData: any = { title: typeof title === 'string' ? title.trim() || title : title };
+      const updateData: any = {
+        title: typeof title === 'string' ? title.trim() || title : title,
+      };
       if ((payload as any).visibility !== undefined) {
         const vis = (payload as any).visibility;
         if (['public', 'off-grid', 'private'].includes(vis)) {
@@ -2664,6 +2675,14 @@ export class ExpeditionService {
       // shouldn't accept further pings, and the freshness badge would lie
       // ("Live · 14m ago") if the track sat open. The pin stays frozen at
       // the final TrackPoint per the Phase 1 spec.
+      //
+      // Race (acceptable, spec-aligned): a ping in flight between the
+      // status update and this updateMany can land on a still-'active'
+      // track because appendBatch's own status check might have read
+      // 'active' before the update committed. The ping is inserted, then
+      // this updateMany sets ended_at. Net result: pin freezes at that
+      // last-ping position, which is exactly the spec #6 frozen-live
+      // behavior. The double-stop is idempotent (where ended_at IS NULL).
       await this.prisma.track.updateMany({
         where: {
           expedition_id: expedition.id,
@@ -3003,7 +3022,8 @@ export class ExpeditionService {
       }
 
       // create a waypoint
-      const { title, lat, lon, date, description, location, sequence } = payload;
+      const { title, lat, lon, date, description, location, sequence } =
+        payload;
       // Convert date: string → Date, null → null (no date), undefined → undefined (Prisma skips)
       const dateTime = date
         ? new Date(date as unknown as string)
@@ -3090,7 +3110,8 @@ export class ExpeditionService {
         });
 
       // update the waypoint
-      const { title, lat, lon, date, description, location, sequence } = payload;
+      const { title, lat, lon, date, description, location, sequence } =
+        payload;
       // Convert date: string → Date, null → null (clear date), undefined → undefined (Prisma skips)
       const dateTime = date
         ? new Date(date as unknown as string)

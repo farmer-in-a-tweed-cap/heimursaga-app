@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 import type mapboxgl from 'mapbox-gl';
 
@@ -35,10 +35,6 @@ export function useLiveTrackMapLayer({
   mapReady,
   polyline,
 }: UseLiveTrackMapLayerArgs) {
-  // Track which map instance we last installed against so a navigation
-  // between expedition pages (map destroyed + re-created) reinstalls.
-  const lastMapRef = useRef<mapboxgl.Map | null>(null);
-
   useEffect(() => {
     if (!mapReady) return;
     const map = mapRef.current;
@@ -78,8 +74,6 @@ export function useLiveTrackMapLayer({
           },
         });
       }
-      lastMapRef.current = map;
-
       const src = map.getSource(SOURCE_ID) as
         | mapboxgl.GeoJSONSource
         | undefined;
@@ -118,11 +112,18 @@ export function useLiveTrackMapLayer({
     }
 
     return () => {
+      // try/catch in case the parent's map-init effect cleanup ran first
+      // and called map.remove() — Mapbox currently only logs a warning
+      // for off() on a disposed map, but defensive in case that changes.
+      // See review note I2 for the longer story.
       try {
         map.off('load', setupAndSync);
       } catch {
         /* ignore */
       }
     };
-  }, [mapRef, mapReady, polyline]);
+    // mapRef intentionally omitted — it's a stable React ref identity that
+    // never changes. Including it would imply re-runs we don't want.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapReady, polyline]);
 }

@@ -10,13 +10,19 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
 
 import { Public, Session } from '@/common/decorators';
 import { ISession } from '@/common/interfaces';
 
 import { TrackPointsAppendDto, TrackStartDto } from './track.dto';
 import { TrackService } from './track.service';
+
+// Throttling note: appendPoints relies on the app-wide ThrottlerGuard
+// (short: 3/s, medium: 20/10s, long: 100/min). A per-route @Throttle
+// override is intentionally NOT applied — the global `short` bucket is
+// the binding constraint regardless of any looser per-route override,
+// so a local override would be dead code. The recorded_at sanity bound
+// in TrackService caps the damage from a misbehaving client.
 
 @ApiTags('trips')
 @Controller('trips')
@@ -33,10 +39,6 @@ export class TrackController {
     return await this.trackService.startTrack({ session, tripId, body });
   }
 
-  // Per-user ingest rate cap. 60 batches per 10s is generous for the mobile
-  // uploader (which posts every ~60s on the typical cadence) but stops a
-  // runaway client from DOS-ing the endpoint.
-  @Throttle({ medium: { limit: 60, ttl: 10000 } })
   @Post(':tripId/tracks/:trackId/points')
   @HttpCode(HttpStatus.OK)
   async appendPoints(

@@ -1194,7 +1194,11 @@ export function ExpeditionDetailPage() {
       );
     };
 
-    const key = apiExpedition?.id || expeditionId;
+    // Use the URL param as the stable gate key. apiExpedition?.id is null
+    // until the fetch resolves; if we used it, the effect would fire once
+    // with `expeditionId` (string) and again when `apiExpedition.id`
+    // (number) arrives, causing a redundant fitBounds animation.
+    const key = expeditionId;
 
     if (
       bannerMapReady &&
@@ -1233,7 +1237,6 @@ export function ExpeditionDetailPage() {
     modalMapReady,
     waypoints,
     journalEntries,
-    apiExpedition?.id,
     expeditionId,
   ]);
 
