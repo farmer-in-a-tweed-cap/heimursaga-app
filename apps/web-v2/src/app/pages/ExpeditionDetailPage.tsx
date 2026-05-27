@@ -1167,6 +1167,85 @@ export function ExpeditionDetailPage() {
     polyline: liveTrack?.polyline ?? null,
   });
 
+  // Auto-fit both maps to include the live track polyline once per
+  // (expedition × map). Gated by refs so we don't re-fit on every 30s
+  // poll — the user's pan/zoom after the initial fit stays put.
+  const bannerLiveFittedRef = useRef<string | null>(null);
+  const modalLiveFittedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const polyline = liveTrack?.polyline;
+    if (!polyline || polyline.coordinates.length < 2) return;
+
+    const buildBounds = () => {
+      const all: [number, number][] = [
+        ...waypoints.map(
+          (wp) => [wp.coords.lng, wp.coords.lat] as [number, number],
+        ),
+        ...journalEntries
+          .filter((e) => e.coords.lat !== 0 || e.coords.lng !== 0)
+          .map((e) => [e.coords.lng, e.coords.lat] as [number, number]),
+        ...polyline.coordinates,
+      ];
+      if (!all.length) return null;
+      return all.reduce(
+        (b, c) => b.extend(c),
+        new mapboxgl.LngLatBounds(all[0], all[0]),
+      );
+    };
+
+    const key = apiExpedition?.id || expeditionId;
+
+    if (
+      bannerMapReady &&
+      bannerMapRef.current &&
+      bannerLiveFittedRef.current !== key
+    ) {
+      const b = buildBounds();
+      if (b) {
+        bannerMapRef.current.fitBounds(b, {
+          padding: 80,
+          maxZoom: 14,
+          duration: 600,
+        });
+        bannerLiveFittedRef.current = key;
+      }
+    }
+
+    if (
+      modalMapReady &&
+      mapRef.current &&
+      modalLiveFittedRef.current !== key
+    ) {
+      const b = buildBounds();
+      if (b) {
+        mapRef.current.fitBounds(b, {
+          padding: 80,
+          maxZoom: 14,
+          duration: 600,
+        });
+        modalLiveFittedRef.current = key;
+      }
+    }
+  }, [
+    liveTrack?.polyline,
+    bannerMapReady,
+    modalMapReady,
+    waypoints,
+    journalEntries,
+    apiExpedition?.id,
+    expeditionId,
+  ]);
+
+  // Reset the fit gates when a map re-mounts so the next polyline read
+  // triggers a fresh fit.
+  useEffect(() => {
+    if (!bannerMapReady) bannerLiveFittedRef.current = null;
+  }, [bannerMapReady]);
+  useEffect(() => {
+    if (!modalMapReady) modalLiveFittedRef.current = null;
+  }, [modalMapReady]);
+
   // Handle pendingFlyTo when modal is already open (clicking different waypoints)
   useEffect(() => {
     if (isMapModalOpen && pendingFlyTo && mapRef.current) {
