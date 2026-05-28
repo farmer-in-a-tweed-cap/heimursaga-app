@@ -12,7 +12,7 @@ export function PrivacyPolicyPage() {
             <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">PRIVACY POLICY</h1>
           </div>
           <p className="text-sm text-[#616161] dark:text-[#b5bcc4] font-mono">
-            Last Updated: January 16, 2026 · Effective Date: January 16, 2026
+            Last Updated: May 28, 2026 · Effective Date: May 28, 2026
           </p>
         </div>
       </div>
@@ -53,7 +53,7 @@ export function PrivacyPolicyPage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-[#4676ac] mt-1">•</span>
-              <span><strong>Location Data:</strong> GPS coordinates and location information you provide for journal entries</span>
+              <span><strong>Location Data:</strong> GPS coordinates and location information for journal entries, waypoints, and live expedition tracking — collected only when you provide it manually or when you have explicitly enabled a live tracking session (see Section 4.3)</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-[#4676ac] mt-1">•</span>
@@ -208,10 +208,59 @@ export function PrivacyPolicyPage() {
           </p>
 
           <h3 className="font-bold mb-2 text-[#202020] dark:text-white">4.2 Location Data Storage</h3>
-          <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-            Precise GPS coordinates are stored securely in our database but are only displayed publicly according to 
-            your privacy settings. You may choose to display approximate regions, hide locations entirely, or share 
+          <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
+            Precise GPS coordinates are stored securely in our database but are only displayed publicly according to
+            your privacy settings. You may choose to display approximate regions, hide locations entirely, or share
             precise coordinates with specific user groups.
+          </p>
+
+          <h3 className="font-bold mb-2 text-[#202020] dark:text-white">4.3 Live Expedition Tracking</h3>
+          <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-3">
+            When you start a live tracking session on an active expedition from the Heimursaga mobile app, the app
+            continuously records your GPS position while tracking is enabled. Tracking only runs when you explicitly
+            start it on a specific expedition; it stops immediately when you pause it, end the expedition, or stop
+            the session manually.
+          </p>
+          <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-3">
+            <strong>What we collect during a tracking session:</strong>
+          </p>
+          <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6 mb-3">
+            <li className="flex items-start gap-2">
+              <span className="text-[#4676ac] mt-1">•</span>
+              <span>GPS position (latitude, longitude, and reported accuracy in metres) at intervals you choose at session-start: Active mode (~every 60 seconds, denser route) or Conservative mode (~every 5 minutes, lower battery use)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#4676ac] mt-1">•</span>
+              <span>Speed and altitude when available from your device&apos;s GPS</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#4676ac] mt-1">•</span>
+              <span>Approximate device battery level, stored as part of each recorded point and used to surface cadence and battery-related warnings in the app</span>
+            </li>
+          </ul>
+          <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-3">
+            <strong>Map rendering.</strong> Track coordinates are rendered into maps via Mapbox; see Section 3.2 for
+            our disclosure of third-party service providers.
+          </p>
+          <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-3">
+            <strong>Background tracking.</strong> If you grant the iOS "Always" location permission, your route
+            continues to record while the app is in the background, your phone is locked, or the app is closed.
+            iOS displays a system indicator (the blue pill at the top of the screen) whenever background tracking
+            is active so you can always see when it is running. You can revoke this permission at any time in
+            iOS Settings → Privacy &amp; Security → Location Services → Heimursaga — the app continues to work in
+            foreground-only mode (tracking only records while the app is open).
+          </p>
+          <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-3">
+            <strong>Route visibility.</strong> Each tracked route has its own visibility setting independent of
+            your current-location pin: Private (only you), Sponsors-only (you plus your active/confirmed sponsors),
+            or Public (anyone who can view the expedition). The default is Private — you must explicitly opt up
+            before any non-owner can see your recorded route.
+          </p>
+          <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+            <strong>Retention and deletion.</strong> Stopping a tracking session does not delete the recorded route
+            — it stops adding new points and the polyline becomes part of the expedition&apos;s permanent record.
+            You can delete an expedition (and all its tracking data) from the expedition settings, or contact us
+            per Sections 7 and 13 to request deletion of specific tracks.
           </p>
         </section>
 
