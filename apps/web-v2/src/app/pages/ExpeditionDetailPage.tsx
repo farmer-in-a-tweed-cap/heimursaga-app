@@ -15,7 +15,7 @@ import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { usePageOwner } from '@/app/context/PageOwnerContext';
 import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
 import { ExpeditionManagementModal } from '@/app/components/ExpeditionManagementModal';
-import { expeditionApi, explorerApi, sponsorshipApi, trackApi, type ExplorerProfile, type SponsorshipTierFull, type BlueprintReview } from '@/app/services/api';
+import { expeditionApi, explorerApi, sponsorshipApi, trackApi, type ExplorerProfile, type SponsorshipTierFull, type BlueprintReview, type TrackPolyline } from '@/app/services/api';
 import { useExplorerProfileQuery, useExplorerTiersQuery, useBlueprintReviewsQuery } from '@/app/hooks/queries';
 import { ExpeditionDetailSkeleton } from '@/app/components/skeletons/PageSkeletons';
 import { ReportModal } from '@/app/components/ReportModal';
@@ -94,16 +94,14 @@ export function ExpeditionDetailPage() {
     return () => setIsOwnContent(false);
   }, [isOwner, setIsOwnContent]);
 
-  // Live tracking — poll the latest track for any expedition that is active
-  // or has ever been tracked. Disabled for blueprints / completed-without-
-  // tracking to avoid pointless polling.
-  const liveTrackEnabled = !!(
-    apiExpedition &&
-    (apiExpedition.status === 'active' ||
-      apiExpedition.currentLocationSource === 'live_track')
-  );
+  // Live tracking — fetch immediately on mount (parallel with the
+  // expedition fetch). The backend returns {trackId:null,polyline:null}
+  // quickly for expeditions without a track, so the cost of an unused
+  // poll on a blueprint/completed page is negligible. Waiting for
+  // apiExpedition.status first added a noticeable delay to the polyline
+  // appearing on live-tracked expeditions.
   const { data: liveTrack } = useLiveTrack(expeditionId, {
-    enabled: liveTrackEnabled,
+    enabled: !!expeditionId,
   });
 
   // Adopt blueprint handler
@@ -188,6 +186,14 @@ export function ExpeditionDetailPage() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const obstacleMarkersRef = useRef<mapboxgl.Marker[]>([]);
+
+  // Latest polyline kept in a ref so the map-init effects can read it
+  // at load-callback time without making `liveTrack` a dep of those
+  // effects. Adding `liveTrack` to the banner/modal init deps would
+  // recreate the entire map on every 30s poll. Write on every render —
+  // refs don't trigger re-renders.
+  const livePolylineRef = useRef<TrackPolyline | null>(null);
+  livePolylineRef.current = liveTrack?.polyline ?? null;
 
 
   // Handler for waypoint click - open modal and fly to waypoint
@@ -299,6 +305,43 @@ export function ExpeditionDetailPage() {
     handleFitBounds,
     formatDistance,
   });
+
+  // Debrief follows whatever route best represents the actual journey:
+  //   1. Live track polyline (the real GPS path) — best when tracking ran
+  //   2. Planned route geometry — best when no tracking but routing exists
+  //   3. Merged waypoint+entry coords — fallback for free-form expeditions
+  //
+  // Don't mutate the ref while debrief is animating — the cumulative-
+  // distance / index tables it precomputes would go stale and cause
+  // jumps. The modal map's load callback used to write this ref directly
+  // (using only #2 or #3); that write is now removed so this effect is
+  // the single source.
+  useEffect(() => {
+    if (isDebriefMode) return;
+    const polyline = liveTrack?.polyline;
+    if (polyline && polyline.coordinates.length >= 2) {
+      routeCoordsRef.current = polyline.coordinates as number[][];
+      return;
+    }
+    if (
+      apiExpedition?.routeGeometry &&
+      apiExpedition.routeGeometry.length >= 2
+    ) {
+      routeCoordsRef.current = apiExpedition.routeGeometry;
+      return;
+    }
+    routeCoordsRef.current = buildMergedRouteCoords(
+      waypoints.map((wp) => wp.coords),
+      journalEntries.map((e) => e.coords),
+    );
+  }, [
+    liveTrack?.polyline,
+    apiExpedition?.routeGeometry,
+    waypoints,
+    journalEntries,
+    isDebriefMode,
+    routeCoordsRef,
+  ]);
 
   const enterDebriefMode = useCallback(() => {
     enterDebriefModeRaw(setClickedEntry);
@@ -733,7 +776,9 @@ export function ExpeditionDetailPage() {
             journalEntries.map(e => e.coords),
           );
 
-      routeCoordsRef.current = routeCoordinates;
+      // routeCoordsRef is now maintained by the top-level effect that
+      // prefers the live polyline when available — don't overwrite here.
+
       const casingColor = getLineCasingColor(mapLayer, theme);
 
       if (routeCoordinates.length >= 2) {
@@ -1115,12 +1160,19 @@ export function ExpeditionDetailPage() {
         map.on('zoomend', result.recalculate);
       }
 
-      // Fit bounds to show all markers
+      // Fit bounds to show all markers + live track polyline. Polyline is
+      // read from a ref so this effect doesn't recreate the map on every
+      // 30s poll. Including it here prevents the post-load fitBounds from
+      // zooming away from the polyline a moment after my fit-bounds effect
+      // has framed it correctly.
+      const livePolylineCoords =
+        livePolylineRef.current?.coordinates ?? [];
       const allCoords: [number, number][] = [
         ...waypoints.map(wp => [wp.coords.lng, wp.coords.lat] as [number, number]),
         ...journalEntries
           .filter(entry => entry.coords.lat !== 0 || entry.coords.lng !== 0)
           .map(entry => [entry.coords.lng, entry.coords.lat] as [number, number]),
+        ...(livePolylineCoords as [number, number][]),
       ];
 
       if (allCoords.length > 0) {
