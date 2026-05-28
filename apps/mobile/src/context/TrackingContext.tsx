@@ -9,7 +9,54 @@ import React, {
 } from 'react';
 import * as Location from 'expo-location';
 
-import { trackApi, expeditionApi } from '@/services/api';
+import {
+  trackApi,
+  expeditionApi,
+  type TrackPointInput,
+} from '@/services/api';
+
+// Server-side rejects points with accuracy worse than this. Filter client-
+// side too so we don't waste a network call on garbage.
+const MAX_ACCURACY_M = 200;
+// Batch upload cadence. Step 4 will add an SQLite buffer behind this for
+// offline durability; for now the buffer lives in-memory.
+const FLUSH_INTERVAL_MS = 60_000;
+// Heartbeat keep-alive. Independent of position pings so the freshness
+// badge stays accurate while the explorer is stationary.
+const HEARTBEAT_INTERVAL_MS = 15 * 60_000;
+// Defensive cap on the in-memory retry buffer. With healthy network this
+// stays empty; with a long offline period at 1 point/min, 5000 ≈ 83 hours
+// of pings. Beyond this, oldest points are dropped to keep memory bounded
+// and avoid Hermes call-stack overflow from `unshift(...veryLargeArray)`.
+// Step 4's SQLite buffer will replace this entirely.
+const MAX_BUFFER_SIZE = 5000;
+
+/**
+ * Foreground tracking watcher options for the two cadence modes. Step 3 is
+ * foreground-only (`watchPositionAsync`). Step 5 will add a parallel
+ * configuration for `startLocationUpdatesAsync` (background task).
+ */
+const ACTIVE_WATCH_OPTS: Location.LocationOptions = {
+  accuracy: Location.Accuracy.Balanced,
+  timeInterval: 60_000,
+  distanceInterval: 50,
+};
+const CONSERVATIVE_WATCH_OPTS: Location.LocationOptions = {
+  accuracy: Location.Accuracy.Balanced,
+  timeInterval: 5 * 60_000,
+  distanceInterval: 500,
+};
+
+function makeClientUuid(): string {
+  // Prefer Hermes' global crypto.randomUUID (available in RN 0.71+ /
+  // Hermes 0.11.1+) for full 122-bit UUID4 randomness. Fall back to the
+  // timestamp + base36 form if not exposed.
+  const g = globalThis as { crypto?: { randomUUID?: () => string } };
+  if (typeof g.crypto?.randomUUID === 'function') {
+    return g.crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 /**
  * Live tracking client-side state machine.
@@ -142,6 +189,181 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void refreshPermissionLevel();
   }, [refreshPermissionLevel]);
+
+  // Foreground tracking pipeline. Subscribes to `Location.watchPositionAsync`
+  // whenever status is 'active' and a track exists. Each callback appends
+  // to an in-memory buffer + sets latestPosition; a 60s interval flushes
+  // the buffer to the server; a 15-min interval sends a heartbeat.
+  //
+  // Background tracking + persistent buffer come in steps 4 and 5.
+  useEffect(() => {
+    if (status !== 'active' || !expeditionId || !trackId) return;
+    // Narrow the closure to non-null locals so we don't carry `null | T`
+    // through every helper. The guard above ensures both are real here.
+    const eid = expeditionId;
+    const tid = trackId;
+
+    const opts = mode === 'conservative' ? CONSERVATIVE_WATCH_OPTS : ACTIVE_WATCH_OPTS;
+    let sub: Location.LocationSubscription | null = null;
+    let flushTimer: ReturnType<typeof setInterval> | null = null;
+    let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+    const buffer: TrackPointInput[] = [];
+    let cancelled = false;
+
+    const handleTrackEnded = () => {
+      // Server auto-stopped the track (expedition status changed mid-
+      // session, or upstream auto-stop fired). Align client state by
+      // resetting to idle — this also triggers cleanup of this effect
+      // via the status-dep change. Without this, the watcher would keep
+      // collecting points and every flush would 404 until the user
+      // notices and taps Stop manually.
+      // eslint-disable-next-line no-console
+      console.info('[TrackingContext] server auto-stopped track on append');
+      setTrackId(null);
+      setExpeditionId(null);
+      setExpeditionTitle(null);
+      setStartedAt(null);
+      setLatestPosition(null);
+      setStatus('idle');
+    };
+
+    const flushBuffer = async () => {
+      if (cancelled || buffer.length === 0) return;
+      const batch = buffer.splice(0, buffer.length);
+      try {
+        const res = await trackApi.appendPoints(eid, tid, batch);
+        if (res.trackEnded) {
+          handleTrackEnded();
+          return;
+        }
+        if (res.rejected > 0) {
+          // Server-side filter (accuracy or recorded_at window) dropped
+          // points the client thought were valid. Most commonly a clock-
+          // skewed device — surface for diagnostics.
+          // eslint-disable-next-line no-console
+          console.warn(
+            `[TrackingContext] server rejected ${res.rejected}/${batch.length} points (clock skew or accuracy filter)`,
+          );
+        }
+      } catch (e) {
+        // Network failure or transient server error — keep points so the
+        // next cycle retries. client_uuid deduplicates on the server, so
+        // re-uploading the same batch is safe.
+        //
+        // Re-check `cancelled` because await may have yielded long enough
+        // for the cleanup to run. If we're orphaned, the unshift goes to
+        // a dead buffer — surface that explicitly rather than silently
+        // dropping the points.
+        if (cancelled) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            `[TrackingContext] appendPoints failed after teardown — ${batch.length} points lost (will be reclaimed by SQLite buffer in step 4)`,
+          );
+        } else {
+          // Defensive bound: cap the buffer so a long offline period plus
+          // a worst-case retry storm can't blow the call stack.
+          buffer.unshift(...batch);
+          if (buffer.length > MAX_BUFFER_SIZE) {
+            const dropped = buffer.length - MAX_BUFFER_SIZE;
+            buffer.length = MAX_BUFFER_SIZE;
+            // eslint-disable-next-line no-console
+            console.warn(
+              `[TrackingContext] buffer at cap — dropped ${dropped} oldest unsent points`,
+            );
+          }
+          // eslint-disable-next-line no-console
+          console.warn('[TrackingContext] appendPoints failed, will retry:', e);
+        }
+      }
+    };
+
+    const sendHeartbeat = async () => {
+      if (cancelled) return;
+      try {
+        await trackApi.heartbeat(eid, tid);
+      } catch (e) {
+        // Best-effort — a missed heartbeat just makes the freshness badge
+        // show a slightly older "Live as of" until the next position ping.
+        // eslint-disable-next-line no-console
+        console.warn('[TrackingContext] heartbeat failed:', e);
+      }
+    };
+
+    const startWatcher = async () => {
+      try {
+        sub = await Location.watchPositionAsync(opts, (loc) => {
+          if (cancelled) return;
+          const accuracy = loc.coords.accuracy ?? undefined;
+          if (accuracy != null && accuracy > MAX_ACCURACY_M) return;
+
+          // Hoist the Date construction — used in both the ISO string for
+          // the upload payload and the latestPosition state.
+          const recordedAt = new Date(loc.timestamp);
+          // CLLocation returns -1 when speed is unknown; expo-location
+          // passes that through unchanged.
+          const speed =
+            loc.coords.speed != null && loc.coords.speed >= 0
+              ? loc.coords.speed
+              : undefined;
+
+          const point: TrackPointInput = {
+            recordedAt: recordedAt.toISOString(),
+            lat: loc.coords.latitude,
+            lon: loc.coords.longitude,
+            accuracyM: accuracy,
+            speedMps: speed,
+            altitudeM: loc.coords.altitude ?? undefined,
+            clientUuid: makeClientUuid(),
+          };
+          buffer.push(point);
+          setLatestPosition({
+            lat: point.lat,
+            lon: point.lon,
+            recordedAt,
+            accuracyM: accuracy,
+          });
+        });
+
+        flushTimer = setInterval(() => {
+          void flushBuffer();
+        }, FLUSH_INTERVAL_MS);
+        heartbeatTimer = setInterval(() => {
+          void sendHeartbeat();
+        }, HEARTBEAT_INTERVAL_MS);
+
+        // Fire one heartbeat immediately so the badge flips to "Live" the
+        // moment tracking starts, not 15 minutes later.
+        void sendHeartbeat();
+      } catch (e) {
+        // expo-location threw at subscribe time. Most likely permission
+        // revoked at the OS level mid-session. Surface to the user via
+        // status + error rather than leaving the banner saying "LIVE"
+        // with no points coming in.
+        const msg = e instanceof Error ? e.message : 'Location watch failed';
+        setError(msg);
+        setStatus('paused');
+      }
+    };
+
+    void startWatcher();
+
+    return () => {
+      cancelled = true;
+      sub?.remove();
+      if (flushTimer) clearInterval(flushTimer);
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      // Best-effort flush of any unsent points on teardown. Buffer is
+      // captured in this closure; the parent effect is gone but the
+      // promise still resolves.
+      // TODO(step-4): if this final flush fails, points are lost. SQLite
+      // will make the buffer durable across pause/stop boundaries.
+      if (buffer.length > 0) {
+        void trackApi.appendPoints(eid, tid, buffer).catch(() => {
+          // Swallow — there's no client UI left to surface the error to.
+        });
+      }
+    };
+  }, [status, expeditionId, trackId, mode]);
 
   const requestWhenInUsePermission = useCallback(async (): Promise<LocationPermissionLevel> => {
     const fg = await Location.requestForegroundPermissionsAsync();
