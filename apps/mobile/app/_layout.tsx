@@ -29,6 +29,11 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { TrackingBanner } from '@/components/ui/TrackingBanner';
 import { TrackingProvider } from '@/context/TrackingContext';
+// Side-effect import — registers the background location task via
+// TaskManager.defineTask at module load time. Must happen at app launch
+// so iOS can dispatch any pending background location events that
+// accumulated while the app was killed.
+import '@/services/trackingTask';
 import { initAnalytics, analytics } from '@/services/analytics';
 import {
   registerForPushNotifications,

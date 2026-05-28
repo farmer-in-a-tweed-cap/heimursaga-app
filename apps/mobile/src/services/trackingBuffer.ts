@@ -64,6 +64,19 @@ async function getDb(): Promise<SQLite.SQLiteDatabase> {
         -- the upload DTO without parsing.
         CREATE INDEX IF NOT EXISTS pending_track_points_track_recorded_idx
           ON pending_track_points(track_id, recorded_at);
+        -- Single-row config table for the active background tracking
+        -- session. The TaskManager callback reads this on each location
+        -- delivery to know which expedition + track to attribute the
+        -- points to. A previous-session crash without a clean stop
+        -- leaves a stale row; that's recovered on app start by the
+        -- TrackingProvider's mount effect.
+        CREATE TABLE IF NOT EXISTS tracking_session (
+          id            TEXT PRIMARY KEY,
+          expedition_id TEXT NOT NULL,
+          track_id      INTEGER NOT NULL,
+          mode          TEXT NOT NULL,
+          started_at    INTEGER NOT NULL
+        );
       `);
       return db;
     })();
@@ -209,4 +222,53 @@ export async function bufferClearAll(): Promise<void> {
   }
   const db = await getDb();
   await db.execAsync(`DELETE FROM pending_track_points`);
+}
+
+// ─── tracking_session — single-row config used by the background task ───
+
+const SESSION_PK = 'current';
+
+export interface TrackingSession {
+  expeditionId: string;
+  trackId: number;
+  mode: 'active' | 'conservative';
+  startedAt: number;
+}
+
+export async function setTrackingSession(s: Omit<TrackingSession, 'startedAt'>): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    `INSERT OR REPLACE INTO tracking_session
+       (id, expedition_id, track_id, mode, started_at)
+     VALUES (?, ?, ?, ?, ?)`,
+    [SESSION_PK, s.expeditionId, s.trackId, s.mode, Date.now()],
+  );
+}
+
+export async function getTrackingSession(): Promise<TrackingSession | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{
+    expedition_id: string;
+    track_id: number;
+    mode: string;
+    started_at: number;
+  }>(
+    `SELECT expedition_id, track_id, mode, started_at
+       FROM tracking_session
+       WHERE id = ?`,
+    [SESSION_PK],
+  );
+  if (!row) return null;
+  if (row.mode !== 'active' && row.mode !== 'conservative') return null;
+  return {
+    expeditionId: row.expedition_id,
+    trackId: row.track_id,
+    mode: row.mode,
+    startedAt: row.started_at,
+  };
+}
+
+export async function clearTrackingSession(): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(`DELETE FROM tracking_session WHERE id = ?`, [SESSION_PK]);
 }

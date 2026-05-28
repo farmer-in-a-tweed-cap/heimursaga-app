@@ -7,24 +7,26 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { AppState } from 'react-native';
 import * as Location from 'expo-location';
 
-import {
-  trackApi,
-  expeditionApi,
-  type TrackPointInput,
-} from '@/services/api';
+import { trackApi, expeditionApi } from '@/services/api';
 import {
   bufferDelete,
-  bufferInsert,
   bufferListPendingTracks,
   bufferPruneStale,
   bufferReadBatch,
+  clearTrackingSession,
+  setTrackingSession,
 } from '@/services/trackingBuffer';
+import {
+  addLocationListener,
+  MAX_ACCURACY_M,
+  TRACKING_TASK_NAME,
+} from '@/services/trackingTask';
 
-// Server-side rejects points with accuracy worse than this. Filter client-
-// side too so we don't waste a network call on garbage.
-const MAX_ACCURACY_M = 200;
+// MAX_ACCURACY_M is imported from `@/services/trackingTask` to keep a
+// single source of truth shared with the background-task filter.
 // Batch upload cadence.
 const FLUSH_INTERVAL_MS = 60_000;
 // Heartbeat keep-alive. Independent of position pings so the freshness
@@ -35,31 +37,35 @@ const HEARTBEAT_INTERVAL_MS = 15 * 60_000;
 const FLUSH_BATCH_SIZE = 100;
 
 /**
- * Foreground tracking watcher options for the two cadence modes. Step 3 is
- * foreground-only (`watchPositionAsync`). Step 5 will add a parallel
- * configuration for `startLocationUpdatesAsync` (background task).
+ * Background-capable tracking options for the two cadence modes. Same
+ * shape as the step-3 watcher options plus the iOS-specific flags that
+ * make the OS treat this as a long-running, user-aware activity:
+ *
+ * - showsBackgroundLocationIndicator: shows the blue "live tracking"
+ *   pill in iOS's status bar. Required by Apple for transparency.
+ * - pausesUpdatesAutomatically: iOS pauses location when it detects the
+ *   user is stationary (e.g. phone parked at a hotel) and resumes when
+ *   they move. Saves significant battery on multi-day expeditions.
+ * - activityType: hint to iOS that this is travel/navigation, not a
+ *   workout — improves cadence under battery-saver heuristics.
+ * - foregroundService is Android-only; no Android target on Phase 1b.
  */
-const ACTIVE_WATCH_OPTS: Location.LocationOptions = {
+const ACTIVE_TRACKING_OPTS: Location.LocationTaskOptions = {
   accuracy: Location.Accuracy.Balanced,
   timeInterval: 60_000,
   distanceInterval: 50,
+  showsBackgroundLocationIndicator: true,
+  pausesUpdatesAutomatically: true,
+  activityType: Location.ActivityType.OtherNavigation,
 };
-const CONSERVATIVE_WATCH_OPTS: Location.LocationOptions = {
+const CONSERVATIVE_TRACKING_OPTS: Location.LocationTaskOptions = {
   accuracy: Location.Accuracy.Balanced,
   timeInterval: 5 * 60_000,
   distanceInterval: 500,
+  showsBackgroundLocationIndicator: true,
+  pausesUpdatesAutomatically: true,
+  activityType: Location.ActivityType.OtherNavigation,
 };
-
-function makeClientUuid(): string {
-  // Prefer Hermes' global crypto.randomUUID (available in RN 0.71+ /
-  // Hermes 0.11.1+) for full 122-bit UUID4 randomness. Fall back to the
-  // timestamp + base36 form if not exposed.
-  const g = globalThis as { crypto?: { randomUUID?: () => string } };
-  if (typeof g.crypto?.randomUUID === 'function') {
-    return g.crypto.randomUUID();
-  }
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-}
 
 /**
  * Live tracking client-side state machine.
@@ -193,14 +199,43 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
     void refreshPermissionLevel();
   }, [refreshPermissionLevel]);
 
-  // Foreground tracking pipeline. Subscribes to `Location.watchPositionAsync`
-  // whenever status is 'active' and a track exists. Each callback persists
-  // to the SQLite buffer + sets latestPosition; a 60s interval drains the
-  // buffer to the server; a 15-min interval sends a heartbeat.
-  //
-  // The SQLite buffer (step 4) replaces the in-memory array from step 3
-  // so points survive app restart / crash / kill-and-relaunch. Background
-  // tracking comes in step 5.
+  // Re-check permission whenever the app returns to the foreground. If
+  // the user revoked Always while we were running, iOS silently stops
+  // delivering background events — the banner would otherwise read
+  // "LIVE" indefinitely with no points coming in. We surface the
+  // degradation via the error state so the UI can warn; we don't
+  // auto-pause because the user can still get foreground pings via
+  // When-in-Use.
+  const trackingActiveRef = useRef(false);
+  trackingActiveRef.current = status === 'active';
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next !== 'active') return;
+      void (async () => {
+        const before = permissionLevel;
+        const after = await refreshPermissionLevel();
+        if (
+          trackingActiveRef.current &&
+          before === 'always' &&
+          after !== 'always'
+        ) {
+          setError(
+            'Background location permission was revoked. Tracking will only record while the app is open. Re-enable Always in iOS Settings → Privacy → Location Services → Heimursaga to resume background tracking.',
+          );
+        }
+      })();
+    });
+    return () => sub.remove();
+  }, [permissionLevel, refreshPermissionLevel]);
+
+  // Tracking pipeline. While status is 'active', registers an OS-level
+  // location task via `startLocationUpdatesAsync(TRACKING_TASK_NAME, opts)`.
+  // The TaskManager callback (defined once in trackingTask.ts) runs in
+  // both foreground and background contexts, writing each point to the
+  // SQLite buffer. A separate foreground listener updates React state
+  // (latestPosition) for the UI; that listener is silent in the killed-
+  // and-relaunched-headless case. The 60s flush timer drains the buffer
+  // to the server; the 15-min heartbeat keeps the freshness badge live.
   useEffect(() => {
     if (status !== 'active' || !expeditionId || !trackId) return;
     // Narrow the closure to non-null locals so we don't carry `null | T`
@@ -208,10 +243,11 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
     const eid = expeditionId;
     const tid = trackId;
 
-    const opts = mode === 'conservative' ? CONSERVATIVE_WATCH_OPTS : ACTIVE_WATCH_OPTS;
-    let sub: Location.LocationSubscription | null = null;
+    const opts =
+      mode === 'conservative' ? CONSERVATIVE_TRACKING_OPTS : ACTIVE_TRACKING_OPTS;
     let flushTimer: ReturnType<typeof setInterval> | null = null;
     let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+    let removeLocationListener: (() => void) | null = null;
     let flushInFlight = false;
     let cancelled = false;
 
@@ -300,46 +336,38 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    const startWatcher = async () => {
+    const startTask = async () => {
       try {
-        sub = await Location.watchPositionAsync(opts, (loc) => {
+        // Persist the session config first — the TaskManager callback
+        // reads it on every delivery to know which expedition + track
+        // to attribute points to.
+        await setTrackingSession({ expeditionId: eid, trackId: tid, mode });
+
+        // Stop-then-start unconditionally. The OS may still have the
+        // task registered from a previous session (force-quit, crash,
+        // or mode change re-running this effect before the previous
+        // cleanup's stopLocationUpdatesAsync resolved). A bare start
+        // call would no-op or apply opts in-place inconsistently — and
+        // worse, in the mode-change case the OS would keep the OLD
+        // cadence options. Always stop first, always start with the
+        // current mode's opts.
+        await Location.stopLocationUpdatesAsync(TRACKING_TASK_NAME).catch(() => {});
+        await Location.startLocationUpdatesAsync(TRACKING_TASK_NAME, opts);
+
+        // Foreground-only listener for UI updates. The TaskManager task
+        // does the SQLite write regardless; this just keeps the
+        // latestPosition state fresh while React is alive. When the
+        // app is backgrounded or killed, this listener never fires
+        // (different JS context or no React tree), but the buffer still
+        // accumulates via the task and the next flush picks it up.
+        removeLocationListener = addLocationListener((loc) => {
           if (cancelled) return;
           const accuracy = loc.coords.accuracy ?? undefined;
           if (accuracy != null && accuracy > MAX_ACCURACY_M) return;
-
-          // Hoist the Date construction — used in both the ISO string for
-          // the upload payload and the latestPosition state.
-          const recordedAt = new Date(loc.timestamp);
-          // CLLocation returns -1 when speed is unknown; expo-location
-          // passes that through unchanged.
-          const speed =
-            loc.coords.speed != null && loc.coords.speed >= 0
-              ? loc.coords.speed
-              : undefined;
-
-          // Persist to SQLite asynchronously. We don't await — the
-          // watcher callback is synchronous-by-convention and a slow
-          // SQLite write shouldn't drop the next callback. Errors are
-          // logged but don't surface to the user (the next flush pulls
-          // whatever did persist).
-          void bufferInsert({
-            expeditionId: eid,
-            trackId: tid,
-            recordedAt: recordedAt.toISOString(),
-            lat: loc.coords.latitude,
-            lon: loc.coords.longitude,
-            accuracyM: accuracy,
-            speedMps: speed,
-            altitudeM: loc.coords.altitude ?? undefined,
-            clientUuid: makeClientUuid(),
-          }).catch((e) => {
-            // eslint-disable-next-line no-console
-            console.warn('[TrackingContext] bufferInsert failed:', e);
-          });
           setLatestPosition({
             lat: loc.coords.latitude,
             lon: loc.coords.longitude,
-            recordedAt,
+            recordedAt: new Date(loc.timestamp),
             accuracyM: accuracy,
           });
         });
@@ -359,23 +387,30 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
         // (e.g., crash-then-resume in the same app launch).
         void flushBuffer();
       } catch (e) {
-        // expo-location threw at subscribe time. Most likely permission
-        // revoked at the OS level mid-session. Surface to the user via
-        // status + error rather than leaving the banner saying "LIVE"
-        // with no points coming in.
-        const msg = e instanceof Error ? e.message : 'Location watch failed';
+        // expo-location threw at startLocationUpdates time. Most likely
+        // permission revoked at the OS level, or background mode not
+        // properly configured. Surface to the user via status + error
+        // rather than leaving the banner saying "LIVE" with no points
+        // coming in.
+        const msg = e instanceof Error ? e.message : 'Location updates failed';
         setError(msg);
         setStatus('paused');
+        await clearTrackingSession().catch(() => {});
       }
     };
 
-    void startWatcher();
+    void startTask();
 
     return () => {
       cancelled = true;
-      sub?.remove();
+      removeLocationListener?.();
       if (flushTimer) clearInterval(flushTimer);
       if (heartbeatTimer) clearInterval(heartbeatTimer);
+      // Stop the OS-level updates and clear the session row. Both are
+      // best-effort — stop can throw if the task isn't running, and a
+      // stale session row is recovered by the next mount's drain.
+      void Location.stopLocationUpdatesAsync(TRACKING_TASK_NAME).catch(() => {});
+      void clearTrackingSession().catch(() => {});
       // No explicit final flush — `cancelled = true` would short-circuit
       // it anyway, and any unflushed points are durable in SQLite. They
       // get picked up by the cross-restart drain on next mount, or by
@@ -555,13 +590,16 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
 
   const pauseTracking = useCallback<TrackingActions['pauseTracking']>(async () => {
     if (status !== 'active') return;
-    // Step 3: also stop the foreground/background location task.
+    // Status transition triggers the tracking effect's cleanup, which
+    // stops the OS-level location updates and clears the session row.
+    // No further work needed here.
     setStatus('paused');
   }, [status]);
 
   const resumeTracking = useCallback<TrackingActions['resumeTracking']>(async () => {
     if (status !== 'paused') return;
-    // Step 3: also re-subscribe the foreground/background location task.
+    // Status transition triggers the tracking effect to re-fire, which
+    // re-registers the OS-level location updates with the current mode.
     setStatus('active');
   }, [status]);
 
