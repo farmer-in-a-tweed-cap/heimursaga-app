@@ -14,22 +14,25 @@ import {
   expeditionApi,
   type TrackPointInput,
 } from '@/services/api';
+import {
+  bufferDelete,
+  bufferInsert,
+  bufferListPendingTracks,
+  bufferPruneStale,
+  bufferReadBatch,
+} from '@/services/trackingBuffer';
 
 // Server-side rejects points with accuracy worse than this. Filter client-
 // side too so we don't waste a network call on garbage.
 const MAX_ACCURACY_M = 200;
-// Batch upload cadence. Step 4 will add an SQLite buffer behind this for
-// offline durability; for now the buffer lives in-memory.
+// Batch upload cadence.
 const FLUSH_INTERVAL_MS = 60_000;
 // Heartbeat keep-alive. Independent of position pings so the freshness
 // badge stays accurate while the explorer is stationary.
 const HEARTBEAT_INTERVAL_MS = 15 * 60_000;
-// Defensive cap on the in-memory retry buffer. With healthy network this
-// stays empty; with a long offline period at 1 point/min, 5000 ≈ 83 hours
-// of pings. Beyond this, oldest points are dropped to keep memory bounded
-// and avoid Hermes call-stack overflow from `unshift(...veryLargeArray)`.
-// Step 4's SQLite buffer will replace this entirely.
-const MAX_BUFFER_SIZE = 5000;
+// Per-flush batch size. The server's @ArrayMaxSize on the DTO is 200 —
+// stay under that ceiling with margin.
+const FLUSH_BATCH_SIZE = 100;
 
 /**
  * Foreground tracking watcher options for the two cadence modes. Step 3 is
@@ -191,11 +194,13 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
   }, [refreshPermissionLevel]);
 
   // Foreground tracking pipeline. Subscribes to `Location.watchPositionAsync`
-  // whenever status is 'active' and a track exists. Each callback appends
-  // to an in-memory buffer + sets latestPosition; a 60s interval flushes
-  // the buffer to the server; a 15-min interval sends a heartbeat.
+  // whenever status is 'active' and a track exists. Each callback persists
+  // to the SQLite buffer + sets latestPosition; a 60s interval drains the
+  // buffer to the server; a 15-min interval sends a heartbeat.
   //
-  // Background tracking + persistent buffer come in steps 4 and 5.
+  // The SQLite buffer (step 4) replaces the in-memory array from step 3
+  // so points survive app restart / crash / kill-and-relaunch. Background
+  // tracking comes in step 5.
   useEffect(() => {
     if (status !== 'active' || !expeditionId || !trackId) return;
     // Narrow the closure to non-null locals so we don't carry `null | T`
@@ -207,16 +212,13 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
     let sub: Location.LocationSubscription | null = null;
     let flushTimer: ReturnType<typeof setInterval> | null = null;
     let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
-    const buffer: TrackPointInput[] = [];
+    let flushInFlight = false;
     let cancelled = false;
 
     const handleTrackEnded = () => {
       // Server auto-stopped the track (expedition status changed mid-
-      // session, or upstream auto-stop fired). Align client state by
-      // resetting to idle — this also triggers cleanup of this effect
-      // via the status-dep change. Without this, the watcher would keep
-      // collecting points and every flush would 404 until the user
-      // notices and taps Stop manually.
+      // session). Align client state by resetting to idle — also triggers
+      // cleanup of this effect via the status-dep change.
       // eslint-disable-next-line no-console
       console.info('[TrackingContext] server auto-stopped track on append');
       setTrackId(null);
@@ -228,52 +230,61 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
     };
 
     const flushBuffer = async () => {
-      if (cancelled || buffer.length === 0) return;
-      const batch = buffer.splice(0, buffer.length);
+      // Re-entrancy guard — a slow network on one flush can otherwise
+      // overlap with the next 60s tick. SQLite handles concurrent writes
+      // fine but we only need one upload in flight.
+      if (cancelled || flushInFlight) return;
+      flushInFlight = true;
       try {
-        const res = await trackApi.appendPoints(eid, tid, batch);
-        if (res.trackEnded) {
-          handleTrackEnded();
-          return;
-        }
-        if (res.rejected > 0) {
-          // Server-side filter (accuracy or recorded_at window) dropped
-          // points the client thought were valid. Most commonly a clock-
-          // skewed device — surface for diagnostics.
-          // eslint-disable-next-line no-console
-          console.warn(
-            `[TrackingContext] server rejected ${res.rejected}/${batch.length} points (clock skew or accuracy filter)`,
+        const batch = await bufferReadBatch(tid, FLUSH_BATCH_SIZE);
+        // Early return — finally still runs and resets flushInFlight.
+        if (batch.length === 0) return;
+        try {
+          const res = await trackApi.appendPoints(eid, tid, batch);
+          // Delete on any non-throw outcome — the server accepted (or
+          // explicitly rejected) the batch, so the rows have completed
+          // their journey. Keeping them around would force the same
+          // batch to retry on every subsequent flush. Same behavior as
+          // the cross-restart drain below — keep the two paths
+          // consistent so step 5 (background task) can share logic.
+          const allUuids = batch.map((p) => p.clientUuid);
+          const uuids = allUuids.filter(
+            (u): u is string => typeof u === 'string',
           );
-        }
-      } catch (e) {
-        // Network failure or transient server error — keep points so the
-        // next cycle retries. client_uuid deduplicates on the server, so
-        // re-uploading the same batch is safe.
-        //
-        // Re-check `cancelled` because await may have yielded long enough
-        // for the cleanup to run. If we're orphaned, the unshift goes to
-        // a dead buffer — surface that explicitly rather than silently
-        // dropping the points.
-        if (cancelled) {
-          // eslint-disable-next-line no-console
-          console.warn(
-            `[TrackingContext] appendPoints failed after teardown — ${batch.length} points lost (will be reclaimed by SQLite buffer in step 4)`,
-          );
-        } else {
-          // Defensive bound: cap the buffer so a long offline period plus
-          // a worst-case retry storm can't blow the call stack.
-          buffer.unshift(...batch);
-          if (buffer.length > MAX_BUFFER_SIZE) {
-            const dropped = buffer.length - MAX_BUFFER_SIZE;
-            buffer.length = MAX_BUFFER_SIZE;
+          if (uuids.length < allUuids.length) {
             // eslint-disable-next-line no-console
             console.warn(
-              `[TrackingContext] buffer at cap — dropped ${dropped} oldest unsent points`,
+              `[TrackingContext] ${allUuids.length - uuids.length} buffered points had no clientUuid — leaving in table for 25h prune`,
             );
           }
+          await bufferDelete(uuids);
+          if (res.rejected > 0) {
+            // Server-side filter (accuracy / recorded_at window) dropped
+            // some points. Most commonly a clock-skewed device. Surface
+            // for diagnostics. Rejected points are deleted with the
+            // accepted ones above — they won't be re-accepted on retry.
+            // eslint-disable-next-line no-console
+            console.warn(
+              `[TrackingContext] server rejected ${res.rejected}/${batch.length} points (clock skew or accuracy filter)`,
+            );
+          }
+          if (res.trackEnded) {
+            handleTrackEnded();
+            return;
+          }
+        } catch (e) {
+          // Network or transient server error — leave the rows. Next
+          // flush will pick them up again. With the SQLite buffer the
+          // points survive app restart, so even if the user closes the
+          // app mid-failure they'll re-attempt on the next launch via
+          // the drain below.
           // eslint-disable-next-line no-console
           console.warn('[TrackingContext] appendPoints failed, will retry:', e);
         }
+      } finally {
+        // Reached via successful flush, batch.length===0 early return,
+        // or appendPoints throw — flushInFlight must always reset.
+        flushInFlight = false;
       }
     };
 
@@ -306,7 +317,14 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
               ? loc.coords.speed
               : undefined;
 
-          const point: TrackPointInput = {
+          // Persist to SQLite asynchronously. We don't await — the
+          // watcher callback is synchronous-by-convention and a slow
+          // SQLite write shouldn't drop the next callback. Errors are
+          // logged but don't surface to the user (the next flush pulls
+          // whatever did persist).
+          void bufferInsert({
+            expeditionId: eid,
+            trackId: tid,
             recordedAt: recordedAt.toISOString(),
             lat: loc.coords.latitude,
             lon: loc.coords.longitude,
@@ -314,11 +332,13 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
             speedMps: speed,
             altitudeM: loc.coords.altitude ?? undefined,
             clientUuid: makeClientUuid(),
-          };
-          buffer.push(point);
+          }).catch((e) => {
+            // eslint-disable-next-line no-console
+            console.warn('[TrackingContext] bufferInsert failed:', e);
+          });
           setLatestPosition({
-            lat: point.lat,
-            lon: point.lon,
+            lat: loc.coords.latitude,
+            lon: loc.coords.longitude,
             recordedAt,
             accuracyM: accuracy,
           });
@@ -334,6 +354,10 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
         // Fire one heartbeat immediately so the badge flips to "Live" the
         // moment tracking starts, not 15 minutes later.
         void sendHeartbeat();
+        // And do an opportunistic flush in case the SQLite buffer holds
+        // leftover points from a previous session on the same track
+        // (e.g., crash-then-resume in the same app launch).
+        void flushBuffer();
       } catch (e) {
         // expo-location threw at subscribe time. Most likely permission
         // revoked at the OS level mid-session. Surface to the user via
@@ -352,18 +376,95 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
       sub?.remove();
       if (flushTimer) clearInterval(flushTimer);
       if (heartbeatTimer) clearInterval(heartbeatTimer);
-      // Best-effort flush of any unsent points on teardown. Buffer is
-      // captured in this closure; the parent effect is gone but the
-      // promise still resolves.
-      // TODO(step-4): if this final flush fails, points are lost. SQLite
-      // will make the buffer durable across pause/stop boundaries.
-      if (buffer.length > 0) {
-        void trackApi.appendPoints(eid, tid, buffer).catch(() => {
-          // Swallow — there's no client UI left to surface the error to.
-        });
-      }
+      // No explicit final flush — `cancelled = true` would short-circuit
+      // it anyway, and any unflushed points are durable in SQLite. They
+      // get picked up by the cross-restart drain on next mount, or by
+      // the next flush cycle if the same track resumes.
     };
   }, [status, expeditionId, trackId, mode]);
+
+  // On Provider mount, drain any pending points left over from a previous
+  // session (crashed mid-tracking, app killed before flush, network was
+  // down during stop). For each pending track, loops batches until empty
+  // or a transport error. Orphaned tracks the user no longer owns will
+  // fail and rows are left for the next launch or the 25h prune.
+  const drainRanRef = useRef(false);
+  useEffect(() => {
+    // Provider remounts (Fast Refresh in dev, or unexpected unmount)
+    // shouldn't re-fire the drain — client_uuid dedup on the server
+    // makes it safe, but the duplicate round-trip is wasted bandwidth.
+    if (drainRanRef.current) return;
+    drainRanRef.current = true;
+
+    let cancelled = false;
+    // Safety bound on loop iterations per track. At 100 points per batch
+    // this drains up to 100k rows per track per launch — more than the
+    // 25h prune threshold can ever accumulate at conservative cadence
+    // (~12 points/h × 25h = 300 points).
+    const MAX_BATCHES_PER_TRACK = 1000;
+
+    void (async () => {
+      try {
+        const pruned = await bufferPruneStale();
+        if (pruned > 0) {
+          // eslint-disable-next-line no-console
+          console.info(`[TrackingContext] pruned ${pruned} stale buffered points`);
+        }
+        const groups = await bufferListPendingTracks();
+        for (const g of groups) {
+          if (cancelled) return;
+          let batches = 0;
+          let stopGroup = false;
+          while (!cancelled && !stopGroup && batches < MAX_BATCHES_PER_TRACK) {
+            batches++;
+            try {
+              const batch = await bufferReadBatch(g.trackId, FLUSH_BATCH_SIZE);
+              if (batch.length === 0) break;
+              const res = await trackApi.appendPoints(
+                g.expeditionId,
+                g.trackId,
+                batch,
+              );
+              const allUuids = batch.map((p) => p.clientUuid);
+              const uuids = allUuids.filter(
+                (u): u is string => typeof u === 'string',
+              );
+              await bufferDelete(uuids);
+              if (res.trackEnded) {
+                // eslint-disable-next-line no-console
+                console.info(
+                  `[TrackingContext] drain: track ${g.trackId} ended on server — moving to next group`,
+                );
+                // Don't `break` the OUTER loop — other groups may still
+                // be drainable. Just stop iterating THIS group.
+                stopGroup = true;
+              }
+              // If batch was smaller than the limit, this track is drained.
+              if (batch.length < FLUSH_BATCH_SIZE) {
+                stopGroup = true;
+              }
+            } catch (e) {
+              // Drain failure (network down, auth expired, server 404 for
+              // an orphaned track) — leave rows for next launch. Don't
+              // block the user-facing app on this background work.
+              // eslint-disable-next-line no-console
+              console.warn(
+                `[TrackingContext] drain failed for track ${g.trackId}, will retry next launch:`,
+                e,
+              );
+              stopGroup = true;
+            }
+          }
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('[TrackingContext] drain init failed:', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const requestWhenInUsePermission = useCallback(async (): Promise<LocationPermissionLevel> => {
     const fg = await Location.requestForegroundPermissionsAsync();
