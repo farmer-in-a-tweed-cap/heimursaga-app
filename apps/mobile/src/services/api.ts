@@ -407,6 +407,74 @@ export const expeditionApi = {
   deleteReview(id: string) {
     return api.delete<void>(`/trips/${id}/reviews`);
   },
+  updateLiveTrackVisibility(id: string, visibility: 'public' | 'sponsors' | 'private') {
+    return api.patch<void>(`/trips/${id}/live-track-visibility`, { visibility });
+  },
+};
+
+// ─── Live tracking ───
+
+export interface TrackPolyline {
+  type: 'LineString';
+  coordinates: [number, number][]; // [lng, lat][]
+}
+
+export interface CurrentTrackResponse {
+  trackId: number | null;
+  polyline: TrackPolyline | null;
+  isActive: boolean;
+  lastPointAt: string | null;
+  heartbeatAt: string | null;
+  startedAt: string | null;
+  endedAt: string | null;
+}
+
+export interface TrackStartResponse {
+  trackId: number;
+  startedAt: string;
+}
+
+export interface TrackAppendResponse {
+  accepted: number;
+  rejected: number;
+  trackEnded: boolean;
+}
+
+export interface TrackPointInput {
+  recordedAt: string;
+  lat: number;
+  lon: number;
+  accuracyM?: number;
+  speedMps?: number;
+  altitudeM?: number;
+  batteryPct?: number;
+  clientUuid?: string;
+}
+
+export const trackApi = {
+  start(expeditionId: string, sourceDeviceId?: string) {
+    return api.post<TrackStartResponse>(`/trips/${expeditionId}/tracks`, {
+      source: 'mobile',
+      sourceDeviceId,
+    });
+  },
+  appendPoints(expeditionId: string, trackId: number, points: TrackPointInput[]) {
+    return api.post<TrackAppendResponse>(
+      `/trips/${expeditionId}/tracks/${trackId}/points`,
+      { points },
+    );
+  },
+  heartbeat(expeditionId: string, trackId: number) {
+    return api.post<{ ok: true }>(`/trips/${expeditionId}/tracks/${trackId}/heartbeat`);
+  },
+  stop(expeditionId: string, trackId: number) {
+    return api.post<{ ok: true }>(`/trips/${expeditionId}/tracks/${trackId}/stop`);
+  },
+  getCurrent(expeditionId: string, maxPoints?: number) {
+    return api.get<CurrentTrackResponse>(
+      `/trips/${expeditionId}/tracks/current${maxPoints ? `?maxPoints=${maxPoints}` : ''}`,
+    );
+  },
 };
 
 export const sponsorshipApi = {

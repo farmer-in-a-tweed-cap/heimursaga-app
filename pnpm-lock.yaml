@@ -345,9 +345,15 @@ importers:
       expo-splash-screen:
         specifier: ~55.0.10
         version: 55.0.10(expo@55.0.4)(typescript@5.9.2)
+      expo-sqlite:
+        specifier: ~55.0.16
+        version: 55.0.16(expo@55.0.4)(react-native@0.83.2)(react@19.2.0)
       expo-status-bar:
         specifier: ~55.0.4
         version: 55.0.4(react-native@0.83.2)(react@19.2.0)
+      expo-task-manager:
+        specifier: ~55.0.16
+        version: 55.0.16(expo@55.0.4)(react-native@0.83.2)
       expo-updates:
         specifier: ~55.0.0
         version: 55.0.0(expo@55.0.4)(react-native@0.83.2)(react@19.2.0)(typescript@5.9.2)
@@ -12360,6 +12366,10 @@ packages:
       fastq: 1.19.1
     dev: false
 
+  /await-lock@2.2.2:
+    resolution: {integrity: sha512-aDczADvlvTGajTDjcjpJMqRkOF6Qdz3YbPZm/PyW6tKPkx2hlYBzxMhEywM/tU72HrVZjgl5VCdRuMlA7pZ8Gw==}
+    dev: false
+
   /axe-core@4.10.3:
     resolution: {integrity: sha512-Xm7bpRXnDSX2YE2YFfBk2FnF0ep6tmG7xPh8iHee8MIcrgq762Nkce856dYtJYLkuIoYZvGfTs/PbZhideTcEg==}
     engines: {node: '>=4'}
@@ -15411,6 +15421,19 @@ packages:
       - typescript
     dev: false
 
+  /expo-sqlite@55.0.16(expo@55.0.4)(react-native@0.83.2)(react@19.2.0):
+    resolution: {integrity: sha512-v6EIL4ygqWt/+ZfI76jIIv+IIaU8PnWPNjkmIN95vEQgh0FrWqzwssqe5ffQmm79kIfqIPTtAgTdl8MuZv88gg==}
+    peerDependencies:
+      expo: '*'
+      react: '*'
+      react-native: '*'
+    dependencies:
+      await-lock: 2.2.2
+      expo: 55.0.4(@babel/core@7.28.3)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.6)(expo-router@55.0.3)(react-dom@18.3.1)(react-native@0.83.2)(react@19.2.0)(typescript@5.9.2)
+      react: 19.2.0
+      react-native: 0.83.2(@babel/core@7.28.3)(@types/react@18.3.28)(react@19.2.0)
+    dev: false
+
   /expo-status-bar@55.0.4(react-native@0.83.2)(react@19.2.0):
     resolution: {integrity: sha512-BPDjUXKqv1F9j2YNGLRZfkBEZXIEEpqj+t81y4c+4fdSN3Pos7goIHXgcl2ozbKQLgKRZQyNZQtbUgh5UjHYUQ==}
     peerDependencies:
@@ -15440,6 +15463,17 @@ packages:
       react: 19.2.0
       react-native: 0.83.2(@babel/core@7.28.3)(@types/react@18.3.28)(react@19.2.0)
       sf-symbols-typescript: 2.2.0
+
+  /expo-task-manager@55.0.16(expo@55.0.4)(react-native@0.83.2):
+    resolution: {integrity: sha512-MR3eg/nyOlTErh38hL3cDXvBhhRtiXDoh1iYjHVeFs8xZ89zB3Y5CPDkK8HgxGrfOZdeI7ntrHJD9Niy6WnlVQ==}
+    peerDependencies:
+      expo: '*'
+      react-native: '*'
+    dependencies:
+      expo: 55.0.4(@babel/core@7.28.3)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.6)(expo-router@55.0.3)(react-dom@18.3.1)(react-native@0.83.2)(react@19.2.0)(typescript@5.9.2)
+      react-native: 0.83.2(@babel/core@7.28.3)(@types/react@18.3.28)(react@19.2.0)
+      unimodules-app-loader: 55.0.5
+    dev: false
 
   /expo-updates-interface@55.0.0(expo@55.0.4):
     resolution: {integrity: sha512-oBLzGLw0oJX3gXMdjiuvpWXkcX5LlIdwkf4x/0pMMaEyw3CwFlO/O2aMc9jhsbR7HlVCSaD2PY4XcqevKSnobg==}
@@ -22623,6 +22657,10 @@ packages:
   /unicode-property-aliases-ecmascript@2.2.0:
     resolution: {integrity: sha512-hpbDzxUY9BFwX+UeBnxv3Sh1q7HFxj48DTmXchNgRa46lO8uj3/1iEn3MiNUYTg1g9ctIqXCCERn8gYZhHC5lQ==}
     engines: {node: '>=4'}
+
+  /unimodules-app-loader@55.0.5:
+    resolution: {integrity: sha512-2eLjtaAVQTK3EeiUAgRbfEnX78f6cMtw5Js8Ri4OcEdkrozsmvG3Wu8YVfr6kfhea17FHZkKZmO1m4dL/Ky2Bg==}
+    dev: false
 
   /universalify@0.2.0:
     resolution: {integrity: sha512-CJ1QgKmNg3CwvAv/kOFmtnEN05f0D/cn9QntgNOQlQF9dgvVTHj3t+8JPdjqawCHk7V/KA+fbUqzZ9XWhcqPUg==}

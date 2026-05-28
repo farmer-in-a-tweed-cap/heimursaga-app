@@ -113,9 +113,11 @@ interface ExpeditionDetail {
   waypoints?: ExpeditionWaypoint[];
   bookmarked?: boolean;
   followingAuthor?: boolean;
-  currentLocationSource?: 'waypoint' | 'entry';
+  currentLocationSource?: 'waypoint' | 'entry' | 'live_track';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
+  /** Polyline visibility — distinct from pin (current_location_visibility). Defaults 'private'. */
+  liveTrackVisibility?: 'public' | 'sponsors' | 'private';
   routeMode?: string;
   routeGeometry?: number[][];
   isRoundTrip?: boolean;
@@ -384,8 +386,16 @@ export default function ExpeditionDetailScreen() {
 
   const openLocationModal = useCallback(() => {
     if (!expedition) return;
-    setLocSource(expedition.currentLocationSource || 'entry');
-    setLocSelectedId(expedition.currentLocationId || '');
+    // Narrow 'live_track' out — the manual location modal only picks
+    // between waypoint and entry. Saving from this modal implicit-stops
+    // any active track server-side.
+    const src = expedition.currentLocationSource;
+    setLocSource(src === 'waypoint' || src === 'entry' ? src : 'entry');
+    // When the current source is live_track, `currentLocationId` is a
+    // TrackPoint id — useless for the entry/waypoint picker, and saving
+    // without re-picking would 404 the entry lookup. Clear it so the
+    // Save button stays disabled until the user makes a fresh selection.
+    setLocSelectedId(src === 'live_track' ? '' : expedition.currentLocationId || '');
     setLocVisibility(expedition.currentLocationVisibility || 'public');
     setLocationModalVisible(true);
   }, [expedition]);

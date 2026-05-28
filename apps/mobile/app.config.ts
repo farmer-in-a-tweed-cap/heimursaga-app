@@ -35,6 +35,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       NSFaceIDUsageDescription: 'Authenticate to unlock Heimursaga',
       NSPhotoLibraryUsageDescription: 'Upload photos to your journal entries',
       NSLocationWhenInUseUsageDescription: 'Show your location on the Explorer Atlas',
+      // Background-location permission strings and UIBackgroundModes are
+      // driven by the expo-location plugin config below — kept in one
+      // place so removing one half can't leave the other orphaned.
     },
     privacyManifests: {
       NSPrivacyAccessedAPITypes: [
@@ -104,8 +107,24 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-location',
       {
         locationWhenInUsePermission: 'Show your location on the Explorer Atlas',
+        // Tier 2 permission for live expedition tracking. Shown after the
+        // in-app explainer screen when the user has already granted
+        // When-in-Use and is opting up to background tracking. Framed
+        // user-first (visible on the map → people following), with the
+        // explicit pause/stop affordance reminder Apple's reviewers
+        // look for.
+        locationAlwaysAndWhenInUsePermission:
+          'Records your expedition route while the app is in the background so your live track is visible on the map and to people following your expedition. Tracking starts only when you enable it and stops immediately when you pause or end the expedition.',
+        // Legacy alias — Apple still requires it on older iOS targets.
+        locationAlwaysPermission:
+          'Records your expedition route while the app is in the background so your live track is visible on the map and to people following your expedition. Tracking starts only when you enable it and stops immediately when you pause or end the expedition.',
+        // Adds UIBackgroundModes: ['location'] to Info.plist via the
+        // plugin's withBackgroundLocation mod. Sole source — no longer
+        // duplicated in the top-level infoPlist block.
+        isIosBackgroundLocationEnabled: true,
       },
     ],
+    'expo-task-manager',
     '@react-native-community/datetimepicker',
     'expo-notifications',
     'react-native-iap',
