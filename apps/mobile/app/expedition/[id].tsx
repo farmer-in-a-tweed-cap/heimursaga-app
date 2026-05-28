@@ -16,6 +16,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
+import { useTracking, type TrackingMode } from '@/context/TrackingContext';
+import { TrackingStartModeModal } from '@/components/tracking/TrackingStartModeModal';
+import { TrackingPermissionExplainer } from '@/components/tracking/TrackingPermissionExplainer';
 import { useApi } from '@/hooks/useApi';
 import { api, ApiError, expeditionApi, bookmarksApi, explorerApi } from '@/services/api';
 import { MAPBOX_TOKEN } from '@/services/mapConfig';
@@ -383,6 +386,56 @@ export default function ExpeditionDetailScreen() {
   const [locSelectedId, setLocSelectedId] = useState('');
   const [locVisibility, setLocVisibility] = useState<'public' | 'sponsors' | 'private'>('public');
   const [locSaving, setLocSaving] = useState(false);
+
+  // Live tracking modal flow
+  const tracking = useTracking();
+  const [trackModeModalVisible, setTrackModeModalVisible] = useState(false);
+  const [trackExplainerVisible, setTrackExplainerVisible] = useState(false);
+  const [startedTrackMode, setStartedTrackMode] = useState<TrackingMode | null>(null);
+
+  const openTrackingFlow = useCallback(async () => {
+    // Ensure foreground permission first. The Always upgrade happens via
+    // the explainer screen AFTER the mode pick, so the user has set
+    // intent before we ask for background access. Defer closing the
+    // location modal until the permission resolves so the user doesn't
+    // lose context if they need to re-open it after denying.
+    const level = await tracking.requestWhenInUsePermission();
+    if (level === 'denied' || level === 'undetermined') {
+      Alert.alert(
+        'Location permission needed',
+        'Heimursaga needs your location to record this expedition. Enable Location for Heimursaga in iOS Settings.',
+      );
+      return;
+    }
+    setLocationModalVisible(false);
+    setTrackModeModalVisible(true);
+  }, [tracking]);
+
+  const handleTrackingModePick = useCallback(
+    async (mode: TrackingMode) => {
+      setTrackModeModalVisible(false);
+      if (!expedition || !id) return;
+      try {
+        await tracking.startTracking({
+          expeditionId: id,
+          expeditionTitle: expedition.title,
+          mode,
+        });
+        // Re-read the OS state rather than trusting the closure — the
+        // explainer + permission flow may have updated permissionLevel
+        // between the render that captured `tracking` and this point.
+        const currentLevel = await tracking.refreshPermissionLevel();
+        if (currentLevel !== 'always') {
+          setStartedTrackMode(mode);
+          setTrackExplainerVisible(true);
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Failed to start tracking';
+        Alert.alert('Could not start tracking', msg);
+      }
+    },
+    [expedition, id, tracking],
+  );
 
   const openLocationModal = useCallback(() => {
     if (!expedition) return;
@@ -1856,6 +1909,33 @@ export default function ExpeditionDetailScreen() {
                 </Text>
               </View>
 
+              {/* Live tracking entry point — alternative to picking a waypoint
+                  or entry. Available only on an `active` expedition: planned
+                  trips need to be started via the existing START EXPEDITION
+                  flow first, and completed/cancelled trips don't accept
+                  new pings server-side. */}
+              {tracking.status === 'idle' && expedition?.status === 'active' && (
+                  <Pressable
+                    onPress={openTrackingFlow}
+                    style={({ pressed }) => [
+                      styles.locInfoBox,
+                      {
+                        borderLeftColor: brandColors.copper,
+                        opacity: pressed ? 0.8 : 1,
+                      },
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Start live tracking from this device"
+                  >
+                    <Text style={[styles.locInfoTitle, { color: brandColors.copper }]}>
+                      OR — LIVE TRACK FROM THIS DEVICE
+                    </Text>
+                    <Text style={[styles.locInfoDesc, { color: colors.textSecondary }]}>
+                      Record your route automatically as you travel. Tap to start →
+                    </Text>
+                  </Pressable>
+                )}
+
               {/* Source toggle */}
               <Text style={[styles.locSectionLabel, { color: colors.text }]}>SELECT SOURCE</Text>
               <View style={styles.locSourceRow}>
@@ -1993,6 +2073,20 @@ export default function ExpeditionDetailScreen() {
           </View>
         </SafeAreaView>
       </Modal>
+
+      <TrackingStartModeModal
+        visible={trackModeModalVisible}
+        onCancel={() => setTrackModeModalVisible(false)}
+        onPick={handleTrackingModePick}
+      />
+      <TrackingPermissionExplainer
+        visible={trackExplainerVisible}
+        onClose={() => setTrackExplainerVisible(false)}
+        onResolved={() => setTrackExplainerVisible(false)}
+        // Conservative mode needs background tracking to actually run —
+        // warn the user before they dismiss without enabling Always.
+        warnOnDismissAlwaysRequired={startedTrackMode === 'conservative'}
+      />
     </View>
   );
 }

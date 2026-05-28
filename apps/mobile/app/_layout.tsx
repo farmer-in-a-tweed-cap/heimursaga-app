@@ -27,6 +27,8 @@ import { ThemeProvider, useTheme } from '@/theme/ThemeContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
+import { TrackingBanner } from '@/components/ui/TrackingBanner';
+import { TrackingProvider } from '@/context/TrackingContext';
 import { initAnalytics, analytics } from '@/services/analytics';
 import {
   registerForPushNotifications,
@@ -549,6 +551,7 @@ function RootNav() {
     <>
       <StatusBar style={dark ? 'light' : 'dark'} />
       <OfflineBanner />
+      <TrackingBanner />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
@@ -609,7 +612,9 @@ export default function RootLayout() {
       <ErrorBoundary>
         <ThemeProvider>
           <AuthProvider>
-            <RootNav />
+            <TrackingProvider>
+              <RootNav />
+            </TrackingProvider>
           </AuthProvider>
         </ThemeProvider>
       </ErrorBoundary>
