@@ -19,7 +19,7 @@ export default function robots(): MetadataRoute.Robots {
           '/expedition-quick-entry',
           '/log-entry',
           '/edit-entry',
-          '/sponsorship',
+          '/sponsorship$', // $ = exact match; bare /sponsorship is the private dashboard, but /sponsorship-guide is a public marketing page
           '/upgrade-success',
           '/payment-success',
           '/cards-preview',
