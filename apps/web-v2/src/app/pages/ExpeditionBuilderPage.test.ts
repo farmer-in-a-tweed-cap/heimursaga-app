@@ -694,3 +694,169 @@ describe('route mode edge cases', () => {
     expect(determineRouteMode(['walking', 'driving'], 'walking')).toBe('mixed');
   });
 });
+
+// ---------------------------------------------------------------------------
+// mergeEntriesIntoWaypoints — replicated verbatim from source.
+// Keep in sync with ExpeditionBuilderPage.tsx.
+// ---------------------------------------------------------------------------
+
+interface EntryContext {
+  id: string;
+  title: string;
+  date: string;
+  place: string;
+  coords: { lat: number; lng: number };
+}
+
+const SAME_LOCATION_EPS = 1e-4;
+
+function mergeEntriesIntoWaypoints(
+  baseWaypoints: Waypoint[],
+  entries: EntryContext[],
+): { waypoints: Waypoint[]; addedStops: boolean } {
+  const linked = new Set<string>();
+  baseWaypoints.forEach((w) => (w.entryIds || []).forEach((id) => linked.add(id)));
+
+  const result = baseWaypoints.map((w) => ({ ...w, entryIds: [...(w.entryIds || [])] }));
+  let addedStops = false;
+
+  for (const entry of entries) {
+    if (linked.has(entry.id)) continue;
+    if (entry.coords.lat === 0 && entry.coords.lng === 0) continue;
+
+    const colocated = result.find(
+      (w) =>
+        Math.abs(w.coordinates.lat - entry.coords.lat) < SAME_LOCATION_EPS &&
+        Math.abs(w.coordinates.lng - entry.coords.lng) < SAME_LOCATION_EPS,
+    );
+    if (colocated) {
+      colocated.entryIds.push(entry.id);
+      if (entry.title && (!colocated.name || /^Waypoint \d+$/.test(colocated.name))) {
+        colocated.name = entry.title;
+      }
+      if (entry.date && !colocated.date) colocated.date = entry.date;
+      if (entry.place && !colocated.location) colocated.location = entry.place;
+      linked.add(entry.id);
+      continue;
+    }
+
+    const newWp: Waypoint = {
+      id: `waypoint-${crypto.randomUUID()}`,
+      sequence: 0,
+      name: entry.title || 'Entry',
+      type: 'standard',
+      coordinates: { lat: entry.coords.lat, lng: entry.coords.lng },
+      location: entry.place || '',
+      date: entry.date || '',
+      description: '',
+      entryIds: [entry.id],
+    };
+    let insertIdx = result.length;
+    if (newWp.date) {
+      for (let i = 0; i < result.length; i++) {
+        if (result[i].date && newWp.date < result[i].date) {
+          insertIdx = i;
+          break;
+        }
+      }
+    }
+    result.splice(insertIdx, 0, newWp);
+    linked.add(entry.id);
+    addedStops = true;
+  }
+
+  return { waypoints: result.map((w, i) => ({ ...w, sequence: i })), addedStops };
+}
+
+function makeEntry(overrides: Partial<EntryContext> & { id: string; coords: { lat: number; lng: number } }): EntryContext {
+  return { title: '', date: '', place: '', ...overrides };
+}
+
+describe('mergeEntriesIntoWaypoints', () => {
+  const A = { lat: 48.8566, lng: 2.3522 }; // Paris
+  const B = { lat: 52.3676, lng: 4.9041 }; // Amsterdam
+
+  it('merges a co-located entry into the existing waypoint (no new node)', () => {
+    const base = [makeWaypoint({ id: 'wp1', name: 'Camp', coordinates: A })];
+    const { waypoints, addedStops } = mergeEntriesIntoWaypoints(base, [
+      makeEntry({ id: 'e1', coords: A }),
+    ]);
+    expect(waypoints).toHaveLength(1);
+    expect(waypoints[0].entryIds).toEqual(['e1']);
+    expect(addedStops).toBe(false);
+  });
+
+  it('treats a point within SAME_LOCATION_EPS as co-located', () => {
+    const base = [makeWaypoint({ id: 'wp1', coordinates: A })];
+    const near = { lat: A.lat + 5e-5, lng: A.lng - 5e-5 };
+    const { waypoints, addedStops } = mergeEntriesIntoWaypoints(base, [
+      makeEntry({ id: 'e1', coords: near }),
+    ]);
+    expect(waypoints).toHaveLength(1);
+    expect(addedStops).toBe(false);
+  });
+
+  it('promotes a distant entry to its own waypoint and flags addedStops', () => {
+    const base = [makeWaypoint({ id: 'wp1', coordinates: A })];
+    const { waypoints, addedStops } = mergeEntriesIntoWaypoints(base, [
+      makeEntry({ id: 'e1', title: 'Summit', coords: B }),
+    ]);
+    expect(waypoints).toHaveLength(2);
+    expect(addedStops).toBe(true);
+    const promoted = waypoints.find((w) => w.entryIds.includes('e1'))!;
+    expect(promoted.name).toBe('Summit');
+    expect(promoted.coordinates).toEqual(B);
+  });
+
+  it('skips entries already linked to a waypoint', () => {
+    const base = [makeWaypoint({ id: 'wp1', coordinates: A, entryIds: ['e1'] })];
+    const { waypoints, addedStops } = mergeEntriesIntoWaypoints(base, [
+      makeEntry({ id: 'e1', coords: B }), // same id already linked — ignored
+    ]);
+    expect(waypoints).toHaveLength(1);
+    expect(waypoints[0].entryIds).toEqual(['e1']);
+    expect(addedStops).toBe(false);
+  });
+
+  it('ignores entries at 0,0', () => {
+    const base = [makeWaypoint({ id: 'wp1', coordinates: A })];
+    const { waypoints, addedStops } = mergeEntriesIntoWaypoints(base, [
+      makeEntry({ id: 'e1', coords: { lat: 0, lng: 0 } }),
+    ]);
+    expect(waypoints).toHaveLength(1);
+    expect(addedStops).toBe(false);
+  });
+
+  it('enriches a bare auto-named waypoint but never clobbers a user name', () => {
+    const base = [
+      makeWaypoint({ id: 'wp1', name: 'Waypoint 1', coordinates: A }),
+      makeWaypoint({ id: 'wp2', name: 'Base Camp', coordinates: B }),
+    ];
+    const { waypoints } = mergeEntriesIntoWaypoints(base, [
+      makeEntry({ id: 'e1', title: 'Arrival', place: 'Paris', coords: A }),
+      makeEntry({ id: 'e2', title: 'Should not override', coords: B }),
+    ]);
+    expect(waypoints.find((w) => w.id === 'wp1')!.name).toBe('Arrival');
+    expect(waypoints.find((w) => w.id === 'wp1')!.location).toBe('Paris');
+    expect(waypoints.find((w) => w.id === 'wp2')!.name).toBe('Base Camp');
+  });
+
+  it('inserts a promoted entry at its date-sorted position and re-sequences', () => {
+    const base = [
+      makeWaypoint({ id: 'wp1', coordinates: A, date: '2026-01-01' }),
+      makeWaypoint({ id: 'wp2', coordinates: B, date: '2026-01-10' }),
+    ];
+    const mid = { lat: 50, lng: 3.5 };
+    const { waypoints } = mergeEntriesIntoWaypoints(base, [
+      makeEntry({ id: 'e1', title: 'Mid', coords: mid, date: '2026-01-05' }),
+    ]);
+    expect(waypoints.map((w) => w.id.startsWith('waypoint-') ? 'NEW' : w.id)).toEqual(['wp1', 'NEW', 'wp2']);
+    expect(waypoints.map((w) => w.sequence)).toEqual([0, 1, 2]);
+  });
+
+  it('does not mutate the input waypoints array', () => {
+    const base = [makeWaypoint({ id: 'wp1', coordinates: A })];
+    mergeEntriesIntoWaypoints(base, [makeEntry({ id: 'e1', coords: A })]);
+    expect(base[0].entryIds).toEqual([]);
+  });
+});

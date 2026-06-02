@@ -97,6 +97,92 @@ interface Waypoint {
   entryIds: string[]; // entry public_ids linked to this waypoint
 }
 
+/** Journal-entry context loaded alongside the route in the builder. */
+interface EntryContext {
+  id: string;
+  title: string;
+  date: string;
+  place: string;
+  coords: { lat: number; lng: number };
+}
+
+// Two stops within ~11m (1e-4°) are treated as the same location, so an entry
+// created at a waypoint folds back into that waypoint instead of duplicating it.
+const SAME_LOCATION_EPS = 1e-4;
+
+/**
+ * Fold journal entries into the waypoint list so they route identically to
+ * waypoints. An entry co-located with an existing waypoint is merged into it
+ * (the waypoint "becomes" that entry); an entry elsewhere is promoted to its
+ * own converted waypoint, inserted at its date-sorted position. Entries already
+ * linked to a waypoint (via entryIds) are left untouched.
+ *
+ * Returns the normalized, re-sequenced list and whether any brand-new stop was
+ * added — the caller uses `addedStops` to decide whether saved route geometry
+ * is still valid (a new stop the saved line never passed through invalidates it).
+ */
+function mergeEntriesIntoWaypoints(
+  baseWaypoints: Waypoint[],
+  entries: EntryContext[],
+): { waypoints: Waypoint[]; addedStops: boolean } {
+  const linked = new Set<string>();
+  baseWaypoints.forEach((w) => (w.entryIds || []).forEach((id) => linked.add(id)));
+
+  const result = baseWaypoints.map((w) => ({ ...w, entryIds: [...(w.entryIds || [])] }));
+  let addedStops = false;
+
+  for (const entry of entries) {
+    if (linked.has(entry.id)) continue;
+    if (entry.coords.lat === 0 && entry.coords.lng === 0) continue;
+
+    // Same coordinates as an existing waypoint → merge (entry replaces / becomes it).
+    const colocated = result.find(
+      (w) =>
+        Math.abs(w.coordinates.lat - entry.coords.lat) < SAME_LOCATION_EPS &&
+        Math.abs(w.coordinates.lng - entry.coords.lng) < SAME_LOCATION_EPS,
+    );
+    if (colocated) {
+      colocated.entryIds.push(entry.id);
+      // The entry "becomes" this waypoint — enrich only where the waypoint has
+      // nothing meaningful yet, never clobbering a name/location the user set.
+      if (entry.title && (!colocated.name || /^Waypoint \d+$/.test(colocated.name))) {
+        colocated.name = entry.title;
+      }
+      if (entry.date && !colocated.date) colocated.date = entry.date;
+      if (entry.place && !colocated.location) colocated.location = entry.place;
+      linked.add(entry.id);
+      continue;
+    }
+
+    // Otherwise → first-class routing stop, inserted at its date-sorted position.
+    const newWp: Waypoint = {
+      id: `waypoint-${crypto.randomUUID()}`,
+      sequence: 0,
+      name: entry.title || 'Entry',
+      type: 'standard',
+      coordinates: { lat: entry.coords.lat, lng: entry.coords.lng },
+      location: entry.place || '',
+      date: entry.date || '',
+      description: '',
+      entryIds: [entry.id],
+    };
+    let insertIdx = result.length;
+    if (newWp.date) {
+      for (let i = 0; i < result.length; i++) {
+        if (result[i].date && newWp.date < result[i].date) {
+          insertIdx = i;
+          break;
+        }
+      }
+    }
+    result.splice(insertIdx, 0, newWp);
+    linked.add(entry.id);
+    addedStops = true;
+  }
+
+  return { waypoints: result.map((w, i) => ({ ...w, sequence: i })), addedStops };
+}
+
 interface ExpeditionData {
   title: string;
   regions: string[];
@@ -2086,9 +2172,21 @@ export function ExpeditionBuilderPage() {
           setExpectedDuration(diffDays.toString());
         }
 
+        // Journal entries with coordinates — folded into the route below so they
+        // route identically to waypoints, and kept as context for the location picker.
+        const entryList: EntryContext[] = (expedition.entries || [])
+          .filter((e: any) => e.lat && e.lon)
+          .map((e: any) => ({
+            id: e.id,
+            title: e.title,
+            date: toDateString(e.date),
+            place: e.place || '',
+            coords: { lat: e.lat!, lng: e.lon! },
+          }));
+
         // Transform and load waypoints
         if (expedition.waypoints && expedition.waypoints.length > 0) {
-          const transformedWaypoints: Waypoint[] = expedition.waypoints.map((wp: any, index) => ({
+          const baseWaypoints: Waypoint[] = expedition.waypoints.map((wp: any, index) => ({
             id: String(wp.id),
             sequence: index,
             name: wp.title || `Waypoint ${index + 1}`,
@@ -2103,6 +2201,10 @@ export function ExpeditionBuilderPage() {
                 : undefined,
             entryIds: wp.entryIds || (wp.entryId ? [wp.entryId] : []),
           }));
+          // Fold unlinked entries into the routing node list (merge co-located,
+          // promote others). addedStops => the saved geometry never routed through
+          // the new stop, so we skip the geometry restore and let it re-fetch.
+          const { waypoints: transformedWaypoints, addedStops } = mergeEntriesIntoWaypoints(baseWaypoints, entryList);
           // Initialize routeOrder from saved sequence (API returns ORDER BY sequence ASC)
           // Set ref BEFORE setWaypoints so the sync effect sees it on the first render
           const savedOrder = transformedWaypoints.map(w => w.id);
@@ -2114,7 +2216,7 @@ export function ExpeditionBuilderPage() {
           // re-fetching, and set the fingerprint so the directions effect
           // sees a match and skips.
           const savedGeom = (expedition as any).routeGeometry as number[][] | null;
-          if (savedGeom && savedGeom.length >= 2) {
+          if (!addedStops && savedGeom && savedGeom.length >= 2) {
             setDirectionsGeometry(savedGeom as [number, number][]);
 
             // Split saved geometry into per-leg segments
@@ -2138,15 +2240,28 @@ export function ExpeditionBuilderPage() {
             setDirectionsLegDistances(legDists);
           }
 
-          // Build fingerprint matching what the directions effect would compute
-          // Use locally-constructed values, not refs that may not have flushed yet
-          const restoredModes = perLegModesRef.current;
-          const modeStr = restoredModes.length > 0
-            ? restoredModes.join(',')
-            : (expedition.routeMode && !isStraightLike(expedition.routeMode) ? expedition.routeMode : (expedition.routeMode === 'passage' ? 'passage' : 'straight'));
-          lastDirectionsCoordsRef.current = transformedWaypoints
-            .map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|')
-            + `::${modeStr}::${!!expedition.isRoundTrip}::${waterwayProfileRef.current}`;
+          // Build fingerprint matching what the directions effect would compute,
+          // so it sees a match and skips the re-fetch. Skip this when we promoted
+          // an entry to a new stop — leaving the fingerprint stale forces the
+          // effect to re-fetch directions that route through the added stop.
+          if (!addedStops) {
+            const restoredModes = perLegModesRef.current;
+            const modeStr = restoredModes.length > 0
+              ? restoredModes.join(',')
+              : (expedition.routeMode && !isStraightLike(expedition.routeMode) ? expedition.routeMode : (expedition.routeMode === 'passage' ? 'passage' : 'straight'));
+            lastDirectionsCoordsRef.current = transformedWaypoints
+              .map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|')
+              + `::${modeStr}::${!!expedition.isRoundTrip}::${waterwayProfileRef.current}`;
+          }
+        } else if (entryList.length > 0) {
+          // No saved waypoints, but entries with coordinates exist → promote them
+          // to routing waypoints so the route is built from the entries.
+          const { waypoints: transformedWaypoints } = mergeEntriesIntoWaypoints([], entryList);
+          if (transformedWaypoints.length > 0) {
+            routeOrderInitializedRef.current = true;
+            setWaypoints(updateDistances(transformedWaypoints));
+            setRouteOrder(transformedWaypoints.map(w => w.id));
+          }
         }
 
         // Restore waterway obstacles
@@ -2159,19 +2274,11 @@ export function ExpeditionBuilderPage() {
           setRouteExportAllowed((expedition as any).routeExportAllowed ?? true);
         }
 
-        // Load entries (read-only context for builder)
-        if (expedition.entries && expedition.entries.length > 0) {
-          setExpeditionEntries(
-            expedition.entries
-              .filter((e: any) => e.lat && e.lon)
-              .map((e: any) => ({
-                id: e.id,
-                title: e.title,
-                date: toDateString(e.date),
-                place: e.place || '',
-                coords: { lat: e.lat!, lng: e.lon! },
-              }))
-          );
+        // Keep entries as context for the location picker / converted-waypoint
+        // labels. They were folded into the route above, so on load every entry is
+        // linked to a waypoint and none renders as a standalone (legless) route row.
+        if (entryList.length > 0) {
+          setExpeditionEntries(entryList);
         }
 
         setIsLoading(false);
