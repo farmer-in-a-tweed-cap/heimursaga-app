@@ -29,6 +29,7 @@ import { ElevationChart } from '@/app/components/expedition-detail/ElevationChar
 import { ContentTabs } from '@/app/components/expedition-detail/ContentTabs';
 import { Sidebar } from '@/app/components/expedition-detail/Sidebar';
 import { MapModal } from '@/app/components/expedition-detail/MapModal';
+import { computeRouteNumbering } from '@/app/components/expedition-detail/routeNumbering';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { useExpeditionData } from '@/app/hooks/useExpeditionData';
 import { useExpeditionSponsors } from '@/app/hooks/useExpeditionSponsors';
@@ -551,29 +552,9 @@ export function ExpeditionDetailPage() {
         (wp.entryIds || []).forEach(eid => linkedEntryIds.add(eid));
       });
 
-      // Entry numbers: sorted by date asc, route position as tiebreaker for same-date entries
-      const entryRoutePosition = new Map<string, number>();
-      waypoints.forEach((wp, wpIdx) => {
-        (wp.entryIds || []).forEach(eid => entryRoutePosition.set(eid, wpIdx));
-      });
-      const sortedEntriesForNumbering = [...journalEntries].sort((a, b) => {
-        const da = new Date(a.date).getTime(), db = new Date(b.date).getTime();
-        if (da !== db) return da - db;
-        const ra = entryRoutePosition.get(a.id) ?? Infinity, rb = entryRoutePosition.get(b.id) ?? Infinity;
-        if (ra !== rb) return ra - rb;
-        return (a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-      });
-      const entryNumberMap = new Map(sortedEntriesForNumbering.map((e, i) => [e.id, i + 1]));
-
-      // Waypoint numbers: independent sequence counting only unconverted waypoints in route order
-      const waypointNumberMap = new Map<string, number>();
-      let wpNum = 0;
-      waypoints.forEach((wp) => {
-        if (!(wp.entryIds && wp.entryIds.length > 0)) {
-          wpNum++;
-          waypointNumberMap.set(wp.id, wpNum);
-        }
-      });
+      // Single combined route-position numbering shared with the route tab and
+      // modal map, so entries and waypoints don't get colliding badges.
+      const { numberByEntryId, numberByWaypointId } = computeRouteNumbering(waypoints, journalEntries);
 
       waypoints.forEach((wp, idx) => {
         const isStart = idx === 0;
@@ -606,7 +587,7 @@ export function ExpeditionDetailPage() {
             fontSize: milestone ? '12px' : '11px', color: 'white', fontWeight: 'bold',
             fontFamily: 'Jost, system-ui, sans-serif',
           });
-          wrapper.textContent = String(entryNumberMap.get(entryIds[0]) ?? idx + 1);
+          wrapper.textContent = String(numberByEntryId.get(entryIds[0]) ?? idx + 1);
         } else {
           // Unconverted — diamond marker
           const diamond = document.createElement('div');
@@ -631,7 +612,7 @@ export function ExpeditionDetailPage() {
             });
             const circleLabel = document.createElement('span');
             Object.assign(circleLabel.style, { color: 'white', fontWeight: 'bold', fontSize: '10px', lineHeight: '1' });
-            circleLabel.textContent = String(waypointNumberMap.get(wp.id) ?? idx + 1);
+            circleLabel.textContent = String(numberByWaypointId.get(wp.id) ?? idx + 1);
             wrapper.appendChild(circleLabel);
             if (isCurrent) wrapper.style.animation = 'wp-pulse 2s ease-out infinite';
             new mapboxgl.Marker(wrapper).setLngLat([wp.coords.lng, wp.coords.lat]).addTo(map);
@@ -973,29 +954,9 @@ export function ExpeditionDetailPage() {
         (wp.entryIds || []).forEach(eid => linkedEntryIds.add(eid));
       });
 
-      // Entry numbers: sorted by date asc, route position as tiebreaker for same-date entries
-      const entryRoutePosition = new Map<string, number>();
-      waypoints.forEach((wp, wpIdx) => {
-        (wp.entryIds || []).forEach(eid => entryRoutePosition.set(eid, wpIdx));
-      });
-      const sortedEntriesForNumbering = [...journalEntries].sort((a, b) => {
-        const da = new Date(a.date).getTime(), db = new Date(b.date).getTime();
-        if (da !== db) return da - db;
-        const ra = entryRoutePosition.get(a.id) ?? Infinity, rb = entryRoutePosition.get(b.id) ?? Infinity;
-        if (ra !== rb) return ra - rb;
-        return (a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-      });
-      const entryNumberMap = new Map(sortedEntriesForNumbering.map((e, i) => [e.id, i + 1]));
-
-      // Waypoint numbers: independent sequence counting only unconverted waypoints in route order
-      const waypointNumberMap = new Map<string, number>();
-      let wpNum = 0;
-      waypoints.forEach((wp) => {
-        if (!(wp.entryIds && wp.entryIds.length > 0)) {
-          wpNum++;
-          waypointNumberMap.set(wp.id, wpNum);
-        }
-      });
+      // Single combined route-position numbering shared with the route tab and
+      // banner map, so entries and waypoints don't get colliding badges.
+      const { numberByEntryId, numberByWaypointId } = computeRouteNumbering(waypoints, journalEntries);
 
       waypoints.forEach((wp, idx) => {
         const isStart = idx === 0;
@@ -1049,7 +1010,7 @@ export function ExpeditionDetailPage() {
             fontSize: milestone ? '12px' : '11px', color: 'white', fontWeight: 'bold',
             fontFamily: 'Jost, system-ui, sans-serif',
           });
-          wrapper.textContent = String(entryNumberMap.get(entryIds[0]) ?? idx + 1);
+          wrapper.textContent = String(numberByEntryId.get(entryIds[0]) ?? idx + 1);
 
           wrapper.addEventListener('click', () => {
             markerClickedRef.current = true;
@@ -1096,7 +1057,7 @@ export function ExpeditionDetailPage() {
             });
             const circleLabel = document.createElement('span');
             Object.assign(circleLabel.style, { color: 'white', fontWeight: 'bold', fontSize: '10px', lineHeight: '1' });
-            circleLabel.textContent = String(waypointNumberMap.get(wp.id) ?? idx + 1);
+            circleLabel.textContent = String(numberByWaypointId.get(wp.id) ?? idx + 1);
             wrapper.appendChild(circleLabel);
             if (isCurrent) wrapper.style.animation = 'wp-pulse 2s ease-out infinite';
             // Skip diamond append — marker is added below

@@ -282,7 +282,8 @@ export function ContentTabs({
 
         {/* Route View — entries and waypoints interspersed in route order with leg connectors */}
         {selectedView === 'waypoints' && (() => {
-            // Compute entry numbers (same logic as journal entries tab)
+            // Entry ordering for the unlinked-entries tail (date asc, route
+            // position then createdAt as tiebreakers).
             const entryRoutePosition = new Map<string, number>();
             waypoints.forEach((wp, wpIdx) => {
               (wp.entryIds || []).forEach((eid: string) => entryRoutePosition.set(eid, wpIdx));
@@ -294,28 +295,28 @@ export function ContentTabs({
               if (ra !== rb) return ra - rb;
               return (a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0);
             });
-            const entryNumberMap = new Map(sortedEntries.map((e, i) => [e.id, i + 1]));
             const entryById = new Map(journalEntries.map(e => [e.id, e]));
 
-            // Build merged route items with waypoint index
+            // Build merged route items in route order. The display number is the
+            // item's 1-based position in this combined list (assigned at render),
+            // so entries and waypoints share one sequence — matching the builder
+            // and the map markers (see computeRouteNumbering).
             type RouteItem =
-              | { kind: 'waypoint'; wp: WaypointType; markerNum: number; wpIdx: number }
-              | { kind: 'entry'; entry: JournalEntryType; entryNumber: number; wpIdx: number };
+              | { kind: 'waypoint'; wp: WaypointType; wpIdx: number }
+              | { kind: 'entry'; entry: JournalEntryType; wpIdx: number };
 
             const routeItems: RouteItem[] = [];
-            let wpNum = 0;
             for (let wpIdx = 0; wpIdx < waypoints.length; wpIdx++) {
               const wp = waypoints[wpIdx];
               if (wp.entryIds && wp.entryIds.length > 0) {
                 for (const eid of wp.entryIds) {
                   const entry = entryById.get(eid);
                   if (entry) {
-                    routeItems.push({ kind: 'entry', entry, entryNumber: entryNumberMap.get(eid) ?? 0, wpIdx });
+                    routeItems.push({ kind: 'entry', entry, wpIdx });
                   }
                 }
               } else {
-                wpNum++;
-                routeItems.push({ kind: 'waypoint', wp, markerNum: wpNum, wpIdx });
+                routeItems.push({ kind: 'waypoint', wp, wpIdx });
               }
             }
 
@@ -323,7 +324,7 @@ export function ContentTabs({
             const linkedEntryIds = new Set(waypoints.flatMap(wp => wp.entryIds || []));
             for (const entry of sortedEntries) {
               if (!linkedEntryIds.has(entry.id)) {
-                routeItems.push({ kind: 'entry', entry, entryNumber: entryNumberMap.get(entry.id) ?? 0, wpIdx: waypoints.length });
+                routeItems.push({ kind: 'entry', entry, wpIdx: waypoints.length });
               }
             }
 
@@ -414,7 +415,7 @@ export function ContentTabs({
                           date={item.entry.date}
                           excerpt={item.entry.excerpt}
                           type={item.entry.type}
-                          entryNumber={item.entryNumber}
+                          entryNumber={i + 1}
                           visibility={item.entry.visibility}
                           isMilestone={item.entry.isMilestone}
                           isCurrent={expedition.currentLocationSource === 'entry' && expedition.currentLocationId === item.entry.id}
@@ -439,7 +440,7 @@ export function ContentTabs({
                           longitude={item.wp.coords.lng}
                           elevation={item.wp.elevationM}
                           views={0}
-                          markerNumber={item.markerNum}
+                          markerNumber={i + 1}
                           isStart={item.wp.id === waypoints[0]?.id}
                           isEnd={item.wp.id === waypoints[waypoints.length - 1]?.id && waypoints.length > 1}
                           isCurrent={expedition.currentLocationSource === 'waypoint' && expedition.currentLocationId === item.wp.id}
