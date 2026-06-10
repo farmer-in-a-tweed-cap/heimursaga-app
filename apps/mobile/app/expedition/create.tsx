@@ -29,6 +29,7 @@ try {
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
 import type { Expedition } from '@/types/api';
 import { MAPBOX_TOKEN } from '@/services/mapConfig';
+import { usePreferences } from '@/context/PreferencesContext';
 import { GEO_REGION_GROUPS, EXPEDITION_CATEGORIES } from '@/constants/geoRegions';
 import {
   searchAlongRoute, clearRouteSearchCache,
@@ -67,11 +68,6 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function formatDistanceKm(km: number): string {
-  if (km < 1) return `${Math.round(km * 1000)} m`;
-  return km < 100 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
-}
-
 const STEPS = ['DETAILS', 'ROUTE', 'FUNDING', 'REVIEW'];
 const VISIBILITY_OPTIONS = [
   { label: 'PUBLIC', desc: 'Visible to all explorers' },
@@ -94,6 +90,7 @@ interface ExpeditionBuilderProps {
 export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) {
   const isEditMode = !!editExpeditionId;
   const { dark, colors } = useTheme();
+  const { formatDistance } = usePreferences();
   const router = useRouter();
   const { ready, user } = useRequireAuth();
 
@@ -1308,10 +1305,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                           ) : null}
                           {poi.distanceFromRoute != null && (
                             <Text style={styles.searchResultDist}>
-                              ~{poi.distanceFromRoute < 1000
-                                ? `${Math.round(poi.distanceFromRoute)}m`
-                                : `${(poi.distanceFromRoute / 1000).toFixed(1)}km`
-                              } from route
+                              ~{formatDistance(poi.distanceFromRoute / 1000, 1)} from route
                             </Text>
                           )}
                         </View>
@@ -1563,8 +1557,8 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                             <View style={{ flex: 1 }} />
                             {leg.legDist > 0 && (
                               <Text style={styles.routeLegDist}>
-                                {formatDistanceKm(leg.legDist)}
-                                {i > 0 && leg.cumDist > 0 ? ` · ${formatDistanceKm(leg.cumDist)} total` : ''}
+                                {formatDistance(leg.legDist, leg.legDist < 100 ? 1 : 0)}
+                                {i > 0 && leg.cumDist > 0 ? ` · ${formatDistance(leg.cumDist, leg.cumDist < 100 ? 1 : 0)} total` : ''}
                               </Text>
                             )}
                             {directionsLoading && !isStraightLike(routeMode) && (

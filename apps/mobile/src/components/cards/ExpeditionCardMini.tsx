@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
+import { usePreferences } from '@/context/PreferencesContext';
 import { HCard } from '@/components/ui/HCard';
 import { StatusHeader } from '@/components/ui/StatusHeader';
 import { CoverImage } from '@/components/ui/CoverImage';
@@ -19,6 +20,7 @@ interface ExpeditionCardMiniProps {
 
 export function ExpeditionCardMini({ expedition, onPress }: ExpeditionCardMiniProps) {
   const { colors } = useTheme();
+  const { formatDistance } = usePreferences();
   const isBlueprint = !!expedition.isBlueprint;
   const MapComponent = useHeimuMap(isBlueprint ? 100 : 99999);
 
@@ -108,7 +110,7 @@ export function ExpeditionCardMini({ expedition, onPress }: ExpeditionCardMiniPr
                   )}
                   {((expedition.totalDistanceKm || expedition.routeDistanceKm) ?? 0) > 0 && (
                     <Text style={[styles.stat, { color: colors.textTertiary }]}>
-                      {Math.round((expedition.totalDistanceKm || expedition.routeDistanceKm)!)} km
+                      {formatDistance((expedition.totalDistanceKm || expedition.routeDistanceKm)!, 0)}
                     </Text>
                   )}
                   {expedition.elevationMinM != null && expedition.elevationMaxM != null && (
@@ -124,7 +126,7 @@ export function ExpeditionCardMini({ expedition, onPress }: ExpeditionCardMiniPr
                   </Text>
                   {((expedition.totalDistanceKm || expedition.routeDistanceKm) ?? 0) > 0 && (
                     <Text style={[styles.stat, { color: colors.textTertiary }]}>
-                      {Math.round((expedition.totalDistanceKm || expedition.routeDistanceKm)!)} km
+                      {formatDistance((expedition.totalDistanceKm || expedition.routeDistanceKm)!, 0)}
                     </Text>
                   )}
                   {sponsorable && (

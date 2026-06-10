@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
+import { usePreferences } from '@/context/PreferencesContext';
 import { HCard } from '@/components/ui/HCard';
 import { StatusHeader } from '@/components/ui/StatusHeader';
 import { CoverImage } from '@/components/ui/CoverImage';
@@ -15,6 +16,7 @@ interface BlueprintCardMiniProps {
 
 export function BlueprintCardMini({ blueprint, onPress }: BlueprintCardMiniProps) {
   const { colors } = useTheme();
+  const { formatDistance } = usePreferences();
 
   return (
     <Pressable
@@ -69,7 +71,7 @@ export function BlueprintCardMini({ blueprint, onPress }: BlueprintCardMiniProps
               )}
               {((blueprint.totalDistanceKm || blueprint.routeDistanceKm) ?? 0) > 0 && (
                 <Text style={[styles.stat, { color: colors.textTertiary }]}>
-                  {Math.round((blueprint.totalDistanceKm || blueprint.routeDistanceKm)!)} km
+                  {formatDistance((blueprint.totalDistanceKm || blueprint.routeDistanceKm)!, 0)}
                 </Text>
               )}
             </View>

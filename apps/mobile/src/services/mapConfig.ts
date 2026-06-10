@@ -10,10 +10,17 @@
 
 export const STYLE_LIGHT = 'mapbox://styles/cnh1187/cm9lit4gy007101rz4wxfdss6';
 export const STYLE_DARK  = 'mapbox://styles/cnh1187/cminkk0hb002d01qy60mm74g0';
+// Same satellite style the web app uses (MapLayerContext) so the
+// preference renders identically across surfaces.
+export const STYLE_SATELLITE = 'mapbox://styles/mapbox/satellite-streets-v12';
 
 export const MAPBOX_TOKEN =
   process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '';
 
-export function getMapStyle(theme: 'light' | 'dark'): string {
+export function getMapStyle(
+  theme: 'light' | 'dark',
+  layer: 'heimursaga' | 'satellite' = 'heimursaga',
+): string {
+  if (layer === 'satellite') return STYLE_SATELLITE;
   return theme === 'dark' ? STYLE_DARK : STYLE_LIGHT;
 }

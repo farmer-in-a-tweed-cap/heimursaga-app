@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
+import { usePreferences } from '@/context/PreferencesContext';
 import { HCard } from '@/components/ui/HCard';
 import { StatusHeader } from '@/components/ui/StatusHeader';
 import { Avatar } from '@/components/ui/Avatar';
@@ -19,6 +20,7 @@ interface ExpeditionCardFullProps {
 
 export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullProps) {
   const { colors } = useTheme();
+  const { convertDistance, distanceLabel } = usePreferences();
 
   const now = Date.now();
   const startMs = expedition.startDate ? new Date(expedition.startDate).getTime() : null;
@@ -151,8 +153,8 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
                 label: 'TRAVEL',
               }] : []),
               ...(((expedition.totalDistanceKm || expedition.routeDistanceKm) ?? 0) > 0 ? [{
-                value: `${Math.round((expedition.totalDistanceKm || expedition.routeDistanceKm)!)}`,
-                suffix: ' km',
+                value: `${Math.round(convertDistance((expedition.totalDistanceKm || expedition.routeDistanceKm)!))}`,
+                suffix: ` ${distanceLabel}`,
                 label: 'DISTANCE',
               }] : []),
               ...(expedition.elevationMinM != null && expedition.elevationMaxM != null ? [{

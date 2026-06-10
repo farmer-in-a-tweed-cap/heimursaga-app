@@ -1,44 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import {
+  usePreferences,
+  type DistanceUnit,
+  type MapLayer,
+} from '@/context/PreferencesContext';
 import { NavBar } from '@/components/ui/NavBar';
 import { HCard } from '@/components/ui/HCard';
 import { RadioOption } from '@/components/ui/RadioOption';
-import { mono, colors as brandColors } from '@/theme/tokens';
+import { mono } from '@/theme/tokens';
 
-const THEME_OPTIONS = ['Light', 'Dark', 'System'];
-const UNIT_OPTIONS = ['Metric (km)', 'Imperial (mi)', 'Nautical (nm)'];
+const THEME_OPTIONS = ['Light', 'Dark'];
 
-const DISTANCE_UNIT_KEY = 'heimursaga_distance_unit';
+const UNIT_OPTIONS: { value: DistanceUnit; label: string; desc: string }[] = [
+  { value: 'km', label: 'METRIC (KM)', desc: 'Kilometers, km/h' },
+  { value: 'mi', label: 'IMPERIAL (MI)', desc: 'Miles, mph' },
+  { value: 'nm', label: 'NAUTICAL (NM)', desc: 'Nautical miles, knots' },
+];
+
+const MAP_LAYER_OPTIONS: { value: MapLayer; label: string; desc: string }[] = [
+  { value: 'heimursaga', label: 'HEIMURSAGA', desc: 'Topographic expedition style' },
+  { value: 'satellite', label: 'SATELLITE', desc: 'Satellite imagery with labels' },
+];
 
 export default function PreferencesScreen() {
   const { colors, mode, toggleMode } = useTheme();
+  const { distanceUnit, setDistanceUnit, mapLayer, setMapLayer } = usePreferences();
   const router = useRouter();
   const { ready } = useRequireAuth();
 
   const themeIndex = mode === 'light' ? 0 : 1;
-  const [distanceUnit, setDistanceUnit] = useState(0);
-
-  useEffect(() => {
-    SecureStore.getItemAsync(DISTANCE_UNIT_KEY).then((val: string | null) => {
-      if (val === 'imperial') setDistanceUnit(1);
-      else if (val === 'nautical') setDistanceUnit(2);
-    });
-  }, []);
-
-  const handleThemeChange = (index: number) => {
-    if (index !== themeIndex) {
-      toggleMode();
-    }
-  };
-
-  const handleDistanceChange = async (index: number) => {
-    setDistanceUnit(index);
-    await SecureStore.setItemAsync(DISTANCE_UNIT_KEY, index === 2 ? 'nautical' : index === 1 ? 'imperial' : 'metric');
-  };
 
   if (!ready) return null;
 
@@ -58,9 +52,11 @@ export default function PreferencesScreen() {
                 <RadioOption
                   key={opt}
                   label={opt.toUpperCase()}
-                  description={i === 2 ? 'Follow device settings' : `Always use ${opt.toLowerCase()} mode`}
-                  selected={themeIndex === i || (i === 2 && false)}
-                  onSelect={() => handleThemeChange(i)}
+                  description={`Always use ${opt.toLowerCase()} mode`}
+                  selected={themeIndex === i}
+                  onSelect={() => {
+                    if (i !== themeIndex) toggleMode();
+                  }}
                 />
               ))}
             </View>
@@ -72,13 +68,31 @@ export default function PreferencesScreen() {
           </View>
           <HCard>
             <View style={styles.cardInner}>
-              {UNIT_OPTIONS.map((opt, i) => (
+              {UNIT_OPTIONS.map((opt) => (
                 <RadioOption
-                  key={opt}
-                  label={opt.toUpperCase()}
-                  description={i === 0 ? 'Kilometers, meters' : i === 1 ? 'Miles, feet' : 'Nautical miles, knots'}
-                  selected={distanceUnit === i}
-                  onSelect={() => handleDistanceChange(i)}
+                  key={opt.value}
+                  label={opt.label}
+                  description={opt.desc}
+                  selected={distanceUnit === opt.value}
+                  onSelect={() => setDistanceUnit(opt.value)}
+                />
+              ))}
+            </View>
+          </HCard>
+
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>MAP STYLE</Text>
+            <View style={[styles.sectionLine, { backgroundColor: colors.border }]} />
+          </View>
+          <HCard>
+            <View style={styles.cardInner}>
+              {MAP_LAYER_OPTIONS.map((opt) => (
+                <RadioOption
+                  key={opt.value}
+                  label={opt.label}
+                  description={opt.desc}
+                  selected={mapLayer === opt.value}
+                  onSelect={() => setMapLayer(opt.value)}
                 />
               ))}
             </View>
