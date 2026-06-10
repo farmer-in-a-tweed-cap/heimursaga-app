@@ -71,13 +71,24 @@ async function getDb(): Promise<SQLite.SQLiteDatabase> {
         -- leaves a stale row; that's recovered on app start by the
         -- TrackingProvider's mount effect.
         CREATE TABLE IF NOT EXISTS tracking_session (
-          id            TEXT PRIMARY KEY,
-          expedition_id TEXT NOT NULL,
-          track_id      INTEGER NOT NULL,
-          mode          TEXT NOT NULL,
-          started_at    INTEGER NOT NULL
+          id               TEXT PRIMARY KEY,
+          expedition_id    TEXT NOT NULL,
+          track_id         INTEGER NOT NULL,
+          mode             TEXT NOT NULL,
+          started_at       INTEGER NOT NULL,
+          expedition_title TEXT,
+          paused           INTEGER NOT NULL DEFAULT 0
         );
       `);
+      // Lightweight migration for installs whose tracking_session predates
+      // the expedition_title/paused columns. SQLite has no IF NOT EXISTS
+      // for columns; a duplicate-column error means it's already there.
+      for (const ddl of [
+        `ALTER TABLE tracking_session ADD COLUMN expedition_title TEXT`,
+        `ALTER TABLE tracking_session ADD COLUMN paused INTEGER NOT NULL DEFAULT 0`,
+      ]) {
+        await db.execAsync(ddl).catch(() => {});
+      }
       return db;
     })();
   }
@@ -233,15 +244,34 @@ export interface TrackingSession {
   trackId: number;
   mode: 'active' | 'conservative';
   startedAt: number;
+  expeditionTitle: string | null;
+  paused: boolean;
 }
 
-export async function setTrackingSession(s: Omit<TrackingSession, 'startedAt'>): Promise<void> {
+export async function setTrackingSession(
+  s: Omit<TrackingSession, 'startedAt' | 'paused' | 'expeditionTitle'> & {
+    expeditionTitle?: string | null;
+  },
+): Promise<void> {
   const db = await getDb();
   await db.runAsync(
     `INSERT OR REPLACE INTO tracking_session
-       (id, expedition_id, track_id, mode, started_at)
-     VALUES (?, ?, ?, ?, ?)`,
-    [SESSION_PK, s.expeditionId, s.trackId, s.mode, Date.now()],
+       (id, expedition_id, track_id, mode, started_at, expedition_title, paused)
+     VALUES (?, ?, ?, ?, ?, ?, 0)`,
+    [SESSION_PK, s.expeditionId, s.trackId, s.mode, Date.now(), s.expeditionTitle ?? null],
+  );
+}
+
+/**
+ * Flip the persisted paused flag without touching the rest of the row.
+ * The row must outlive pause (it's what lets a reload restore a paused
+ * session instead of resurrecting it as actively-recording).
+ */
+export async function setTrackingSessionPaused(paused: boolean): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    `UPDATE tracking_session SET paused = ? WHERE id = ?`,
+    [paused ? 1 : 0, SESSION_PK],
   );
 }
 
@@ -252,8 +282,10 @@ export async function getTrackingSession(): Promise<TrackingSession | null> {
     track_id: number;
     mode: string;
     started_at: number;
+    expedition_title: string | null;
+    paused: number;
   }>(
-    `SELECT expedition_id, track_id, mode, started_at
+    `SELECT expedition_id, track_id, mode, started_at, expedition_title, paused
        FROM tracking_session
        WHERE id = ?`,
     [SESSION_PK],
@@ -265,6 +297,8 @@ export async function getTrackingSession(): Promise<TrackingSession | null> {
     trackId: row.track_id,
     mode: row.mode,
     startedAt: row.started_at,
+    expeditionTitle: row.expedition_title,
+    paused: row.paused === 1,
   };
 }
 

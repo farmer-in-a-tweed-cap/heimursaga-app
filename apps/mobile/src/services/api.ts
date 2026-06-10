@@ -407,8 +407,19 @@ export const expeditionApi = {
   deleteReview(id: string) {
     return api.delete<void>(`/trips/${id}/reviews`);
   },
-  updateLiveTrackVisibility(id: string, visibility: 'public' | 'sponsors' | 'private') {
-    return api.patch<void>(`/trips/${id}/live-track-visibility`, { visibility });
+  // applyToPin extends the same visibility to the current-location pin —
+  // the tracking-setup flow passes true so its single privacy decision
+  // covers everything a viewer could see (route line AND latest-position
+  // pin). Omit for line-only updates.
+  updateLiveTrackVisibility(
+    id: string,
+    visibility: 'public' | 'sponsors' | 'private',
+    applyToPin = false,
+  ) {
+    return api.patch<void>(`/trips/${id}/live-track-visibility`, {
+      visibility,
+      ...(applyToPin ? { applyToPin: true } : {}),
+    });
   },
 };
 
@@ -451,6 +462,14 @@ export interface TrackPointInput {
   clientUuid?: string;
 }
 
+export interface ActiveTrackInfo {
+  trackId: number;
+  expeditionPublicId: string;
+  expeditionSlug: string | null;
+  expeditionTitle: string;
+  startedAt: string;
+}
+
 export const trackApi = {
   start(expeditionId: string, sourceDeviceId?: string) {
     return api.post<TrackStartResponse>(`/trips/${expeditionId}/tracks`, {
@@ -474,6 +493,11 @@ export const trackApi = {
     return api.get<CurrentTrackResponse>(
       `/trips/${expeditionId}/tracks/current${maxPoints ? `?maxPoints=${maxPoints}` : ''}`,
     );
+  },
+  // Lookup the user's currently-active track across all expeditions.
+  // Used by the recovery dialog when start returns 409.
+  getMyActiveTrack() {
+    return api.get<{ activeTrack: ActiveTrackInfo | null }>(`/trips/me/active-track`);
   },
 };
 

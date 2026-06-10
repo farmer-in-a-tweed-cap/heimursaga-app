@@ -7,17 +7,22 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { AppState } from 'react-native';
+import { Alert, AppState } from 'react-native';
 import * as Location from 'expo-location';
 
-import { trackApi, expeditionApi } from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
+import { ApiError, trackApi, expeditionApi } from '@/services/api';
+import { registerPreLogoutHandler } from '@/services/preLogout';
+import type { ActiveTrackInfo } from '@/services/api';
 import {
   bufferDelete,
   bufferListPendingTracks,
   bufferPruneStale,
   bufferReadBatch,
   clearTrackingSession,
+  getTrackingSession,
   setTrackingSession,
+  setTrackingSessionPaused,
 } from '@/services/trackingBuffer';
 import {
   addLocationListener,
@@ -87,6 +92,24 @@ export type TrackingStatus =
 
 export type TrackingMode = 'active' | 'conservative';
 
+/**
+ * Thrown by startTracking when the server's single-active-track guard
+ * rejects with 409 AND we successfully looked up which orphan is in the
+ * way. The caller (typically the expedition screen) catches this and
+ * surfaces a recovery dialog — "Stop session on [Title]?" — that calls
+ * stopForeignTrack on the orphan and retries the start.
+ *
+ * If the lookup itself fails (e.g., the 409 was a false positive and the
+ * orphan disappeared between the start and the lookup), startTracking
+ * falls through to the generic error path instead.
+ */
+export class TrackingConflictError extends Error {
+  constructor(public readonly activeTrack: ActiveTrackInfo) {
+    super(`Tracking session already active on: ${activeTrack.expeditionTitle}`);
+    this.name = 'TrackingConflictError';
+  }
+}
+
 export type LocationPermissionLevel = 'undetermined' | 'denied' | 'when-in-use' | 'always';
 
 export interface TrackingPosition {
@@ -128,11 +151,14 @@ interface TrackingActions {
   resumeTracking(): Promise<void>;
 
   /**
-   * Quick-drop a waypoint at the latest known position. Returns true if
-   * the waypoint was created. Step 2 stub — UI surface; the real
-   * implementation in step 4.5 will POST /trips/:id/waypoints.
+   * Quick-drop a waypoint via POST /trips/:id/waypoints. Defaults to the
+   * latest GPS fix; the quick-drop modal can pass an optional title and
+   * a re-assigned location (map pick). Returns true if created.
    */
-  dropWaypointAtCurrentPosition(title?: string): Promise<boolean>;
+  dropWaypointAtCurrentPosition(
+    title?: string,
+    overrideLocation?: { lat: number; lon: number },
+  ): Promise<boolean>;
 
   /**
    * Request the When-in-Use permission. Returns the resolved level.
@@ -148,6 +174,14 @@ interface TrackingActions {
 
   /** Re-read the OS permission state. */
   refreshPermissionLevel(): Promise<LocationPermissionLevel>;
+
+  /**
+   * Stop a track that this client isn't tracking locally — used by the
+   * recovery dialog when start hits a 409. Doesn't touch context state
+   * (which is idle by definition when the recovery fires); just calls
+   * the server stop endpoint. Throws on failure.
+   */
+  stopForeignTrack(args: { expeditionId: string; trackId: number }): Promise<void>;
 }
 
 type TrackingContextValue = TrackingState & TrackingActions;
@@ -208,6 +242,16 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
   // When-in-Use.
   const trackingActiveRef = useRef(false);
   trackingActiveRef.current = status === 'active';
+  // Fresh snapshot for callbacks that fire outside the render cycle
+  // (pre-logout handler, user-switch watcher) — they must read the
+  // CURRENT session, not the values captured when they were registered.
+  const sessionRef = useRef({ status, expeditionId, trackId });
+  sessionRef.current = { status, expeditionId, trackId };
+  // Read by the tracking effect WITHOUT being a dependency — the title is
+  // display metadata for the session row; a title change must not restart
+  // the OS location task.
+  const expeditionTitleRef = useRef(expeditionTitle);
+  expeditionTitleRef.current = expeditionTitle;
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next) => {
       if (next !== 'active') return;
@@ -251,12 +295,18 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
     let flushInFlight = false;
     let cancelled = false;
 
-    const handleTrackEnded = () => {
-      // Server auto-stopped the track (expedition status changed mid-
-      // session). Align client state by resetting to idle — also triggers
-      // cleanup of this effect via the status-dep change.
+    const handleTrackEnded = (reason: string) => {
+      // The track ended server-side without a local stop (expedition
+      // status changed mid-session, stop pressed on the web, or a manual
+      // location update implicit-stopped it). Align client state by
+      // resetting to idle — also triggers cleanup of this effect via the
+      // status-dep change, which stops the OS task and clears the
+      // session row.
       // eslint-disable-next-line no-console
-      console.info('[TrackingContext] server auto-stopped track on append');
+      console.info(`[TrackingContext] track ended server-side: ${reason}`);
+      // End-of-life for the persisted session row (the effect cleanup
+      // intentionally doesn't clear it — see the cleanup comment).
+      void clearTrackingSession().catch(() => {});
       setTrackId(null);
       setExpeditionId(null);
       setExpeditionTitle(null);
@@ -305,10 +355,25 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
             );
           }
           if (res.trackEnded) {
-            handleTrackEnded();
+            handleTrackEnded('expedition status changed (auto-stop on append)');
             return;
           }
         } catch (e) {
+          // 404 means the active track no longer exists server-side —
+          // stopped from the web, or implicit-stopped by a manual
+          // location update (spec decision #4: symmetric controls).
+          // Retrying forever would keep GPS running and the banner
+          // saying LIVE against a dead track. Wind the session down and
+          // tell the user; leftover buffered rows age out via the 25h
+          // prune.
+          if (e instanceof ApiError && e.status === 404) {
+            handleTrackEnded('appendPoints returned 404 (stopped elsewhere)');
+            Alert.alert(
+              'Tracking stopped',
+              'This tracking session was ended from another device or by a manual location update. Your phone has stopped recording.',
+            );
+            return;
+          }
           // Network or transient server error — leave the rows. Next
           // flush will pick them up again. With the SQLite buffer the
           // points survive app restart, so even if the user closes the
@@ -340,8 +405,14 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
       try {
         // Persist the session config first — the TaskManager callback
         // reads it on every delivery to know which expedition + track
-        // to attribute points to.
-        await setTrackingSession({ expeditionId: eid, trackId: tid, mode });
+        // to attribute points to, and the mount-restore effect uses it
+        // to resurrect the session (title included) after a reload.
+        await setTrackingSession({
+          expeditionId: eid,
+          trackId: tid,
+          mode,
+          expeditionTitle: expeditionTitleRef.current ?? null,
+        });
 
         // Stop-then-start unconditionally. The OS may still have the
         // task registered from a previous session (force-quit, crash,
@@ -388,14 +459,22 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
         void flushBuffer();
       } catch (e) {
         // expo-location threw at startLocationUpdates time. Most likely
-        // permission revoked at the OS level, or background mode not
-        // properly configured. Surface to the user via status + error
-        // rather than leaving the banner saying "LIVE" with no points
-        // coming in.
+        // permission revoked at the OS level, the iOS UIBackgroundModes
+        // entitlement missing from the dev build, or the TaskManager
+        // task name not registered. Surface the actual error so the
+        // user knows their tracking is stuck in 'paused' instead of
+        // silently failing — this was the dev-loop trap on the stop
+        // path and we're closing the same hole here.
         const msg = e instanceof Error ? e.message : 'Location updates failed';
+        // eslint-disable-next-line no-console
+        console.warn('[TrackingContext] startLocationUpdatesAsync failed:', e);
         setError(msg);
         setStatus('paused');
         await clearTrackingSession().catch(() => {});
+        Alert.alert(
+          'Tracking could not start',
+          `${msg}\n\nYour expedition is paused. Check that "Always" location permission is granted in iOS Settings → Privacy → Location Services → Heimursaga, then tap Resume on the tracking banner.`,
+        );
       }
     };
 
@@ -406,17 +485,71 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
       removeLocationListener?.();
       if (flushTimer) clearInterval(flushTimer);
       if (heartbeatTimer) clearInterval(heartbeatTimer);
-      // Stop the OS-level updates and clear the session row. Both are
-      // best-effort — stop can throw if the task isn't running, and a
-      // stale session row is recovered by the next mount's drain.
+      // Stop the OS-level updates (best-effort — can throw if the task
+      // isn't running). The session ROW is deliberately NOT cleared here:
+      // cleanup also runs on pause and on dev remounts, and the row is
+      // what lets the mount-restore effect resurrect the session after a
+      // reload. The row is cleared only at true end-of-life points —
+      // stopTracking, handleTrackEnded, logout teardown, restore-
+      // validation mismatch.
       void Location.stopLocationUpdatesAsync(TRACKING_TASK_NAME).catch(() => {});
-      void clearTrackingSession().catch(() => {});
       // No explicit final flush — `cancelled = true` would short-circuit
       // it anyway, and any unflushed points are durable in SQLite. They
       // get picked up by the cross-restart drain on next mount, or by
       // the next flush cycle if the same track resumes.
     };
   }, [status, expeditionId, trackId, mode]);
+
+  // On Provider mount, restore a persisted session. The row survives app
+  // kills and reloads; React state doesn't — without this, a reload made
+  // the banner vanish while the OS task and server track stayed live, and
+  // the next start hit the 409 "never stopped" dialog.
+  const restoreRanRef = useRef(false);
+  useEffect(() => {
+    if (restoreRanRef.current) return;
+    restoreRanRef.current = true;
+    void (async () => {
+      try {
+        const row = await getTrackingSession();
+        if (!row) return;
+
+        // Validate against server truth BEFORE promoting to 'active' —
+        // promoting first would start the OS task and flash the banner
+        // for a session that may have been stopped from the web while
+        // the app was dead. On a network/auth failure adopt anyway:
+        // points buffer locally, and the 404 wind-down at first flush
+        // covers a stale track.
+        try {
+          const { activeTrack } = await trackApi.getMyActiveTrack();
+          if (!activeTrack || activeTrack.trackId !== row.trackId) {
+            // eslint-disable-next-line no-console
+            console.info(
+              '[TrackingContext] persisted session is stale server-side — clearing',
+            );
+            await Location.stopLocationUpdatesAsync(TRACKING_TASK_NAME).catch(() => {});
+            await clearTrackingSession().catch(() => {});
+            return;
+          }
+        } catch {
+          // offline / auth not ready — adopt the persisted session
+        }
+
+        // eslint-disable-next-line no-console
+        console.info(
+          `[TrackingContext] restoring ${row.paused ? 'paused' : 'active'} session for track ${row.trackId}`,
+        );
+        setExpeditionId(row.expeditionId);
+        setExpeditionTitle(row.expeditionTitle ?? 'Expedition');
+        setTrackId(row.trackId);
+        setMode(row.mode);
+        setStartedAt(new Date(row.startedAt));
+        setStatus(row.paused ? 'paused' : 'active');
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('[TrackingContext] session restore failed:', e);
+      }
+    })();
+  }, []);
 
   // On Provider mount, drain any pending points left over from a previous
   // session (crashed mid-tracking, app killed before flush, network was
@@ -547,6 +680,26 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
         // step 3 of the Phase 1b plan. State is captured here so the
         // banner UI renders correctly in the meantime.
       } catch (e) {
+        // 409 from the server's single-active-track guard. Look up the
+        // orphan so the caller can surface a meaningful recovery dialog.
+        // If the lookup itself fails (auth flap, the orphan disappeared
+        // mid-flight, network blip), fall through to the generic path.
+        if (e instanceof ApiError && e.status === 409) {
+          try {
+            const { activeTrack } = await trackApi.getMyActiveTrack();
+            if (activeTrack) {
+              setStatus('idle');
+              throw new TrackingConflictError(activeTrack);
+            }
+          } catch (lookupErr) {
+            if (lookupErr instanceof TrackingConflictError) throw lookupErr;
+            // eslint-disable-next-line no-console
+            console.warn(
+              '[TrackingContext] active-track lookup failed during 409 recovery:',
+              lookupErr,
+            );
+          }
+        }
         const msg = e instanceof Error ? e.message : 'Failed to start tracking';
         setError(msg);
         setStatus('idle');
@@ -558,42 +711,113 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
     [status],
   );
 
+  const stopForeignTrack = useCallback<TrackingActions['stopForeignTrack']>(
+    async ({ expeditionId: foreignExpId, trackId: foreignTrackId }) => {
+      // Bypass the local state machine — by contract this is called when
+      // the local context is idle and the orphan lives only on the server.
+      await trackApi.stop(foreignExpId, foreignTrackId);
+    },
+    [],
+  );
+
   const stopTracking = useCallback<TrackingActions['stopTracking']>(async () => {
     if (status === 'idle' || !expeditionId || !trackId) return;
+    // Capture the prior status so a failure can revert cleanly. The banner
+    // gates visibility on this status, so a failed stop reappears the
+    // banner with the same Pause/Stop controls instead of trapping the
+    // user with an active server-side track and no UI to recover.
+    const priorStatus = status;
     setStatus('stopping');
-    let stopError: unknown = null;
     try {
       await trackApi.stop(expeditionId, trackId);
     } catch (e) {
-      // Don't block the client-side release — the banner needs to dismiss
-      // so the user feels the action. We surface the failure via the
-      // error state so the next startTracking attempt can offer better
-      // diagnostics (the server's single-active-track guard would
-      // otherwise 409 with a generic "already active" message).
-      stopError = e;
-      // eslint-disable-next-line no-console
-      console.warn('[TrackingContext] trackApi.stop failed:', e);
-    } finally {
+      // Server-side track is still active. Keep all client state intact
+      // (trackId, expeditionId, mode, latestPosition) and revert status
+      // so the banner returns. Throw so the caller can surface an Alert
+      // with a Retry — silent failure here is what created the dev-loop
+      // orphan-track trap in the first place.
+      setStatus(priorStatus);
+      throw e;
+    }
+    await clearTrackingSession().catch(() => {});
+    setTrackId(null);
+    setExpeditionId(null);
+    setExpeditionTitle(null);
+    setStartedAt(null);
+    setLatestPosition(null);
+    setError(null);
+    setStatus('idle');
+  }, [status, expeditionId, trackId]);
+
+  /**
+   * Session teardown for credential-boundary events (logout, account
+   * switch, token loss). Unlike stopTracking, this NEVER blocks or
+   * reverts: whatever happens server-side, the local session must die —
+   * the next account's credentials must not be used to flush another
+   * user's track, and the banner must not survive into their session.
+   */
+  const teardownForCredentialChange = useCallback(
+    async ({ serverStop }: { serverStop: boolean }) => {
+      const s = sessionRef.current;
+      if (s.status === 'idle') return;
+      if (serverStop && s.expeditionId && s.trackId != null) {
+        try {
+          await trackApi.stop(s.expeditionId, s.trackId);
+        } catch (e) {
+          // Best-effort — the orphan stays active server-side and gets
+          // resolved by the 409 recovery dialog on this user's next start.
+          // eslint-disable-next-line no-console
+          console.warn('[TrackingContext] logout stop failed (orphan remains):', e);
+        }
+      }
+      // Explicit OS/session cleanup: when status is 'paused' the tracking
+      // effect isn't mounted, so its cleanup won't run on the status flip
+      // below. Idempotent with that cleanup when it does run.
+      await Location.stopLocationUpdatesAsync(TRACKING_TASK_NAME).catch(() => {});
+      await clearTrackingSession().catch(() => {});
       setTrackId(null);
       setExpeditionId(null);
       setExpeditionTitle(null);
       setStartedAt(null);
       setLatestPosition(null);
-      setError(
-        stopError instanceof Error
-          ? `Could not finalize tracking on the server — it will auto-stop when the expedition completes. (${stopError.message})`
-          : null,
-      );
+      setError(null);
       setStatus('idle');
+    },
+    [],
+  );
+
+  // Finalize the track with the OLD credentials before AuthContext clears
+  // them — runs inside logout(), ahead of clearTokens().
+  useEffect(
+    () =>
+      registerPreLogoutHandler(() =>
+        teardownForCredentialChange({ serverStop: true }),
+      ),
+    [teardownForCredentialChange],
+  );
+
+  // Backstop for credential loss that bypasses logout() (refresh-token
+  // expiry, forced sign-out). By the time `user` flips, the old tokens
+  // are gone — server stop would 401, so local-only teardown. On a
+  // proper logout the pre-logout handler already ran and this no-ops.
+  const { user } = useAuth();
+  const prevUserIdRef = useRef(user?.id);
+  useEffect(() => {
+    const prev = prevUserIdRef.current;
+    prevUserIdRef.current = user?.id;
+    if (prev != null && user?.id !== prev) {
+      void teardownForCredentialChange({ serverStop: false });
     }
-  }, [status, expeditionId, trackId]);
+  }, [user?.id, teardownForCredentialChange]);
 
   const pauseTracking = useCallback<TrackingActions['pauseTracking']>(async () => {
     if (status !== 'active') return;
     // Status transition triggers the tracking effect's cleanup, which
-    // stops the OS-level location updates and clears the session row.
-    // No further work needed here.
+    // stops the OS-level location updates. The session row stays (with
+    // paused=1) so a reload restores the session as paused instead of
+    // losing it or resurrecting it as actively-recording.
     setStatus('paused');
+    void setTrackingSessionPaused(true).catch(() => {});
   }, [status]);
 
   const resumeTracking = useCallback<TrackingActions['resumeTracking']>(async () => {
@@ -601,23 +825,32 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
     // Status transition triggers the tracking effect to re-fire, which
     // re-registers the OS-level location updates with the current mode.
     setStatus('active');
+    void setTrackingSessionPaused(false).catch(() => {});
   }, [status]);
 
   const dropWaypointAtCurrentPosition = useCallback<
     TrackingActions['dropWaypointAtCurrentPosition']
   >(
-    async (title) => {
-      if (!expeditionId || !latestPosition) {
+    async (title, overrideLocation) => {
+      if (!expeditionId || (!latestPosition && !overrideLocation)) {
         // No active expedition or no GPS yet — refuse silently. The UI
         // gates the button on `latestPosition`, so this is a safety net.
         return false;
       }
+      // The quick-drop modal lets the user re-assign the location (map
+      // pick) — an override drops at the picked point with the pick time;
+      // the default drops at the GPS fix with the fix's timestamp.
+      const lat = overrideLocation?.lat ?? latestPosition!.lat;
+      const lon = overrideLocation?.lon ?? latestPosition!.lon;
+      const date = overrideLocation
+        ? new Date().toISOString()
+        : new Date(latestPosition!.recordedAt).toISOString();
       try {
         await expeditionApi.createWaypoint(expeditionId, {
           title: title?.trim() || 'Quick waypoint',
-          lat: latestPosition.lat,
-          lon: latestPosition.lon,
-          date: new Date(latestPosition.recordedAt).toISOString(),
+          lat,
+          lon,
+          date,
         });
         return true;
       } catch (e) {
@@ -642,6 +875,7 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
       error,
       startTracking,
       stopTracking,
+      stopForeignTrack,
       pauseTracking,
       resumeTracking,
       dropWaypointAtCurrentPosition,
@@ -661,6 +895,7 @@ export function TrackingProvider({ children }: { children: React.ReactNode }) {
       error,
       startTracking,
       stopTracking,
+      stopForeignTrack,
       pauseTracking,
       resumeTracking,
       dropWaypointAtCurrentPosition,

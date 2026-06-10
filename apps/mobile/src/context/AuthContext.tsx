@@ -5,8 +5,10 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
+import { AppState } from 'react-native';
 import { api, ApiError } from '@/services/api';
 import { analytics } from '@/services/analytics';
+import { runPreLogoutHandlers } from '@/services/preLogout';
 import {
   setTokens,
   clearTokens,
@@ -32,6 +34,17 @@ interface User {
   isGuide?: boolean;
   stripeAccountConnected?: boolean;
   created_at?: string;
+  /**
+   * The explorer's current expedition (active preferred over planned;
+   * blueprints excluded). Drives the persistent quick-access banner —
+   * same field the web header banner reads.
+   */
+  activeExpedition?: {
+    id: number;
+    publicId: string;
+    title: string;
+    status: 'active' | 'planned';
+  } | null;
 }
 
 interface AuthContextValue {
@@ -164,6 +177,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    // Let subsystems finalize server-side state (e.g. stop an active
+    // tracking session) while this user's tokens are still valid. Never
+    // throws and is timeout-bounded — logout always proceeds.
+    await runPreLogoutHandlers();
     await clearTokens();
     setUser(null);
     setHasStoredSession(false);
@@ -180,6 +197,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Silently fail — user stays as-is
     }
   }, []);
+
+  // Refresh on foreground so derived UI (the persistent expedition
+  // banner reads user.activeExpedition) tracks expedition lifecycle
+  // changes made elsewhere — web, or a completed expedition. Gated on a
+  // ref so we don't re-subscribe per user change.
+  const hasUserRef = React.useRef(false);
+  hasUserRef.current = !!user;
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active' && hasUserRef.current) void refreshUser();
+    });
+    return () => sub.remove();
+  }, [refreshUser]);
 
   const handleSetBiometricEnabled = useCallback(async (enabled: boolean) => {
     if (enabled) {
