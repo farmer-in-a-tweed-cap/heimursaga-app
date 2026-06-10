@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, ScrollView, Pressable, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTopInset } from '@/hooks/useTopInset';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useApi } from '@/hooks/useApi';
@@ -60,7 +60,7 @@ function QuickFilters({ options, active, onSelect, colors }: {
 
 export default function DiscoverScreen() {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
+  const topInset = useTopInset();
   const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState(tab ? Number(tab) : 0);
@@ -213,9 +213,9 @@ export default function DiscoverScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <TopoBackground topOffset={insets.top + 47} />
+      <TopoBackground topOffset={topInset + 47} />
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.header, { paddingTop: topInset + 12 }]}>
         <Text style={styles.headerTitle}>DISCOVER</Text>
       </View>
 

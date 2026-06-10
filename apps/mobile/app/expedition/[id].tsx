@@ -16,10 +16,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
-import { useTracking, type TrackingMode } from '@/context/TrackingContext';
+import {
+  TrackingConflictError,
+  useTracking,
+  type TrackingMode,
+} from '@/context/TrackingContext';
 import { TrackingStartModeModal } from '@/components/tracking/TrackingStartModeModal';
 import { TrackingPermissionExplainer } from '@/components/tracking/TrackingPermissionExplainer';
 import { useApi } from '@/hooks/useApi';
+import { useTopInset } from '@/hooks/useTopInset';
+import { usePreferences } from '@/context/PreferencesContext';
 import { api, ApiError, expeditionApi, bookmarksApi, explorerApi } from '@/services/api';
 import { MAPBOX_TOKEN } from '@/services/mapConfig';
 import { colors as brandColors, mono, heading, borders, ROUTE_MODE_STYLES } from '@/theme/tokens';
@@ -161,9 +167,6 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function formatDistance(km: number): string {
-  return km < 1 ? `${Math.round(km * 1000)}M` : `${km.toFixed(1)}KM`;
-}
 
 function formatDuration(hours: number): string {
   if (hours < 1) return `${Math.round(hours * 60)} min`;
@@ -386,36 +389,72 @@ export default function ExpeditionDetailScreen() {
   const [locSelectedId, setLocSelectedId] = useState('');
   const [locVisibility, setLocVisibility] = useState<'public' | 'sponsors' | 'private'>('public');
   const [locSaving, setLocSaving] = useState(false);
+  // 'manual' = pick a waypoint/entry to pin to. 'live-track' = adjust
+  // live-track visibility then begin tracking from this device. Single
+  // modal, two modes, so the user can fiddle with privacy before
+  // committing to the tracking flow instead of being yanked into the
+  // mode picker the instant they tap the live-track card.
+  const [locMode, setLocMode] = useState<'manual' | 'live-track'>('manual');
+  const [liveTrackVisibility, setLiveTrackVisibility] = useState<
+    'public' | 'sponsors' | 'private'
+  >('public');
+  const [beginningTracking, setBeginningTracking] = useState(false);
 
   // Live tracking modal flow
   const tracking = useTracking();
+  const topInset = useTopInset();
+  const { formatDistance, convertDistance, distanceLabel } = usePreferences();
   const [trackModeModalVisible, setTrackModeModalVisible] = useState(false);
   const [trackExplainerVisible, setTrackExplainerVisible] = useState(false);
   const [startedTrackMode, setStartedTrackMode] = useState<TrackingMode | null>(null);
 
-  const openTrackingFlow = useCallback(async () => {
-    // Ensure foreground permission first. The Always upgrade happens via
-    // the explainer screen AFTER the mode pick, so the user has set
-    // intent before we ask for background access. Defer closing the
-    // location modal until the permission resolves so the user doesn't
-    // lose context if they need to re-open it after denying.
-    const level = await tracking.requestWhenInUsePermission();
-    if (level === 'denied' || level === 'undetermined') {
-      Alert.alert(
-        'Location permission needed',
-        'Heimursaga needs your location to record this expedition. Enable Location for Heimursaga in iOS Settings.',
-      );
-      return;
-    }
+  // Single close handler that always resets sub-mode. Wrap every modal
+  // dismiss so the user can't reopen the modal and land in live-track
+  // sub-view from a stale state. openLocationModal also re-seeds it, but
+  // belt-and-braces avoids any future second-entry-point footgun.
+  const closeLocationModal = useCallback(() => {
     setLocationModalVisible(false);
-    setTrackModeModalVisible(true);
-  }, [tracking]);
+    setLocMode('manual');
+  }, []);
+
+  // Commits the live-track sub-mode. Always PATCHes the chosen visibility
+  // (idempotent, cheap) so what the user SEES selected is what the server
+  // holds — a "skip if unchanged" check could drift from the column
+  // default on expeditions that predate the picker.
+  const beginTracking = useCallback(async () => {
+    if (!expedition || !id || beginningTracking) return;
+    setBeginningTracking(true);
+    try {
+      try {
+        // applyToPin: the picker promises "who can watch YOU", so the
+        // chosen level must cover the route line and the pin together.
+        await expeditionApi.updateLiveTrackVisibility(id, liveTrackVisibility, true);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Could not save privacy setting.';
+        Alert.alert('Could not save privacy', msg);
+        return;
+      }
+      const level = await tracking.requestWhenInUsePermission();
+      if (level === 'denied' || level === 'undetermined') {
+        Alert.alert(
+          'Location permission needed',
+          'Heimursaga needs your location to record this expedition. Enable Location for Heimursaga in iOS Settings.',
+        );
+        return;
+      }
+      closeLocationModal();
+      setTrackModeModalVisible(true);
+    } finally {
+      setBeginningTracking(false);
+    }
+  }, [beginningTracking, closeLocationModal, expedition, id, liveTrackVisibility, tracking]);
 
   const handleTrackingModePick = useCallback(
     async (mode: TrackingMode) => {
       setTrackModeModalVisible(false);
       if (!expedition || !id) return;
-      try {
+
+      const attemptStart = async (): Promise<void> => {
         await tracking.startTracking({
           expeditionId: id,
           expeditionTitle: expedition.title,
@@ -429,7 +468,55 @@ export default function ExpeditionDetailScreen() {
           setStartedTrackMode(mode);
           setTrackExplainerVisible(true);
         }
+      };
+
+      try {
+        await attemptStart();
       } catch (e) {
+        if (e instanceof TrackingConflictError) {
+          // Server-side single-active-track guard fired. The orphan is
+          // typically a previous session that lost its client-side handle
+          // (app killed, Metro reload, or a silently-failed stop). Offer
+          // to stop the orphan and try again — same as a real user would
+          // be guided through. The alternative (silently force-stopping)
+          // would lose data if the user is actually tracking elsewhere.
+          const orphan = e.activeTrack;
+          const orphanRef = orphan.expeditionSlug ?? orphan.expeditionPublicId;
+          const isSameExpedition =
+            orphan.expeditionPublicId === id ||
+            (orphan.expeditionSlug && orphan.expeditionSlug === id);
+          const message = isSameExpedition
+            ? `A previous session on this expedition was never stopped (started ${new Date(orphan.startedAt).toLocaleString()}). Stop it and start fresh?`
+            : `A tracking session is still active on "${orphan.expeditionTitle}". Stop it before starting here.`;
+          Alert.alert('Previous session still active', message, [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Stop and start here',
+              style: 'destructive',
+              onPress: () => {
+                void (async () => {
+                  try {
+                    await tracking.stopForeignTrack({
+                      expeditionId: orphanRef,
+                      trackId: orphan.trackId,
+                    });
+                  } catch (stopErr) {
+                    const sm = stopErr instanceof Error ? stopErr.message : 'Could not stop the previous session.';
+                    Alert.alert('Could not stop previous session', sm);
+                    return;
+                  }
+                  try {
+                    await attemptStart();
+                  } catch (retryErr) {
+                    const rm = retryErr instanceof Error ? retryErr.message : 'Failed to start tracking';
+                    Alert.alert('Could not start tracking', rm);
+                  }
+                })();
+              },
+            },
+          ]);
+          return;
+        }
         const msg = e instanceof Error ? e.message : 'Failed to start tracking';
         Alert.alert('Could not start tracking', msg);
       }
@@ -450,6 +537,11 @@ export default function ExpeditionDetailScreen() {
     // Save button stays disabled until the user makes a fresh selection.
     setLocSelectedId(src === 'live_track' ? '' : expedition.currentLocationId || '');
     setLocVisibility(expedition.currentLocationVisibility || 'public');
+    setLocMode('manual');
+    // Seed with the server value, falling back to the column default
+    // ('private', spec decision #1) — the user must consciously opt up
+    // to a wider audience, never get one pre-selected.
+    setLiveTrackVisibility(expedition.liveTrackVisibility || 'private');
     setLocationModalVisible(true);
   }, [expedition]);
 
@@ -462,7 +554,7 @@ export default function ExpeditionDetailScreen() {
         locationId: locSelectedId,
         visibility: locVisibility,
       });
-      setLocationModalVisible(false);
+      closeLocationModal();
       await refetch();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to update location';
@@ -572,6 +664,14 @@ export default function ExpeditionDetailScreen() {
     ]);
   };
 
+  // Live session on THIS expedition → the local GPS fix is the current
+  // position. Single source of truth for the map marker, the legend, and
+  // the current-location bar, so they can't disagree about live-ness.
+  const isLiveTrackingThis =
+    (tracking.status === 'active' || tracking.status === 'paused') &&
+    (tracking.expeditionId === id || tracking.expeditionId === expedition?.id);
+  const livePosition = isLiveTrackingThis ? tracking.latestPosition : null;
+
   // Merge all markers — must run before early returns to satisfy rules of hooks
   const allMarkers = useMemo<WaypointMarker[]>(() => {
     if (!expedition) return [];
@@ -625,7 +725,13 @@ export default function ExpeditionDetailScreen() {
     const src = expedition.currentLocationSource;
     const locId = expedition.currentLocationId;
     let curCoords: [number, number] | null = null;
-    if (src === 'waypoint' && locId) {
+    // Live position wins: the server-side pin is a TrackPoint id that
+    // can't be resolved from the expedition payload (waypoints/entries
+    // only), and it lags the device by up to a flush cycle anyway.
+    if (livePosition) {
+      curCoords = [livePosition.lon, livePosition.lat];
+    }
+    if (!curCoords && src === 'waypoint' && locId) {
       const wp = (expedition.waypoints ?? []).find(w => String(w.id) === locId);
       if (wp) curCoords = [wp.lon, wp.lat];
     }
@@ -644,12 +750,20 @@ export default function ExpeditionDetailScreen() {
         return m;
       });
       if (!matched) {
-        markers.push({ coordinates: curCoords, type: 'current', label: 'Current Location', isCurrent: true });
+        markers.push({
+          coordinates: curCoords,
+          type: 'current',
+          label: livePosition ? 'Live position' : 'Current Location',
+          isCurrent: true,
+          // Live signal green (web map head dot / tracking banner), vs
+          // the gray diamond of a manually-pinned current location.
+          ...(livePosition ? { color: '#22c55e' } : {}),
+        });
       }
     }
 
     return clusterMarkers(markers, mapZoom);
-  }, [expedition, mapZoom]);
+  }, [expedition, mapZoom, livePosition]);
 
   // ── Map data (memoized before early returns for stable references) ─────
   const sortedWaypoints = useMemo(() => {
@@ -709,6 +823,12 @@ export default function ExpeditionDetailScreen() {
       ...sortedWaypoints.map(w => ({ lon: w.lon, lat: w.lat })),
       ...geoEntries.map(e => ({ lon: e.lon!, lat: e.lat! })),
     ];
+    // The live-position marker is part of the picture — without it, a
+    // tracker who wanders past the planned route gets fitted out of
+    // their own map.
+    if (livePosition) {
+      allCoords.push({ lon: livePosition.lon, lat: livePosition.lat });
+    }
     return allCoords.length > 0
       ? {
           ne: [
@@ -721,10 +841,21 @@ export default function ExpeditionDetailScreen() {
           ] as [number, number],
         }
       : undefined;
-  }, [sortedWaypoints, geoEntries]);
+  }, [sortedWaypoints, geoEntries, livePosition]);
 
   const coverMapBounds = useMemo(() => {
     return mapBounds ? { ...mapBounds, padding: 40 } : undefined;
+  }, [mapBounds]);
+
+  // The expanded map is interactive — its Camera bounds are snapshotted
+  // at open time (fitting waypoints, entries AND the live position as of
+  // that moment) and then frozen, so per-fix bounds updates don't yank
+  // the camera away from wherever the user panned. The non-interactive
+  // hero map keeps the live-updating bounds.
+  const expandedBoundsRef = useRef(mapBounds);
+  const openExpandedMap = useCallback(() => {
+    expandedBoundsRef.current = mapBounds;
+    setMapExpanded(true);
   }, [mapBounds]);
 
   if (loading) {
@@ -793,6 +924,11 @@ export default function ExpeditionDetailScreen() {
   // ── Current location ────────────────────────────────────────────────────
   const currentLoc = (() => {
     if (expedition.status === 'cancelled') return null;
+    // Live session on this expedition → local GPS fix wins (same
+    // precedence as the map marker).
+    if (livePosition) {
+      return { place: 'Live position', lat: livePosition.lat, lon: livePosition.lon };
+    }
     const src = expedition.currentLocationSource;
     const locId = expedition.currentLocationId;
     if (src === 'waypoint' && locId) {
@@ -815,7 +951,7 @@ export default function ExpeditionDetailScreen() {
           {MapComponent && (
             <MapComponent
               style={StyleSheet.absoluteFillObject}
-              bounds={mapBounds}
+              bounds={expandedBoundsRef.current}
               center={[-98, 40]}
               zoom={2}
               routeCoords={routeCoords.length > 1 ? routeCoords : undefined}
@@ -841,8 +977,11 @@ export default function ExpeditionDetailScreen() {
               }}
             />
           )}
-          {/* Top bar: title + close */}
-          <SafeAreaView style={styles.fullMapHeader} edges={['top']}>
+          {/* Top bar: title + close. Padded with the banner-aware top
+              inset (NOT a SafeAreaView) — the global expedition banner
+              already consumes the notch area when visible, and the
+              native SafeAreaView can't know that. */}
+          <View style={[styles.fullMapHeader, { paddingTop: topInset + 8 }]}>
             <Text style={styles.fullMapTitle} numberOfLines={1}>{expedition.title}</Text>
             <Pressable
               style={styles.fullMapCloseBtn}
@@ -850,10 +989,10 @@ export default function ExpeditionDetailScreen() {
             >
               <Text style={styles.fullMapCloseText}>CLOSE</Text>
             </Pressable>
-          </SafeAreaView>
+          </View>
           {/* Entry popup — positioned below header */}
           {selectedEntry && (
-            <SafeAreaView style={styles.popupSafeWrap} edges={['top']} pointerEvents="box-none">
+            <View style={[styles.popupSafeWrap, { paddingTop: topInset }]} pointerEvents="box-none">
               <View style={[styles.popupWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.popupHeader}>
                   <Text
@@ -885,11 +1024,11 @@ export default function ExpeditionDetailScreen() {
                   <Text style={styles.popupBtnText}>VIEW ENTRY</Text>
                 </TouchableOpacity>
               </View>
-            </SafeAreaView>
+            </View>
           )}
           {/* Multi-entry list popup */}
           {selectedEntries.length > 0 && (
-            <SafeAreaView style={styles.popupSafeWrap} edges={['top']} pointerEvents="box-none">
+            <View style={[styles.popupSafeWrap, { paddingTop: topInset }]} pointerEvents="box-none">
               <View style={[styles.popupWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.popupHeader}>
                   <Text
@@ -928,7 +1067,7 @@ export default function ExpeditionDetailScreen() {
                   ))}
                 </ScrollView>
               </View>
-            </SafeAreaView>
+            </View>
           )}
           {/* Map legend */}
           <View style={[styles.mapLegend, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -966,14 +1105,19 @@ export default function ExpeditionDetailScreen() {
                 </View>
                 <Text style={[styles.mapLegendText, { color: colors.textSecondary }]}>Journal Entry</Text>
               </View>
+              {/* Dynamic: a live session renders the green live-position
+                  marker; a manual pin renders the gray diamond. The
+                  legend follows whichever is actually on the map. */}
               <View style={styles.mapLegendItem}>
                 <View style={styles.mapLegendDotWrap}>
                   <View style={{ width: 22, height: 22, alignItems: 'center', justifyContent: 'center' }}>
                     <View style={{ position: 'absolute', width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)' }} />
-                    <View style={[styles.mapLegendDot, { backgroundColor: '#616161', width: 14, height: 14, borderRadius: 7, borderWidth: 3, borderColor: '#fff' }]} />
+                    <View style={[styles.mapLegendDot, { backgroundColor: livePosition ? '#22c55e' : '#616161', width: 14, height: 14, borderRadius: 7, borderWidth: 3, borderColor: '#fff' }]} />
                   </View>
                 </View>
-                <Text style={[styles.mapLegendText, { color: colors.textSecondary }]}>Current Location</Text>
+                <Text style={[styles.mapLegendText, { color: colors.textSecondary }]}>
+                  {livePosition ? 'Live Position' : 'Current Location'}
+                </Text>
               </View>
               <View style={[styles.mapLegendSep, { borderTopColor: colors.borderThin }]} />
               <View style={styles.mapLegendItem}>
@@ -1034,7 +1178,7 @@ export default function ExpeditionDetailScreen() {
                 <Text style={[styles.heroTitle, { flex: 1 }]}>{expedition.title}</Text>
                 <Pressable
                   style={styles.viewMapBtn}
-                  onPress={() => setMapExpanded(true)}
+                  onPress={openExpandedMap}
                 >
                   <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth={2}>
                     <Path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
@@ -1080,8 +1224,46 @@ export default function ExpeditionDetailScreen() {
           </View>
         </View>
 
-        {/* Status bar: current location (active), starts in (planned), completed date */}
+        {/* Status bar: current location (active), starts in (planned), completed date.
+            While live-tracking THIS expedition the bar reflects the live
+            session instead of the (possibly stale) manual pin — the pin
+            promotes server-side on the first flush, so "Not set" under a
+            LIVE banner would read as a contradiction. */}
         {!isBlueprint && expedition.status === 'active' && (
+          (tracking.status === 'active' || tracking.status === 'paused') &&
+          tracking.expeditionId === id ? (
+            <Pressable
+              style={styles.currentLocRow}
+              onPress={isOwner ? openLocationModal : undefined}
+            >
+              <View style={styles.currentLocLeft}>
+                <View
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    // Same green as the tracking banner / web live signal.
+                    backgroundColor: tracking.status === 'active' ? '#22c55e' : 'rgba(255,255,255,0.6)',
+                  }}
+                />
+                <Text style={styles.currentlyLabel}>
+                  {tracking.status === 'active' ? 'LIVE TRACKING' : 'TRACKING PAUSED'}
+                </Text>
+                <Text style={styles.currentlyCity}>
+                  {tracking.latestPosition ? 'Pin updates automatically' : 'Acquiring GPS…'}
+                </Text>
+              </View>
+              {(tracking.latestPosition || currentLoc?.lat != null) && (
+                <Text style={styles.currentlyCoords}>
+                  {(() => {
+                    const lat = tracking.latestPosition?.lat ?? currentLoc!.lat!;
+                    const lon = tracking.latestPosition?.lon ?? currentLoc!.lon!;
+                    return `${Math.abs(lat).toFixed(2)}${lat >= 0 ? 'N' : 'S'} / ${Math.abs(lon).toFixed(2)}${lon >= 0 ? 'E' : 'W'}`;
+                  })()}
+                </Text>
+              )}
+            </Pressable>
+          ) : (
           <Pressable
             style={styles.currentLocRow}
             onPress={isOwner ? openLocationModal : undefined}
@@ -1100,6 +1282,7 @@ export default function ExpeditionDetailScreen() {
               </Text>
             )}
           </Pressable>
+          )
         )}
         {!isBlueprint && expedition.status === 'planned' && (
           <Pressable
@@ -1210,7 +1393,7 @@ export default function ExpeditionDetailScreen() {
               { value: String(expedition.adoptionsCount ?? 0), label: 'LAUNCHES' },
               { value: (expedition.averageRating ?? 0) > 0 ? (expedition.averageRating!).toFixed(1) : '--', label: 'RATING' },
               { value: String(waypointCount), label: 'WAYPOINTS' },
-              ...(totalDistanceKm > 0 ? [{ value: `${Math.round(totalDistanceKm)}`, label: 'KM' }] : []),
+              ...(totalDistanceKm > 0 ? [{ value: `${Math.round(convertDistance(totalDistanceKm))}`, label: distanceLabel.toUpperCase() }] : []),
               ...(expedition.estimatedDurationH ? [{ value: formatDuration(expedition.estimatedDurationH), label: 'TRAVEL' }] : []),
             ] : [
               ...((expedition.goal ?? 0) > 0 ? [{
@@ -1229,7 +1412,7 @@ export default function ExpeditionDetailScreen() {
                     { value: String(waypointCount), label: 'WAYPOINTS' },
                     { value: String(expedition.entriesCount ?? 0), label: 'ENTRIES' },
                   ]),
-              ...(totalDistanceKm > 0 ? [{ value: `${Math.round(totalDistanceKm)}`, label: 'KM' }] : []),
+              ...(totalDistanceKm > 0 ? [{ value: `${Math.round(convertDistance(totalDistanceKm))}`, label: distanceLabel.toUpperCase() }] : []),
               ...(durationDays > 0 ? [{ value: String(durationDays), label: durationDays === 1 ? 'DAY' : 'DAYS' }] : []),
             ]}
           />
@@ -1894,13 +2077,14 @@ export default function ExpeditionDetailScreen() {
                 <Text style={styles.modalSubtitle} numberOfLines={1}>{expedition.title}</Text>
               </View>
             </View>
-            <Pressable onPress={() => setLocationModalVisible(false)} style={styles.modalCloseBtn}>
+            <Pressable onPress={closeLocationModal} style={styles.modalCloseBtn}>
               <Text style={styles.modalCloseText}>CLOSE</Text>
             </Pressable>
           </View>
 
           <ScrollView style={styles.modalScroll} keyboardShouldPersistTaps="handled">
             <View style={styles.modalBody}>
+              {locMode === 'manual' && (<>
               {/* Info */}
               <View style={[styles.locInfoBox, { borderLeftColor: brandColors.blue }]}>
                 <Text style={[styles.locInfoTitle, { color: colors.text }]}>QUICK LOCATION UPDATE</Text>
@@ -1909,14 +2093,15 @@ export default function ExpeditionDetailScreen() {
                 </Text>
               </View>
 
-              {/* Live tracking entry point — alternative to picking a waypoint
-                  or entry. Available only on an `active` expedition: planned
-                  trips need to be started via the existing START EXPEDITION
-                  flow first, and completed/cancelled trips don't accept
-                  new pings server-side. */}
+              {/* Live tracking entry point — flips this modal into
+                  live-track mode (visibility-only) so the user can adjust
+                  privacy before committing via the BEGIN TRACKING footer.
+                  Available only on an `active` expedition: planned trips
+                  need to be started first, and completed/cancelled trips
+                  don't accept new pings server-side. */}
               {tracking.status === 'idle' && expedition?.status === 'active' && (
                   <Pressable
-                    onPress={openTrackingFlow}
+                    onPress={() => setLocMode('live-track')}
                     style={({ pressed }) => [
                       styles.locInfoBox,
                       {
@@ -1925,13 +2110,13 @@ export default function ExpeditionDetailScreen() {
                       },
                     ]}
                     accessibilityRole="button"
-                    accessibilityLabel="Start live tracking from this device"
+                    accessibilityLabel="Switch to live tracking from this device"
                   >
                     <Text style={[styles.locInfoTitle, { color: brandColors.copper }]}>
                       OR — LIVE TRACK FROM THIS DEVICE
                     </Text>
                     <Text style={[styles.locInfoDesc, { color: colors.textSecondary }]}>
-                      Record your route automatically as you travel. Tap to start →
+                      Record your route automatically as you travel. Tap to set up →
                     </Text>
                   </Pressable>
                 )}
@@ -2028,7 +2213,7 @@ export default function ExpeditionDetailScreen() {
                 </Pressable>
               ))}
 
-              {/* Visibility */}
+              {/* Visibility (manual mode — controls currentLocationVisibility) */}
               <Text style={[styles.locSectionLabel, { color: colors.text, marginTop: 16 }]}>LOCATION PRIVACY</Text>
               {([
                 { value: 'public' as const, label: 'PUBLIC', desc: 'Visible to everyone' },
@@ -2052,24 +2237,98 @@ export default function ExpeditionDetailScreen() {
                   <Text style={[styles.locVisDesc, { color: colors.textTertiary }]}>{opt.desc}</Text>
                 </Pressable>
               ))}
+              </>)}
+
+              {locMode === 'live-track' && (<>
+                {/* Live-track sub-mode — explainer + privacy picker only.
+                    The user came here from the OR — LIVE TRACK card and
+                    can either back out (Update location instead) or
+                    commit via the footer's BEGIN TRACKING button. */}
+                <View style={[styles.locInfoBox, { borderLeftColor: brandColors.copper }]}>
+                  <Text style={[styles.locInfoTitle, { color: brandColors.copper }]}>LIVE TRACK FROM THIS DEVICE</Text>
+                  <Text style={[styles.locInfoDesc, { color: colors.textSecondary }]}>
+                    Your phone's GPS will record this expedition's route
+                    automatically. You can choose a cadence (day trip vs
+                    multi-day) on the next step.
+                  </Text>
+                </View>
+
+                <Pressable
+                  onPress={() => setLocMode('manual')}
+                  style={({ pressed }) => [{ paddingVertical: 6, opacity: pressed ? 0.6 : 1 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Switch back to manual location update"
+                >
+                  <Text style={{ color: brandColors.copper, fontFamily: mono, fontSize: 11, fontWeight: '800', letterSpacing: 0.5 }}>
+                    ← UPDATE LOCATION INSTEAD
+                  </Text>
+                </Pressable>
+
+                {/* Live-track visibility — separate from the manual pin's
+                    visibility. Saved via PATCH /trips/:id/live-track-visibility
+                    on Begin Tracking, only if changed. */}
+                <Text style={[styles.locSectionLabel, { color: colors.text, marginTop: 16 }]}>WHO CAN WATCH YOU?</Text>
+                {/* One decision covering everything a viewer could see —
+                    route line AND current-location pin (applyToPin on the
+                    PATCH). Splitting them here (spec decision #5 keeps the
+                    columns independent) read as a contradiction: "PRIVATE"
+                    with a public pin still showed the latest position. The
+                    fine-grained split remains available via LOCATION
+                    PRIVACY in the manual update view. */}
+                {([
+                  { value: 'public' as const, label: 'PUBLIC', desc: 'Anyone can see your route and current position' },
+                  { value: 'sponsors' as const, label: 'SPONSORS ONLY', desc: 'Only your sponsors can see your route and position' },
+                  { value: 'private' as const, label: 'PRIVATE', desc: 'Nothing is visible to anyone but you' },
+                ]).map((opt) => (
+                  <Pressable
+                    key={opt.value}
+                    style={[
+                      styles.locVisItem,
+                      {
+                        borderColor: liveTrackVisibility === opt.value ? brandColors.copper : colors.border,
+                        backgroundColor: liveTrackVisibility === opt.value ? `${brandColors.copper}10` : colors.card,
+                      },
+                    ]}
+                    onPress={() => setLiveTrackVisibility(opt.value)}
+                  >
+                    <Text style={[styles.locVisLabel, { color: liveTrackVisibility === opt.value ? brandColors.copper : colors.text }]}>
+                      {opt.label}
+                    </Text>
+                    <Text style={[styles.locVisDesc, { color: colors.textTertiary }]}>{opt.desc}</Text>
+                  </Pressable>
+                ))}
+
+              </>)}
             </View>
           </ScrollView>
 
-          {/* Footer */}
+          {/* Footer — primary action label depends on mode. Manual mode
+              saves the picked waypoint/entry; live-track mode kicks off
+              the permission + cadence-pick flow. */}
           <View style={[styles.modalFooter, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
             <Pressable
               style={[styles.modalCancelBtn, { borderColor: colors.border }]}
-              onPress={() => setLocationModalVisible(false)}
+              onPress={closeLocationModal}
             >
               <Text style={[styles.modalCancelText, { color: colors.text }]}>CANCEL</Text>
             </Pressable>
-            <Pressable
-              style={[styles.modalSaveBtn, { opacity: !locSelectedId || locSaving ? 0.5 : 1 }]}
-              onPress={handleSaveLocation}
-              disabled={!locSelectedId || locSaving}
-            >
-              <Text style={styles.modalSaveText}>{locSaving ? 'SAVING...' : 'SAVE LOCATION'}</Text>
-            </Pressable>
+            {locMode === 'manual' ? (
+              <Pressable
+                style={[styles.modalSaveBtn, { opacity: !locSelectedId || locSaving ? 0.5 : 1 }]}
+                onPress={handleSaveLocation}
+                disabled={!locSelectedId || locSaving}
+              >
+                <Text style={styles.modalSaveText}>{locSaving ? 'SAVING...' : 'SAVE LOCATION'}</Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                style={[styles.modalSaveBtn, { opacity: beginningTracking ? 0.5 : 1 }]}
+                onPress={beginTracking}
+                disabled={beginningTracking}
+              >
+                <Text style={styles.modalSaveText}>{beginningTracking ? 'STARTING…' : 'BEGIN TRACKING'}</Text>
+              </Pressable>
+            )}
           </View>
         </SafeAreaView>
       </Modal>
@@ -2082,7 +2341,20 @@ export default function ExpeditionDetailScreen() {
       <TrackingPermissionExplainer
         visible={trackExplainerVisible}
         onClose={() => setTrackExplainerVisible(false)}
-        onResolved={() => setTrackExplainerVisible(false)}
+        onResolved={(level) => {
+          setTrackExplainerVisible(false);
+          // The local tracking effect fires the instant `startTracking`
+          // flips status to 'active' — that's BEFORE the explainer asks
+          // for Always. So the first run of the effect throws (When-in-Use
+          // can't drive a TaskManager background task on iOS), flips
+          // status to 'paused', and the banner reads PAUSED while the
+          // user is still inside this explainer. When the user grants
+          // Always here, retry by transitioning paused → active so the
+          // effect re-fires with the correct permission.
+          if (level === 'always' && tracking.status === 'paused') {
+            void tracking.resumeTracking();
+          }
+        }}
         // Conservative mode needs background tracking to actually run —
         // warn the user before they dismiss without enabling Always.
         warnOnDismissAlwaysRequired={startedTrackMode === 'conservative'}

@@ -14,7 +14,7 @@ import {
   StyleSheet,
   LayoutChangeEvent,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTopInset } from '@/hooks/useTopInset';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
@@ -42,7 +42,7 @@ interface TripsResponse {
 
 export default function HomeScreen() {
   const { dark, colors } = useTheme();
-  const insets = useSafeAreaInsets();
+  const topInset = useTopInset();
   const { user } = useAuth();
   const router = useRouter();
   const [contentAreaHeight, setContentAreaHeight] = useState(0);
@@ -232,9 +232,9 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <TopoBackground topOffset={insets.top + 58} />
+      <TopoBackground topOffset={topInset + 58} />
       {/* Header bar */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+      <View style={[styles.header, { paddingTop: topInset + 16 }]}>
         <Image
           source={require('../../assets/logo-lg-light.png')}
           style={{ height: 50, width: 148 }}

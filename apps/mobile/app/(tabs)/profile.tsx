@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, ComponentType } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { useTopInset } from '@/hooks/useTopInset';
 import { useApi } from '@/hooks/useApi';
 import { explorerApi } from '@/services/api';
 import { ProfileBanner } from '@/components/profile/ProfileBanner';
@@ -26,6 +26,7 @@ const FOLLOW_TABS = ['FOLLOWING', 'FOLLOWERS'];
 export default function ProfileScreen() {
   const { colors } = useTheme();
   const { ready, user } = useRequireAuth();
+  const topInset = useTopInset();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState(0);
   const [followTab, setFollowTab] = useState(0);
@@ -92,9 +93,9 @@ export default function ProfileScreen() {
 
   if (!ready) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topInset }]}>
         <ActivityIndicator color={brandColors.copper} style={styles.loader} />
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -106,7 +107,7 @@ export default function ProfileScreen() {
   const followingUsernames = new Set(following.map((f) => f.username));
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topInset }]}>
       <TopoBackground topOffset={bannerHeight} />
       <ScrollView>
         {(() => {
@@ -316,7 +317,7 @@ export default function ProfileScreen() {
 
         <View style={styles.spacer} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

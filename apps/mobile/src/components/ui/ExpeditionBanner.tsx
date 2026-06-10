@@ -1,19 +1,93 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { mono, colors } from '@/theme/tokens';
+import { borders, mono, colors } from '@/theme/tokens';
+import { useAuth } from '@/context/AuthContext';
 import { useTracking } from '@/context/TrackingContext';
+import { QuickDropModal } from '@/components/tracking/QuickDropModal';
 
 /**
- * Persistent banner shown across all screens whenever a tracking session is
- * active or paused. Tap to navigate back to the expedition. Pause/resume
- * and Stop are exposed directly. Drop Waypoint is the quick-drop button
- * (Phase 1b step 4.5 wiring; here the button is rendered conditionally on
- * latestPosition so it only enables once GPS has produced a fix).
+ * Persistent top banner, one of two modes (live tracking wins):
+ *
+ * 1. TRACKING — a session is active or paused: status, expedition title,
+ *    DROP / PAUSE / STOP controls. Tap navigates to the tracked
+ *    expedition.
+ * 2. QUICK ACCESS — the explorer has a current expedition
+ *    (user.activeExpedition: active preferred over planned, blueprints
+ *    excluded): one-tap route to that expedition's page. Mirrors the web
+ *    header's ActiveExpeditionBanner, same status colors.
+ *
+ * Rendered once above the navigation stack (app/_layout.tsx) so it
+ * persists across screens. useTopInset() must mirror this component's
+ * visibility logic — screens drop their own top inset while a banner is
+ * consuming the safe area.
  */
-export function TrackingBanner() {
+export function useExpeditionBannerVisible(): boolean {
+  const { status } = useTracking();
+  const { user } = useAuth();
+  return status === 'active' || status === 'paused' || !!user?.activeExpedition;
+}
+
+export function ExpeditionBanner() {
+  const tracking = useTracking();
+  const { user } = useAuth();
+  const trackingVisible =
+    tracking.status === 'active' || tracking.status === 'paused';
+
+  if (trackingVisible) return <TrackingMode />;
+  if (user?.activeExpedition) {
+    return <QuickAccessMode expedition={user.activeExpedition} />;
+  }
+  return null;
+}
+
+// ─── Mode 2: quick access ───
+
+function QuickAccessMode({
+  expedition,
+}: {
+  expedition: NonNullable<
+    NonNullable<ReturnType<typeof useAuth>['user']>['activeExpedition']
+  >;
+}) {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const isPlanned = expedition.status === 'planned';
+
+  return (
+    <Pressable
+      onPress={() => router.push(`/expedition/${expedition.publicId}`)}
+      accessibilityRole="button"
+      accessibilityLabel={`Open your ${isPlanned ? 'planned' : 'active'} expedition: ${expedition.title}`}
+      style={({ pressed }) => [
+        styles.banner,
+        {
+          backgroundColor: isPlanned ? colors.blue : colors.copper,
+          paddingTop: insets.top + 8,
+          opacity: pressed ? 0.92 : 1,
+        },
+      ]}
+    >
+      <View style={styles.headerRow}>
+        <View style={styles.titleColumn}>
+          <Text style={styles.statusLabel}>
+            {isPlanned ? 'PLANNED EXPEDITION' : 'ACTIVE EXPEDITION'}
+          </Text>
+          <Text style={styles.expeditionTitle} numberOfLines={1}>
+            {expedition.title}
+          </Text>
+        </View>
+      </View>
+      <Text style={styles.quickAccessArrow}>{'→'}</Text>
+    </Pressable>
+  );
+}
+
+// ─── Mode 1: live tracking ───
+
+function TrackingMode() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const {
@@ -24,8 +98,8 @@ export function TrackingBanner() {
     pauseTracking,
     resumeTracking,
     stopTracking,
-    dropWaypointAtCurrentPosition,
   } = useTracking();
+  const [dropModalVisible, setDropModalVisible] = useState(false);
 
   const onTap = useCallback(() => {
     if (!expeditionId) return;
@@ -40,38 +114,43 @@ export function TrackingBanner() {
     }
   }, [status, pauseTracking, resumeTracking]);
 
+  // stopTracking throws on server failure (instead of silently releasing
+  // local state). Wrap so we can surface the failure as an Alert with a
+  // Retry — silent failure was what created the orphan-track +
+  // 409-on-next-start dev-loop trap.
+  const performStop = useCallback(async () => {
+    try {
+      await stopTracking();
+    } catch (e) {
+      const msg =
+        e instanceof Error ? e.message : 'Could not stop tracking on the server.';
+      Alert.alert(
+        'Could not stop tracking',
+        `${msg}\n\nYour session is still recording. Retry?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Retry', onPress: () => void performStop() },
+        ],
+      );
+    }
+  }, [stopTracking]);
+
   const onStop = useCallback(() => {
     Alert.alert(
       'Stop tracking?',
       'The last position remains as your current location pin. You can re-pin manually anytime.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Stop', style: 'destructive', onPress: () => void stopTracking() },
+        { text: 'Stop', style: 'destructive', onPress: () => void performStop() },
       ],
     );
-  }, [stopTracking]);
+  }, [performStop]);
 
-  // No `latestPosition` in the dep array — the button's `disabled`
-  // prop already gates on it, and the context's drop method guards
-  // defensively. Without this, every GPS fix in step 3 would recreate
-  // the callback and force the BannerButton to re-render.
+  // DROP opens the quick-drop sheet (optional title + location pick)
+  // rather than creating immediately — the sheet owns the create call.
   const onDrop = useCallback(() => {
-    void (async () => {
-      const ok = await dropWaypointAtCurrentPosition();
-      if (ok) {
-        Alert.alert('Waypoint dropped', 'Saved at your current location. Edit later from the expedition.');
-      } else {
-        Alert.alert('Could not drop waypoint', 'Try again in a moment.');
-      }
-    })();
-  }, [dropWaypointAtCurrentPosition]);
-
-  // Also hide the banner while transitioning out. Without this, a slow
-  // server stop could leave the banner visible (with still-tappable
-  // controls) during the network round-trip.
-  if (status === 'idle' || status === 'starting' || status === 'stopping') {
-    return null;
-  }
+    setDropModalVisible(true);
+  }, []);
 
   const isPaused = status === 'paused';
 
@@ -116,6 +195,18 @@ export function TrackingBanner() {
         />
         <BannerButton label="STOP" tone="danger" onPress={onStop} />
       </View>
+
+      <QuickDropModal
+        visible={dropModalVisible}
+        onClose={() => setDropModalVisible(false)}
+        onDropped={() => {
+          setDropModalVisible(false);
+          Alert.alert('Waypoint dropped', 'Saved to your expedition. Edit it anytime from the waypoint list.');
+        }}
+        onFailed={() => {
+          Alert.alert('Could not drop waypoint', 'Try again in a moment.');
+        }}
+      />
     </Pressable>
   );
 }
@@ -175,6 +266,8 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   dotActive: {
+    // Matches the web live signal (LiveTrackBadge dot + map polyline),
+    // not the muted brand green — "live" reads the same on both surfaces.
     backgroundColor: '#22c55e',
   },
   dotPaused: {
@@ -211,11 +304,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
   },
+  quickAccessArrow: {
+    fontFamily: mono,
+    fontSize: 16,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.85)',
+  },
   button: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 4,
+    borderWidth: borders.thin,
+    borderColor: 'rgba(255,255,255,0.25)',
+    borderRadius: borders.radius,
   },
   buttonPressed: {
     backgroundColor: 'rgba(255,255,255,0.30)',

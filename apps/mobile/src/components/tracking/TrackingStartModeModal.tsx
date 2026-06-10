@@ -2,7 +2,8 @@ import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { TrackingMode } from '@/context/TrackingContext';
-import { mono, serif, colors } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { borders, colors as brandColors, mono } from '@/theme/tokens';
 
 interface TrackingStartModeModalProps {
   visible: boolean;
@@ -12,8 +13,7 @@ interface TrackingStartModeModalProps {
 
 /**
  * Center-modal that asks the user how long this expedition will be. The
- * answer picks the cadence the underlying tracking task uses (step 3
- * wiring):
+ * answer picks the cadence the underlying tracking task uses:
  *
  * - Active: 60s / 50m. Day trips and intentional active sessions. Higher
  *   battery cost, denser polyline.
@@ -22,13 +22,20 @@ interface TrackingStartModeModalProps {
  *
  * Per the Phase 1 spec decision #2, the answer is prompted explicitly at
  * tracking-start rather than chosen by a silent default. The user can
- * always change tracking later by stopping and starting again.
+ * change tracking by stopping and starting a new session.
+ *
+ * Visual identity follows the rest of the mobile app: copper header bar,
+ * sharp corners (zero radius), 2px borders, mono uppercase labels, and
+ * fully theme-aware surfaces so the modal reads correctly in both light
+ * and dark modes.
  */
 export function TrackingStartModeModal({
   visible,
   onCancel,
   onPick,
 }: TrackingStartModeModalProps) {
+  const { colors } = useTheme();
+
   return (
     <Modal
       visible={visible}
@@ -39,41 +46,71 @@ export function TrackingStartModeModal({
       <Pressable style={styles.backdrop} onPress={onCancel}>
         <Pressable
           onPress={(e) => e.stopPropagation()}
-          style={styles.card}
           accessibilityRole="none"
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
         >
-          <Text style={styles.eyebrow}>START LIVE TRACKING</Text>
-          <Text style={styles.heading}>How long is this trip?</Text>
-          <Text style={styles.subheading}>
-            Tracking adjusts cadence to match your trip length. You can stop and restart any time.
-          </Text>
+          {/* Copper header bar — matches the brand-color header used by
+              the page-sheet modals (e.g., UPDATE LOCATION on the
+              expedition detail screen). */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>START LIVE TRACKING</Text>
+            <Pressable
+              onPress={onCancel}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel"
+              style={({ pressed }) => [
+                styles.closeBtn,
+                pressed && styles.closeBtnPressed,
+              ]}
+            >
+              <Text style={styles.closeText}>CLOSE</Text>
+            </Pressable>
+          </View>
 
-          <ModeCard
-            label="Day trip"
-            sublabel="Active mode · 60-second cadence · denser polyline"
-            tag="Best battery for shorter trips"
-            onPress={() => onPick('active')}
-          />
-          <ModeCard
-            label="Multi-day"
-            sublabel="Conservative · 5-min cadence · deferred batching"
-            tag="Best battery for long expeditions"
-            onPress={() => onPick('conservative')}
-            recommended
-          />
+          <View style={styles.body}>
+            <Text style={[styles.heading, { color: colors.text }]}>
+              How long is this trip?
+            </Text>
+            <Text style={[styles.subheading, { color: colors.textSecondary }]}>
+              Tracking adjusts cadence to match your trip length. You can
+              stop and restart any time.
+            </Text>
 
-          <Pressable
-            onPress={onCancel}
-            accessibilityRole="button"
-            accessibilityLabel="Cancel"
-            style={({ pressed }) => [styles.cancel, pressed && styles.cancelPressed]}
-          >
-            <Text style={styles.cancelLabel}>Cancel</Text>
-          </Pressable>
+            <ModeCard
+              label="DAY TRIP"
+              sublabel="Active · 60-second cadence · denser polyline"
+              tag="Best battery for shorter trips"
+              onPress={() => onPick('active')}
+              colors={colors}
+            />
+            <ModeCard
+              label="MULTI-DAY"
+              sublabel="Conservative · 5-min cadence · deferred batching"
+              tag="Best battery for long expeditions"
+              onPress={() => onPick('conservative')}
+              colors={colors}
+              recommended
+            />
+          </View>
         </Pressable>
       </Pressable>
     </Modal>
   );
+}
+
+interface ModeCardProps {
+  label: string;
+  sublabel: string;
+  tag: string;
+  onPress(): void;
+  recommended?: boolean;
+  colors: ReturnType<typeof useTheme>['colors'];
 }
 
 function ModeCard({
@@ -82,24 +119,27 @@ function ModeCard({
   tag,
   onPress,
   recommended,
-}: {
-  label: string;
-  sublabel: string;
-  tag: string;
-  onPress(): void;
-  recommended?: boolean;
-}) {
+  colors,
+}: ModeCardProps) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${label} — ${sublabel}`}
-      style={({ pressed }) => [styles.modeCard, pressed && styles.modeCardPressed]}
+      style={({ pressed }) => [
+        styles.modeCard,
+        {
+          backgroundColor: colors.inputBackground,
+          borderColor: pressed ? brandColors.copper : colors.border,
+        },
+      ]}
     >
       <View style={styles.modeRow}>
         <View style={styles.modeText}>
-          <Text style={styles.modeLabel}>{label}</Text>
-          <Text style={styles.modeSublabel}>{sublabel}</Text>
+          <Text style={[styles.modeLabel, { color: colors.text }]}>{label}</Text>
+          <Text style={[styles.modeSublabel, { color: colors.textTertiary }]}>
+            {sublabel}
+          </Text>
         </View>
         {recommended && <Text style={styles.recommended}>SUGGESTED</Text>}
       </View>
@@ -119,44 +159,68 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 460,
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    paddingHorizontal: 20,
-    paddingTop: 22,
-    paddingBottom: 14,
+    borderWidth: borders.thick,
+    borderRadius: borders.radius,
+    overflow: 'hidden',
   },
-  eyebrow: {
+  // ─── Header ───
+  header: {
+    backgroundColor: brandColors.copper,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  headerTitle: {
+    fontFamily: mono,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    color: '#ffffff',
+  },
+  closeBtn: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  closeBtnPressed: {
+    backgroundColor: 'rgba(255,255,255,0.30)',
+  },
+  closeText: {
     fontFamily: mono,
     fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.4,
-    color: colors.copper,
-    marginBottom: 8,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    color: '#ffffff',
+  },
+  // ─── Body ───
+  body: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
   heading: {
-    fontFamily: serif,
-    fontSize: 22,
-    lineHeight: 28,
-    color: colors.black,
-    marginBottom: 8,
+    fontFamily: mono,
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    marginBottom: 6,
   },
   subheading: {
-    fontFamily: serif,
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.darkGray,
-    marginBottom: 18,
+    fontFamily: mono,
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 16,
   },
+  // ─── Mode card ───
   modeCard: {
-    borderWidth: 1.5,
-    borderColor: '#e5e5e5',
-    borderRadius: 8,
+    borderWidth: borders.thick,
+    borderRadius: borders.radius,
     padding: 14,
     marginBottom: 10,
-  },
-  modeCardPressed: {
-    borderColor: colors.copper,
-    backgroundColor: 'rgba(172,109,70,0.06)',
   },
   modeRow: {
     flexDirection: 'row',
@@ -169,47 +233,31 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   modeLabel: {
-    fontFamily: serif,
-    fontSize: 17,
+    fontFamily: mono,
+    fontSize: 14,
     fontWeight: '700',
-    color: colors.black,
+    letterSpacing: 0.5,
   },
   modeSublabel: {
     fontFamily: mono,
-    fontSize: 11,
-    color: colors.darkGray,
+    fontSize: 10,
     marginTop: 4,
     letterSpacing: 0.4,
   },
   modeTag: {
     fontFamily: mono,
     fontSize: 10,
-    color: colors.copper,
+    color: brandColors.copper,
     marginTop: 8,
     letterSpacing: 1.0,
     textTransform: 'uppercase',
+    fontWeight: '700',
   },
   recommended: {
     fontFamily: mono,
     fontSize: 10,
     fontWeight: '800',
-    color: colors.copper,
+    color: brandColors.copper,
     letterSpacing: 1.2,
-  },
-  cancel: {
-    marginTop: 6,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  cancelPressed: {
-    opacity: 0.6,
-  },
-  cancelLabel: {
-    fontFamily: mono,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1.0,
-    color: colors.darkGray,
-    textTransform: 'uppercase',
   },
 });

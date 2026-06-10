@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTopInset } from '@/hooks/useTopInset';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
@@ -15,7 +15,7 @@ import type { Expedition, Entry, ExplorerProfile } from '@/types/api';
 
 export default function BookmarksScreen() {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
+  const topInset = useTopInset();
   const router = useRouter();
   const { ready } = useRequireAuth();
 
@@ -54,9 +54,9 @@ export default function BookmarksScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <TopoBackground topOffset={insets.top + 47} />
+      <TopoBackground topOffset={topInset + 47} />
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.header, { paddingTop: topInset + 12 }]}>
         <Text style={styles.headerTitle}>BOOKMARKS</Text>
       </View>
 

@@ -27,8 +27,9 @@ import { ThemeProvider, useTheme } from '@/theme/ThemeContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
-import { TrackingBanner } from '@/components/ui/TrackingBanner';
+import { ExpeditionBanner } from '@/components/ui/ExpeditionBanner';
 import { TrackingProvider } from '@/context/TrackingContext';
+import { PreferencesProvider } from '@/context/PreferencesContext';
 // Side-effect import — registers the background location task via
 // TaskManager.defineTask at module load time. Must happen at app launch
 // so iOS can dispatch any pending background location events that
@@ -556,7 +557,7 @@ function RootNav() {
     <>
       <StatusBar style={dark ? 'light' : 'dark'} />
       <OfflineBanner />
-      <TrackingBanner />
+      <ExpeditionBanner />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
@@ -616,11 +617,13 @@ export default function RootLayout() {
     >
       <ErrorBoundary>
         <ThemeProvider>
-          <AuthProvider>
-            <TrackingProvider>
-              <RootNav />
-            </TrackingProvider>
-          </AuthProvider>
+          <PreferencesProvider>
+            <AuthProvider>
+              <TrackingProvider>
+                <RootNav />
+              </TrackingProvider>
+            </AuthProvider>
+          </PreferencesProvider>
         </ThemeProvider>
       </ErrorBoundary>
     </StripeProvider>

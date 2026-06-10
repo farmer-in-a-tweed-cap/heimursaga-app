@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, us
 import { View, ViewStyle, StyleSheet, Animated, Easing } from 'react-native';
 import MapboxGL from '@rnmapbox/maps';
 import { useTheme } from '@/theme/ThemeContext';
+import { usePreferences } from '@/context/PreferencesContext';
 import { getMapStyle, MAPBOX_TOKEN } from '@/services/mapConfig';
 import { colors as brandColors } from '@/theme/tokens';
 
@@ -40,6 +41,12 @@ export interface WaypointMarker {
   text?: string;
   /** When true, this marker is the current location and gets a pulse ring */
   isCurrent?: boolean;
+  /**
+   * Override the type's default fill color (e.g. live-position green for
+   * a current marker fed by an active tracking session, vs the gray of a
+   * manually-pinned current location). Also tints the pulse ring.
+   */
+  color?: string;
   /** Entry IDs linked to this marker — used for tap-to-open behaviour */
   entryIds?: string[];
   /** Override the default white stroke color (e.g. blue border for round-trip start) */
@@ -144,6 +151,9 @@ export function clusterMarkers(
       ...base,
       text: mergedText,
       isCurrent: group.some(m => m.isCurrent),
+      // Keep a member's color override (live-position green) visible
+      // even when the marker merges into a cluster.
+      color: group.find(m => m.color)?.color,
       entryIds: group.flatMap(m => m.entryIds ?? []),
       clusterSize: group.length,
       clusterCoords: group.map(m => m.coordinates),
@@ -273,6 +283,7 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
   nauticalOverlay,
 }, ref) {
   const { mode } = useTheme();
+  const { mapLayer } = usePreferences();
   const [useFallbackStyle, setUseFallbackStyle] = useState(false);
   const [tokenReady, setTokenReady] = useState(_tokenReady);
   const cameraRef = useRef<MapboxGL.Camera>(null);
@@ -341,7 +352,7 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
 
   const styleURL = useFallbackStyle
     ? FALLBACK_STYLES[mode]
-    : getMapStyle(mode);
+    : getMapStyle(mode, mapLayer);
 
   const handleMapLoadError = useCallback(() => {
     if (!useFallbackStyle) setUseFallbackStyle(true);
@@ -403,7 +414,7 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
         geometry: { type: 'Point' as const, coordinates: wp.coordinates },
         properties: {
           type: wp.type,
-          color: MARKER_COLOR[wp.type],
+          color: wp.color ?? MARKER_COLOR[wp.type],
           radius: MARKER_RADIUS[wp.type],
           strokeWidth: MARKER_STROKE_WIDTH[wp.type],
           strokeColor: wp.strokeColor ?? '#ffffff',
@@ -583,7 +594,7 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
                 height: 30,
                 borderRadius: 15,
                 borderWidth: 2,
-                borderColor: '#ffffff',
+                borderColor: currentWaypoint.color ?? '#ffffff',
                 opacity: pulseOpacity,
                 transform: [{ scale: pulseScale }],
               }}
