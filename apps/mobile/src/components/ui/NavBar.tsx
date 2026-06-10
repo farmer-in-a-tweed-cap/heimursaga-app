@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Pressable, Text, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeContext';
+import { useTopInset } from '@/hooks/useTopInset';
 import { colors as brandColors, mono, borders } from '@/theme/tokens';
 
 interface NavBarProps {
@@ -12,14 +12,14 @@ interface NavBarProps {
 
 export function NavBar({ onBack, title, right }: NavBarProps) {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
+  const topInset = useTopInset();
 
   return (
     <View
       style={[
         styles.container,
         {
-          paddingTop: insets.top + 14,
+          paddingTop: topInset + 14,
           backgroundColor: colors.card,
           borderBottomColor: colors.border,
         },
