@@ -2949,7 +2949,7 @@ export class ExpeditionService {
     payload,
   }: ISessionQueryWithPayload<
     { id: string },
-    { visibility: 'public' | 'sponsors' | 'private' }
+    { visibility: 'public' | 'sponsors' | 'private'; applyToPin?: boolean }
   >): Promise<void> {
     try {
       const { id } = query;
@@ -2975,7 +2975,15 @@ export class ExpeditionService {
 
       await this.prisma.expedition.update({
         where: { id: expedition.id },
-        data: { live_track_visibility: visibility },
+        data: {
+          live_track_visibility: visibility,
+          // One-decision privacy from the tracking-setup flow: the pin
+          // would otherwise leak the latest position under a stricter
+          // route-line setting.
+          ...(payload.applyToPin
+            ? { current_location_visibility: visibility }
+            : {}),
+        },
       });
     } catch (e) {
       this.logger.error(e);

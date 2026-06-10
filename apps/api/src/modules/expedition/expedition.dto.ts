@@ -471,6 +471,16 @@ export class ExpeditionUpdateLiveTrackVisibilityDto {
   @ApiProperty({ required: true, enum: ['public', 'sponsors', 'private'] })
   @IsIn(['public', 'sponsors', 'private'])
   visibility: 'public' | 'sponsors' | 'private';
+
+  // The mobile tracking-setup flow presents ONE privacy decision and
+  // applies it to both the route line and the current-location pin —
+  // otherwise "PRIVATE" still leaks the latest position via a public
+  // pin. The pin keeps its independent setting (spec decision #5) for
+  // callers that don't opt in (the web owner cycler stays line-only).
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  applyToPin?: boolean;
 }
 
 export class WaypointCreateDto implements IWaypointCreatePayload {

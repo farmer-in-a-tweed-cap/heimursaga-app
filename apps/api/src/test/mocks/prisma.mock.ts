@@ -9,6 +9,7 @@ function createModelMock() {
     findUnique: jest.fn(),
     findFirstOrThrow: jest.fn(),
     create: jest.fn(),
+    createMany: jest.fn(),
     update: jest.fn(),
     updateMany: jest.fn(),
     delete: jest.fn(),
@@ -34,6 +35,8 @@ export function createMockPrismaService() {
     entry: createModelMock(),
     profile: createModelMock(),
     plan: createModelMock(),
+    track: createModelMock(),
+    trackPoint: createModelMock(),
     $transaction: jest.fn((cb: any) => {
       if (typeof cb === 'function') {
         // Pass mock prisma as tx so inner tx.* calls use our mocks

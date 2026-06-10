@@ -140,17 +140,7 @@ export class AuthService {
         });
       }
 
-      // Check for an active or planned expedition owned by this user (exclude blueprints)
-      const currentExpedition = await this.prisma.expedition.findFirst({
-        where: {
-          author_id: userId,
-          status: { in: ['active', 'planned'] },
-          deleted_at: null,
-          is_blueprint: { not: true },
-        },
-        select: { id: true, public_id: true, title: true, status: true },
-        orderBy: { status: 'asc' }, // 'active' sorts before 'planned'
-      });
+      const currentExpedition = await this.findActiveExpeditionFor(userId);
 
       return {
         id,
@@ -338,6 +328,8 @@ export class AuthService {
         data: { is_stripe_account_connected: stripeConnected },
       });
 
+      const currentExpedition = await this.findActiveExpeditionFor(user.id);
+
       // Format user response
       const userResponse: ISessionUserGetResponse = {
         id: user.id,
@@ -353,6 +345,14 @@ export class AuthService {
         isPremium: user.is_premium,
         isGuide: user.is_guide ?? false,
         stripeAccountConnected: stripeConnected,
+        activeExpedition: currentExpedition
+          ? {
+              id: currentExpedition.id,
+              publicId: currentExpedition.public_id,
+              title: currentExpedition.title,
+              status: currentExpedition.status as 'active' | 'planned',
+            }
+          : null,
       };
 
       return {
@@ -445,6 +445,24 @@ export class AuthService {
     }
   }
 
+  /**
+   * The explorer's current expedition for quick-access banners (web
+   * header + mobile persistent banner): the active one if any, else the
+   * next planned one. Blueprints never qualify.
+   */
+  private async findActiveExpeditionFor(userId: number) {
+    return await this.prisma.expedition.findFirst({
+      where: {
+        author_id: userId,
+        status: { in: ['active', 'planned'] },
+        deleted_at: null,
+        is_blueprint: { not: true },
+      },
+      select: { id: true, public_id: true, title: true, status: true },
+      orderBy: { status: 'asc' }, // 'active' sorts before 'planned'
+    });
+  }
+
   // Method to get user data from JWT token (equivalent to getSessionUser for tokens)
   async getTokenUser(token: string): Promise<ISessionUserGetResponse> {
     try {
@@ -506,6 +524,8 @@ export class AuthService {
         data: { is_stripe_account_connected: stripeConnected },
       });
 
+      const currentExpedition = await this.findActiveExpeditionFor(user.id);
+
       return {
         id: user.id,
         role: user.role as UserRole,
@@ -520,6 +540,14 @@ export class AuthService {
         isPremium: user.is_premium,
         isGuide: user.is_guide ?? false,
         stripeAccountConnected: stripeConnected,
+        activeExpedition: currentExpedition
+          ? {
+              id: currentExpedition.id,
+              publicId: currentExpedition.public_id,
+              title: currentExpedition.title,
+              status: currentExpedition.status as 'active' | 'planned',
+            }
+          : null,
       };
     } catch (e) {
       this.logger.error(e);

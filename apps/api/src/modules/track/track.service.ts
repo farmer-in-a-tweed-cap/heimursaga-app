@@ -91,7 +91,7 @@ export class TrackService {
         where: {
           ended_at: null,
           deleted_at: null,
-          expedition: { author_id: explorerId },
+          expedition: { author_id: explorerId, deleted_at: null },
         },
         select: { id: true, expedition_id: true },
       });
@@ -275,6 +275,63 @@ export class TrackService {
       }
 
       return { ok: true };
+    } catch (e: any) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  /**
+   * Lookup the user's currently-active track (across all expeditions),
+   * or null. Used by the mobile client's recovery flow when startTrack
+   * returns 409 — the client needs to know which expedition the orphan
+   * belongs to so it can surface a meaningful "Stop session on [Title]?"
+   * dialog and call stopTrack with the right tripId.
+   *
+   * Returns the expedition's public_id (preferred mobile reference form)
+   * AND slug — caller can use either with idOrSlug-backed endpoints.
+   */
+  async getMyActiveTrack({ session }: { session: ISession }) {
+    try {
+      const explorerId = session?.explorerId;
+      if (!explorerId) throw new ServiceForbiddenException();
+
+      // expedition.deleted_at filter matters here: a track orphaned by a
+      // soft-deleted expedition can't be stopped via the stop route (which
+      // also filters deleted expeditions) — surfacing it would trap the
+      // recovery dialog in a stop-that-always-404s loop.
+      const active = await this.prisma.track.findFirst({
+        where: {
+          ended_at: null,
+          deleted_at: null,
+          expedition: { author_id: explorerId, deleted_at: null },
+        },
+        select: {
+          id: true,
+          started_at: true,
+          expedition: {
+            select: {
+              public_id: true,
+              slug: true,
+              title: true,
+            },
+          },
+        },
+        orderBy: { started_at: 'desc' },
+      });
+
+      if (!active) return { activeTrack: null };
+
+      return {
+        activeTrack: {
+          trackId: active.id,
+          expeditionPublicId: active.expedition.public_id,
+          expeditionSlug: active.expedition.slug,
+          expeditionTitle: active.expedition.title,
+          startedAt: active.started_at.toISOString(),
+        },
+      };
     } catch (e: any) {
       this.logger.error(e);
       if (e.status) throw e;

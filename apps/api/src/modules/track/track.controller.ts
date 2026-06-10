@@ -29,6 +29,16 @@ import { TrackService } from './track.service';
 export class TrackController {
   constructor(private trackService: TrackService) {}
 
+  // Declared before the `:tripId/...` routes so route ordering can't
+  // accidentally let `me` collide with a tripId param. NestJS matches in
+  // declaration order; literal segments win regardless, but keeping
+  // literal-first is the defensive choice.
+  @Get('me/active-track')
+  @HttpCode(HttpStatus.OK)
+  async getMyActiveTrack(@Session() session: ISession) {
+    return await this.trackService.getMyActiveTrack({ session });
+  }
+
   @Post(':tripId/tracks')
   @HttpCode(HttpStatus.CREATED)
   async startTrack(
