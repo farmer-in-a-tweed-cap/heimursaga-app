@@ -28,6 +28,10 @@ interface MapModalProps {
   entryBookmarked: Set<string>;
   entryBookmarkLoading: string | null;
   currentLocationData: CurrentLocationData | null;
+  /** True when the live-track polyline (and its head dot) is drawn on this map. */
+  liveTrackOnMap?: boolean;
+  /** True while the underlying track is still active (drives the legend label/pulse). */
+  liveTrackIsActive?: boolean;
   totalRouteDistance: number;
   formatDistance: (meters: number, decimals?: number) => string;
   formatDate: (date: string) => string;
@@ -63,6 +67,8 @@ export function MapModal({
   entryBookmarked,
   entryBookmarkLoading,
   currentLocationData,
+  liveTrackOnMap,
+  liveTrackIsActive,
   totalRouteDistance,
   formatDistance,
   formatDate,
@@ -196,12 +202,26 @@ export function MapModal({
                 </div>
                 <span>Waypoint</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 flex items-center justify-center shrink-0">
-                  <div className="w-[18px] h-[18px] rounded-full bg-[#616161] border-2 border-white animate-[legend-pulse_2s_ease-out_infinite]" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}></div>
+              {/* Legend mirrors what's actually drawn: the gray pulsing
+                  pin only renders when a manual current location resolved;
+                  the live head dot (green, from useLiveTrackMapLayer) gets
+                  its own entry whenever the track polyline is on the map. */}
+              {currentLocationData?.coords && (
+                <div className="flex items-center gap-2">
+                  <div className="w-6 flex items-center justify-center shrink-0">
+                    <div className="w-[18px] h-[18px] rounded-full bg-[#616161] border-2 border-white animate-[legend-pulse_2s_ease-out_infinite]" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}></div>
+                  </div>
+                  <span>Current Location</span>
                 </div>
-                <span>Current Location</span>
-              </div>
+              )}
+              {liveTrackOnMap && (
+                <div className="flex items-center gap-2">
+                  <div className="w-6 flex items-center justify-center shrink-0">
+                    <div className={`w-[14px] h-[14px] rounded-full bg-[#22c55e] border-2 border-white ${liveTrackIsActive ? 'animate-[legend-pulse_2s_ease-out_infinite]' : ''}`} style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}></div>
+                  </div>
+                  <span>{liveTrackIsActive ? 'Live Position' : 'Last Tracked Position'}</span>
+                </div>
+              )}
               {hasObstacles && (
                 <div className="flex items-center gap-2">
                   <div className="w-6 flex items-center justify-center shrink-0">

@@ -268,6 +268,10 @@ export function ExpeditionDetailPage() {
     const allCoords: [number, number][] = [
       ...waypoints.map(wp => [wp.coords.lng, wp.coords.lat] as [number, number]),
       ...journalEntries.map(entry => [entry.coords.lng, entry.coords.lat] as [number, number]),
+      // The live track (line + head dot) is part of the expedition's
+      // footprint — FIT must include where the explorer actually went,
+      // not just the plan.
+      ...(liveTrack?.polyline?.coordinates ?? []),
     ];
 
     if (allCoords.length === 0) return;
@@ -281,7 +285,7 @@ export function ExpeditionDetailPage() {
       maxZoom: 14,
       duration: 1000,
     });
-  }, [waypoints, journalEntries]);
+  }, [waypoints, journalEntries, liveTrack?.polyline]);
 
   // Debrief mode hook
   const {
@@ -1550,6 +1554,8 @@ export function ExpeditionDetailPage() {
         entryBookmarked={entryBookmarked}
         entryBookmarkLoading={entryBookmarkLoading}
         currentLocationData={currentLocationData}
+        liveTrackOnMap={!!liveTrack?.polyline}
+        liveTrackIsActive={!!liveTrack?.isActive}
         totalRouteDistance={totalRouteDistance}
         formatDistance={formatDistance}
         formatDate={formatDate}

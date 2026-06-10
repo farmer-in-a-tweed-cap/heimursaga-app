@@ -456,6 +456,24 @@ export function HeroBanner({
                   <span>Stop tracking</span>
                 </button>
               )}
+              {/* Inline sponsor CTA — the live bar is where sponsors watch
+                  the expedition unfold, so the ask lives next to the live
+                  signal (Phase 1 spec). The action bar below has the same
+                  destination; this one converts the "it's happening right
+                  now" moment. */}
+              {!isOwner &&
+                showSponsorshipSection &&
+                liveTrack.isActive &&
+                expedition.status !== 'completed' &&
+                expedition.status !== 'cancelled' && (
+                  <Link
+                    href={isAuthenticated ? `/sponsor/${expedition.id}` : `/auth?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1.5 bg-[#ac6d46] px-3 py-1 text-white text-xs font-bold font-mono uppercase tracking-wide hover:bg-[#8a5738] transition-colors"
+                  >
+                    <span>Sponsor this expedition</span>
+                  </Link>
+                )}
             </div>
           )}
 
