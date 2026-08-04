@@ -381,7 +381,6 @@ export class SponsorService {
       const { clientSecret } = await this.prisma.$transaction(
         async (tx) => {
           let amount = 0;
-          let stripePaymentIntentId: string | undefined;
           let stripeSubscriptionId: string | undefined = undefined;
           let clientSecret = '';
 
@@ -586,7 +585,7 @@ export class SponsorService {
             throw new ServiceInternalException();
           }
 
-          stripePaymentIntentId = piId;
+          const stripePaymentIntentId = piId;
           clientSecret = piClientSecret;
 
           // Update checkout with stripe IDs

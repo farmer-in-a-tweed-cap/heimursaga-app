@@ -53,3 +53,11 @@ cookies.txt
 **/.claude/worktrees/
 **/.claude/scheduled_tasks.lock
 **/.claude/settings.local.json
+
+# stray expo prebuild at the repo root
+# The mobile app lives in apps/mobile (bundle id com.heimursaga.app, its own
+# eas.json + app.config.ts). Running `expo prebuild` from the repo root instead
+# generates a ~1GB ios/ named after the root package ("with-docker"), which is
+# junk. Root-anchored so apps/mobile/ios stays tracked.
+/ios/
+/.expo/
