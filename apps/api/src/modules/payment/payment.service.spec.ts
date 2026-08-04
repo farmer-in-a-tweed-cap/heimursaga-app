@@ -87,6 +87,13 @@ describe('PaymentService', () => {
       stripe.subscriptions.update.mockResolvedValue({});
       prisma.checkout.update.mockResolvedValue({});
 
+      // A free subscription is completed inline rather than by webhook — no
+      // payment intent means payment_intent.succeeded never fires. The
+      // completion itself is covered by A1; here we only assert it is invoked.
+      const completeSpy = jest
+        .spyOn(service, 'completeSubscriptionPlanUpgrade')
+        .mockResolvedValue(undefined as any);
+
       const result = await service.checkoutSubscriptionPlanUpgrade({
         session: userSession,
         payload: {
@@ -98,6 +105,7 @@ describe('PaymentService', () => {
 
       expect(result.isFreeSubscription).toBe(true);
       expect(result.clientSecret).toBeNull();
+      expect(completeSpy).toHaveBeenCalledWith({ checkoutId: 100 });
     });
   });
 
@@ -234,8 +242,8 @@ describe('PaymentService', () => {
         data: { role: 'creator' },
       });
       expect(txMock.explorerPlan.create).toHaveBeenCalled();
-      // 3 one-time + 2 monthly = 5 default tiers
-      expect(txMock.sponsorshipTier.create).toHaveBeenCalledTimes(5);
+      // 3 one-time + 3 monthly = 6 default tiers
+      expect(txMock.sponsorshipTier.create).toHaveBeenCalledTimes(6);
     });
   });
 

@@ -285,7 +285,10 @@ describe('StripeService', () => {
       });
       expect(prisma.expedition.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ public_id: 'exp_abc123' }),
+          where: expect.objectContaining({
+            OR: [{ public_id: 'exp_abc123' }, { slug: 'exp_abc123' }],
+            deleted_at: null,
+          }),
         }),
       );
       expect(prisma.expedition.update).toHaveBeenCalledWith({
@@ -681,13 +684,21 @@ describe('StripeService', () => {
 
       expect(prisma.expedition.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ public_id: 'exp_abc123' }),
+          where: expect.objectContaining({
+            OR: [{ public_id: 'exp_abc123' }, { slug: 'exp_abc123' }],
+            deleted_at: null,
+          }),
         }),
       );
 
-      // Raised clamped to 0 (3 - 5 = -2, clamped to 0)
+      // Atomic decrement, then a clamp pass that only fires when the result
+      // went negative (300 - 500 = -200 cents).
       expect(prisma.expedition.update).toHaveBeenCalledWith({
         where: { id: 100 },
+        data: { raised: { decrement: 500 } },
+      });
+      expect(prisma.expedition.updateMany).toHaveBeenCalledWith({
+        where: { id: 100, raised: { lt: 0 } },
         data: { raised: 0 },
       });
     });
@@ -734,11 +745,11 @@ describe('StripeService', () => {
         amount_refunded: 200,
       });
 
-      // raised update only (1000 - 200 = 800 cents)
+      // raised decrement only — sponsors_count is left alone on a partial refund
       expect(prisma.expedition.update).toHaveBeenCalledTimes(1);
       expect(prisma.expedition.update).toHaveBeenCalledWith({
         where: { id: 100 },
-        data: { raised: 800 },
+        data: { raised: { decrement: 200 } },
       });
     });
 

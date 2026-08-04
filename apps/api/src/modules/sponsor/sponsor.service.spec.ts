@@ -207,13 +207,13 @@ describe('SponsorService', () => {
     it('should create checkout and payment intent', async () => {
       setupCheckoutMocks();
 
-      const txMock = {
-        checkout: {
-          create: jest.fn().mockResolvedValue({ id: 100, public_id: 'co_123' }),
-          update: jest.fn().mockResolvedValue({}),
-        },
-      };
-      prisma.$transaction.mockImplementation(async (cb: any) => cb(txMock));
+      // The one-time path writes the checkout row directly and calls Stripe
+      // outside any transaction, so there is no tx client to stub here.
+      prisma.checkout.create.mockResolvedValue({
+        id: 100,
+        public_id: 'co_123',
+      });
+      prisma.checkout.update.mockResolvedValue({});
 
       stripe.paymentIntents.create.mockResolvedValue({
         id: 'pi_123',
@@ -243,6 +243,11 @@ describe('SponsorService', () => {
         }),
         expect.any(Object),
       );
+      // The payment intent id must be written back to the checkout row.
+      expect(prisma.checkout.update).toHaveBeenCalledWith({
+        where: { id: 100 },
+        data: { stripe_payment_intent_id: 'pi_123' },
+      });
     });
   });
 

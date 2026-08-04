@@ -20,7 +20,7 @@ function createModelMock() {
 }
 
 export function createMockPrismaService() {
-  return {
+  const mock = {
     payoutMethod: createModelMock(),
     payout: createModelMock(),
     explorer: createModelMock(),
@@ -37,14 +37,22 @@ export function createMockPrismaService() {
     plan: createModelMock(),
     track: createModelMock(),
     trackPoint: createModelMock(),
-    $transaction: jest.fn((cb: any) => {
-      if (typeof cb === 'function') {
-        // Pass mock prisma as tx so inner tx.* calls use our mocks
-        return cb(createMockPrismaService());
-      }
-      return Promise.resolve(cb);
-    }),
+    $transaction: jest.fn(),
   };
+
+  // `tx` must be this same instance, not a fresh one. Handing the callback a new
+  // createMockPrismaService() gives it jest.fn()s the test never configured and
+  // cannot assert on, so anything a service does inside $transaction silently
+  // vanishes — writes appear as zero calls and mockResolvedValue has no effect.
+  mock.$transaction.mockImplementation((cb: any) => {
+    if (typeof cb === 'function') {
+      return cb(mock);
+    }
+    // Array form: $transaction([p1, p2]) resolves the operations together.
+    return Promise.resolve(cb);
+  });
+
+  return mock;
 }
 
 export type MockPrismaService = ReturnType<typeof createMockPrismaService>;

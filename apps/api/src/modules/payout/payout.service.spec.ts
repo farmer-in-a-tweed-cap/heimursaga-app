@@ -293,15 +293,19 @@ describe('PayoutService', () => {
   // ─── F10: getPayouts — returns history ───
   describe('getPayouts — F10: returns payout history', () => {
     it('should return formatted payout list', async () => {
-      prisma.payout.count.mockResolvedValue(1);
-      prisma.payout.findMany.mockResolvedValue([
+      // Access is decided by the stored role, not session.userRole.
+      prisma.explorer.findUnique.mockResolvedValue({
+        admin: false,
+        role: 'creator',
+      });
+      // History is derived from confirmed checkouts, not the payout table.
+      prisma.checkout.findMany.mockResolvedValue([
         {
           public_id: 'po_1',
-          status: 'COMPLETED',
-          amount: 5000,
+          total: 5000,
           currency: 'usd',
-          created_at: new Date('2025-01-01'),
-          arrival_date: new Date('2025-01-03'),
+          confirmed_at: new Date('2025-01-01'),
+          status: 'confirmed',
         },
       ]);
 
@@ -317,6 +321,20 @@ describe('PayoutService', () => {
           status: 'COMPLETED',
         }),
       );
+    });
+
+    it('should throw forbidden for a non-creator, non-admin explorer', async () => {
+      prisma.explorer.findUnique.mockResolvedValue({
+        admin: false,
+        role: 'user',
+      });
+
+      await expect(
+        service.getPayouts({ session: userSession } as any),
+      ).rejects.toThrow();
+
+      // Earnings must not be queried at all once access is refused.
+      expect(prisma.checkout.findMany).not.toHaveBeenCalled();
     });
   });
 
