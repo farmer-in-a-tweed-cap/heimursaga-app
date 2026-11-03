@@ -95,7 +95,7 @@ export function SponsorshipGuidePage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] mt-1">•</span>
-                  <span><strong>Quick Sponsor</strong> — a $3 micro-sponsorship to show appreciation for a specific journal entry</span>
+                  <span><strong>Quick Sponsor</strong> — a $5 micro-sponsorship to show appreciation for a specific journal entry</span>
                 </li>
               </ul>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
@@ -187,16 +187,16 @@ export function SponsorshipGuidePage() {
               <h3 id="quick-sponsor" className="font-bold mb-2 text-[#202020] dark:text-white">Quick Sponsor</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
                 Quick Sponsor is a fast, lightweight way to show appreciation for a specific journal entry. Look for
-                the &quot;QUICK SPONSOR $3&quot; button at the bottom of any entry by an Explorer Pro.
+                the &quot;QUICK SPONSOR $5&quot; button at the bottom of any entry by an Explorer Pro.
               </p>
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6">
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] mt-1">•</span>
-                  <span><strong>Fixed $3.00 amount</strong> — the explorer receives $2.70 after platform and Stripe fees</span>
+                  <span><strong>Fixed $5.00 amount</strong> — the explorer receives $4.05 after the 10% platform fee and Stripe processing</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] mt-1">•</span>
-                  <span><strong>Counts toward expedition funding</strong> — if the entry belongs to a planned or active expedition, the $3 is added to that expedition&apos;s raised total</span>
+                  <span><strong>Counts toward expedition funding</strong> — if the entry belongs to a planned or active expedition, the $5 is added to that expedition&apos;s raised total</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] mt-1">•</span>
@@ -781,7 +781,7 @@ export function SponsorshipGuidePage() {
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Payouts</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                 Stripe automatically pays out your available balance to your connected bank account on a daily schedule.
-                Funds from each sponsorship typically become available for payout within 2-7 business days after payment.
+                Funds from each sponsorship typically become available within 2-7 business days after payment and are paid out weekly, on Mondays.
                 Explorers can view their balance and payout history from their Sponsorship Dashboard.
               </p>
             </div>

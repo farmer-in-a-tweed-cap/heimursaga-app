@@ -82,7 +82,7 @@ export function QuickSponsorCardModal({
         </div>
         <div className="p-6">
           <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
-            Add a card to complete your $3.00 sponsorship. Your card will be saved for future transactions.
+            Add a card to complete your $5.00 sponsorship. Your card will be saved for future transactions.
           </p>
 
           <div className="border-2 border-[#202020] dark:border-[#616161] p-3 mb-4">
@@ -117,7 +117,7 @@ export function QuickSponsorCardModal({
               className="flex-1 px-4 py-2.5 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isLoading && <Loader2 size={14} className="animate-spin" />}
-              SAVE CARD & SPONSOR $3.00
+              SAVE CARD & SPONSOR $5.00
             </button>
           </div>
         </div>

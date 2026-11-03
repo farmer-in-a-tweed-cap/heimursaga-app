@@ -2378,7 +2378,7 @@ export const sponsorshipApi = {
     api.post<{ success: boolean }>('/sponsor/checkout/complete', { paymentIntentId }),
 
   /**
-   * Quick sponsor — $3 micro-sponsorship for a specific entry
+   * Quick sponsor — $5 micro-sponsorship for a specific entry
    */
   quickSponsor: (entryPublicId: string) =>
     api.post<{ success?: boolean; sponsorshipId?: string; requiresPaymentMethod?: boolean; clientSecret?: string }>(

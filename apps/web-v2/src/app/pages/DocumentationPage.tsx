@@ -667,7 +667,7 @@ export function DocumentationPage() {
                 Sponsorships are financial contributions that help fund explorer expeditions. All transactions are processed securely
                 through Stripe. Explorer Pro accounts can enable sponsorships on their expeditions, while all accounts can send sponsorships.
                 There are three ways to sponsor: <strong>one-time</strong> contributions, <strong>monthly recurring</strong> support,
-                and <strong>quick sponsors</strong> ($3 micro-sponsorships on individual journal entries).
+                and <strong>quick sponsors</strong> ($5 micro-sponsorships on individual journal entries).
               </p>
             </div>
             <div>
@@ -705,17 +705,17 @@ export function DocumentationPage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Quick Sponsor</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
-                Quick Sponsor is a $3 micro-sponsorship to show appreciation for a specific journal entry. Click
-                &quot;QUICK SPONSOR $3&quot; at the bottom of any entry by an Explorer Pro with Stripe connected.
+                Quick Sponsor is a $5 micro-sponsorship to show appreciation for a specific journal entry. Click
+                &quot;QUICK SPONSOR $5&quot; at the bottom of any entry by an Explorer Pro with Stripe connected.
               </p>
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-4">
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac]">•</span>
-                  <span>Fixed amount of $3.00 (explorer receives $2.70 after fees)</span>
+                  <span>Fixed amount of $5.00 (explorer receives $4.05 after the 10% platform fee and Stripe processing)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac]">•</span>
-                  <span>If the entry belongs to a planned or active expedition, the $3 counts toward that expedition&apos;s funding</span>
+                  <span>If the entry belongs to a planned or active expedition, the $5 counts toward that expedition&apos;s funding</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac]">•</span>

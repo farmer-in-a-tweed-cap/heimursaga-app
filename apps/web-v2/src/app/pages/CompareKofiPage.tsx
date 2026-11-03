@@ -96,7 +96,7 @@ export function CompareKofiPage() {
                 { feature: 'One-time tips / donations', a: true, b: true, note: 'Ko-fi: "buy a coffee" tips. Heimursaga: $5–$10,000 per expedition' },
                 { feature: 'Monthly memberships', a: true, b: true, note: 'Ko-fi: custom tiers. Heimursaga: 3 structured tiers ($5–$150/mo)' },
                 { feature: 'Annual billing for supporters', a: false, b: true, note: 'Heimursaga: 10% discount for annual sponsors' },
-                { feature: 'Micro-sponsorships ($3 one-tap)', a: true, b: true, note: 'Ko-fi: "buy a coffee" ($3 default). Heimursaga: quick sponsor on entries' },
+                { feature: 'Micro-sponsorships ($5 one-tap)', a: true, b: true, note: 'Ko-fi: "buy a coffee" ($3 default). Heimursaga: quick sponsor on entries' },
                 { feature: 'Expedition-scoped funding', a: false, b: true, note: 'Sponsors fund specific journeys, not just a creator' },
                 { feature: 'Public funding progress', a: 'partial', b: true, note: 'Ko-fi: donation goal bar. Heimursaga: expedition-level funding with raised/goal/remaining' },
                 { feature: 'Digital product sales / shop', a: true, b: false },

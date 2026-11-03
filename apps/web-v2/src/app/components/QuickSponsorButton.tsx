@@ -8,6 +8,9 @@ import { sponsorshipApi, paymentMethodApi, type PaymentMethodFull } from '@/app/
 import { ConfirmationModal } from './ConfirmationModal';
 import { QuickSponsorCardModal } from './QuickSponsorCardModal';
 import { toast } from 'sonner';
+import { calculateSponsorshipFees, QUICK_SPONSOR_AMOUNT } from '@repo/types/sponsorship-fees';
+
+const explorerReceives = (calculateSponsorshipFees(QUICK_SPONSOR_AMOUNT * 100).explorerReceives / 100).toFixed(2);
 
 interface QuickSponsorButtonProps {
   entryPublicId: string;
@@ -90,7 +93,7 @@ export function QuickSponsorButton({
     setTimeout(() => setCooldown(false), 30000);
   };
 
-  const label = 'QUICK SPONSOR $3';
+  const label = 'QUICK SPONSOR $5';
 
   return (
     <>
@@ -113,13 +116,13 @@ export function QuickSponsorButton({
         onConfirm={handleConfirm}
         title="Quick sponsor this explorer"
         headerColor="bg-[#ac6d46]"
-        confirmLabel="CONFIRM — $3.00"
+        confirmLabel="CONFIRM — $5.00"
         confirmColor="bg-[#ac6d46] text-white hover:bg-[#8a5738]"
         isLoading={isLoading}
       >
         <div className="space-y-4 mb-4">
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5]">
-            You&apos;re about to sponsor <strong>{authorUsername}</strong> $3.00 as a show of appreciation for this journal entry.
+            You&apos;re about to sponsor <strong>{authorUsername}</strong> $5.00 as a show of appreciation for this journal entry.
           </p>
           {expeditionId && expeditionTitle && (
             <p className="text-xs text-[#4676ac] dark:text-[#7ba3d4]">
@@ -127,7 +130,7 @@ export function QuickSponsorButton({
             </p>
           )}
           <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-            Explorer receives $2.70 after platform and Stripe fees.
+            Explorer receives ${explorerReceives} after platform and Stripe fees.
           </p>
 
           {savedCard && (

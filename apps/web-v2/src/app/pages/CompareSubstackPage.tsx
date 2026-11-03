@@ -93,7 +93,7 @@ export function CompareSubstackPage() {
                 { feature: 'Monthly subscriptions', a: true, b: true },
                 { feature: 'Annual subscriptions', a: true, b: true, note: 'Heimursaga: 10% discount for annual sponsors' },
                 { feature: 'One-time payments', a: false, b: true, note: 'Substack pledges convert to subscriptions. Heimursaga: $5–$10,000 per expedition' },
-                { feature: 'Micro-sponsorships ($3 one-tap)', a: false, b: true },
+                { feature: 'Micro-sponsorships ($5 one-tap)', a: false, b: true },
                 { feature: 'Expedition-scoped funding', a: false, b: true, note: 'Sponsors fund specific journeys, not just a creator' },
                 { feature: 'Public funding progress', a: false, b: true },
                 { feature: 'Founding member / premium tiers', a: true, b: true, note: 'Substack: founding tier with creator-defined perks. Heimursaga: 3 structured tiers ($5–$150/mo)' },

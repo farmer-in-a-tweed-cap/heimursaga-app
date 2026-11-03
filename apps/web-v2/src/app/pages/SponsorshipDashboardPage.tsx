@@ -8,6 +8,7 @@ import { CreditCard, RefreshCw, DollarSign, TrendingUp, Users, Search, ChevronDo
 import { sponsorshipApi, payoutApi, type SponsorshipFull, type PayoutBalance } from '@/app/services/api';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/app/utils/formatCurrency';
+import { calculateSponsorshipFees, PLATFORM_FEE_PERCENT } from '@repo/types/sponsorship-fees';
 
 type TabType = 'overview' | 'active' | 'history' | 'received';
 
@@ -642,9 +643,9 @@ export function SponsorshipDashboardPage() {
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
-                                      <span className="text-[#616161] dark:text-[#b5bcc4]">Platform fee (10%):</span>
+                                      <span className="text-[#616161] dark:text-[#b5bcc4]">Heimursaga keeps ({PLATFORM_FEE_PERCENT}%):</span>
                                       <span className="text-[#ac6d46]">
-                                        -${formatCurrency((payment.amount) * 0.10)}
+                                        -${formatCurrency(calculateSponsorshipFees(Math.round(payment.amount * 100)).platformFee / 100)}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
@@ -652,18 +653,14 @@ export function SponsorshipDashboardPage() {
                                         Stripe fee (~2.9% + $0.30):
                                       </span>
                                       <span className="text-[#ac6d46]">
-                                        -${formatCurrency((payment.amount) * 0.029 + 0.3)}
+                                        -${formatCurrency(calculateSponsorshipFees(Math.round(payment.amount * 100)).processingFee / 100)}
                                       </span>
                                     </div>
                                     <div className="flex justify-between pt-2 border-t border-[#b5bcc4] dark:border-[#616161]">
                                       <span className="font-bold dark:text-[#e5e5e5]">Explorer received:</span>
                                       <span className="font-bold text-[#ac6d46]">
                                         $
-                                        {formatCurrency(
-                                          payment.amount -
-                                          (payment.amount) * 0.10 -
-                                          ((payment.amount) * 0.029 + 0.3)
-                                        )}
+                                        {formatCurrency(calculateSponsorshipFees(Math.round(payment.amount * 100)).explorerReceives / 100)}
                                       </span>
                                     </div>
                                   </div>

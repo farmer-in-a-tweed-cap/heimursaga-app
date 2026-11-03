@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { expeditionApi, explorerApi, type Expedition, type ExplorerProfile } from '@/app/services/api';
 import { Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/app/utils/formatCurrency';
+import { calculateSponsorshipFees, PLATFORM_FEE_PERCENT } from '@repo/types/sponsorship-fees';
 
 export function PaymentSuccessPage() {
   const searchParams = useSearchParams();
@@ -60,11 +61,10 @@ export function PaymentSuccessPage() {
   }, [expeditionId, explorerUsername]);
 
   // Calculate fees
-  const stripeFeePercent = 0.029;
-  const stripeFeeFixed = 0.30;
-  const platformFee = amount * 0.10;
-  const stripeFee = (amount * stripeFeePercent) + stripeFeeFixed;
-  const explorerReceives = amount - platformFee - stripeFee;
+  const fees = calculateSponsorshipFees(Math.round(amount * 100));
+  const platformFee = fees.platformFee / 100;
+  const stripeFee = fees.processingFee / 100;
+  const explorerReceives = fees.explorerReceives / 100;
 
   // Display name - use username
   const displayExplorerName = explorer?.username || explorerUsername || 'the explorer';
@@ -155,11 +155,11 @@ export function PaymentSuccessPage() {
               <div className="font-bold mb-4 dark:text-[#e5e5e5]">FINANCIAL BREAKDOWN:</div>
               <div className="space-y-2 text-sm font-mono">
                 <div className="flex justify-between">
-                  <span className="text-[#616161] dark:text-[#b5bcc4]">Your contribution:</span>
+                  <span className="text-[#616161] dark:text-[#b5bcc4]">You paid:</span>
                   <span className="font-bold dark:text-[#e5e5e5]">${formatCurrency(amount)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#616161] dark:text-[#b5bcc4]">Platform fee (10%):</span>
+                  <span className="text-[#616161] dark:text-[#b5bcc4]">Heimursaga keeps ({PLATFORM_FEE_PERCENT}%):</span>
                   <span className="text-[#ac6d46]">-${formatCurrency(platformFee)}</span>
                 </div>
                 <div className="flex justify-between">
@@ -172,7 +172,7 @@ export function PaymentSuccessPage() {
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-[#b5bcc4] dark:border-[#616161] text-xs text-[#616161] dark:text-[#b5bcc4] space-y-1">
-                <div>Funds are typically transferred to the explorer's account within 2-7 business days, depending on their bank and location.</div>
+                <div>Funds are paid out to the explorer weekly, once Stripe releases them.</div>
                 <div>Fee breakdown is an estimate. Refer to your Stripe email receipt for the authoritative charge amount.</div>
               </div>
             </div>
@@ -267,7 +267,7 @@ export function PaymentSuccessPage() {
                   <div>
                     <div className="font-bold mb-1 dark:text-[#e5e5e5]">Funds Transfer</div>
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                      Your contribution (minus fees) will be transferred to {displayExplorerName}'s account within 2-7 business days.
+                      Your contribution (minus fees) will be paid out to {displayExplorerName} in their next weekly payout.
                     </div>
                   </div>
                 </div>

@@ -12,7 +12,7 @@ export function TermsOfServicePage() {
             <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">TERMS OF SERVICE</h1>
           </div>
           <p className="text-sm text-[#616161] dark:text-[#b5bcc4] font-mono">
-            Last Updated: January 16, 2026 · Effective Date: January 16, 2026
+            Last Updated: November 3, 2026 · Effective Date: November 3, 2026
           </p>
         </div>
       </div>
@@ -340,9 +340,9 @@ export function TermsOfServicePage() {
 
           <h3 className="font-bold mb-2 text-[#202020] dark:text-white">8.4 Platform Fee</h3>
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-            Heimursaga retains a 10% platform fee from all sponsorship transactions to cover payment processing 
-            and platform maintenance costs. The remaining 90% is transferred to the expedition creator's connected 
-            Stripe account.
+            Heimursaga retains a 10% platform fee from all sponsorship transactions. Stripe&apos;s payment processing 
+            fee (currently 2.9% + $0.30 per transaction) is also deducted from the sponsorship. The remainder is 
+            transferred to the expedition creator&apos;s connected Stripe account and paid out weekly.
           </p>
         </section>
 
@@ -403,7 +403,7 @@ export function TermsOfServicePage() {
             <div className="text-[#202020] dark:text-[#e5e5e5]">Email: admin@heimursaga.com</div>
           </div>
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mt-4">
-            These Terms of Service are effective as of January 16, 2026, and apply to all users of the Heimursaga Service.
+            These Terms of Service are effective as of November 3, 2026, and apply to all users of the Heimursaga Service.
           </p>
         </section>
       </div>

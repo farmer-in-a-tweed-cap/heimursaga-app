@@ -90,7 +90,7 @@ export function ComparePage() {
               rows={[
                 { feature: 'Monthly subscriptions', a: true, b: true },
                 { feature: 'One-time payments', a: true, b: true },
-                { feature: 'Micro-sponsorships ($3 one-tap)', a: false, b: true },
+                { feature: 'Micro-sponsorships ($5 one-tap)', a: false, b: true },
                 { feature: 'Expedition-scoped funding', a: false, b: true, note: 'Sponsors fund specific journeys, not just a creator' },
                 { feature: 'Yearly billing for sponsors', a: true, b: true, note: 'Patreon: annual memberships available. Heimursaga: 10% discount for annual sponsors' },
                 { feature: 'Public funding progress', a: 'partial', b: true },

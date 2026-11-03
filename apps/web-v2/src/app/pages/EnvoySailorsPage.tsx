@@ -214,7 +214,7 @@ export function EnvoySailorsPage() {
             <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3">
               Supporters back your expedition with one-time or recurring contributions. You set a funding
               goal, progress is displayed on your expedition page, and payouts flow through Stripe Connect.
-              You keep 90% (10% platform fee + Stripe processing).
+              You keep the full amount minus the 10% platform fee and Stripe processing (2.9% + $0.30).
             </p>
             <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-4">
               The key difference from Patreon: sponsorships are tied to a specific voyage, not to you as a

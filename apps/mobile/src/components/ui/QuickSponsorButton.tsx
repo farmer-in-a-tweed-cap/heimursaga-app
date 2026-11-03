@@ -64,7 +64,7 @@ export function QuickSponsorButton({ entryId, authorUsername, onSuccess }: Quick
   const handleSuccess = useCallback(() => {
     startCooldown();
     setShowCardModal(false);
-    Alert.alert('Sent!', `$3 quick sponsor sent to ${authorUsername}.`);
+    Alert.alert('Sent!', `$5 quick sponsor sent to ${authorUsername}.`);
     onSuccess?.();
   }, [authorUsername, startCooldown, onSuccess]);
 
@@ -80,8 +80,8 @@ export function QuickSponsorButton({ entryId, authorUsername, onSuccess }: Quick
       : '\nYou\'ll be prompted to add a payment method.';
 
     Alert.alert(
-      'Quick Sponsor $3',
-      `Send a $3 micro-sponsorship to ${authorUsername}?${cardInfo}\n\nExplorer receives $2.70 after fees.`,
+      'Quick Sponsor $5',
+      `Send a $5 micro-sponsorship to ${authorUsername}?${cardInfo}\n\nExplorer receives $4.05 after fees.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -179,7 +179,7 @@ export function QuickSponsorButton({ entryId, authorUsername, onSuccess }: Quick
           disabled={loading || cooldown || showCardModal}
         >
           <Text style={styles.buttonText}>
-            {loading ? 'SENDING...' : cooldown ? 'SENT' : 'QUICK SPONSOR $3'}
+            {loading ? 'SENDING...' : cooldown ? 'SENT' : 'QUICK SPONSOR $5'}
           </Text>
         </Pressable>
       </View>
@@ -207,7 +207,7 @@ export function QuickSponsorButton({ entryId, authorUsername, onSuccess }: Quick
 
             <View style={styles.modalBody}>
               <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>
-                Add a card to complete your $3.00 sponsorship. Your card will be saved for future transactions.
+                Add a card to complete your $5.00 sponsorship. Your card will be saved for future transactions.
               </Text>
 
               <CardField
@@ -241,7 +241,7 @@ export function QuickSponsorButton({ entryId, authorUsername, onSuccess }: Quick
                   {cardLoading ? (
                     <ActivityIndicator color="#ffffff" size="small" />
                   ) : (
-                    <Text style={styles.modalBtnConfirmText}>SAVE CARD & SPONSOR $3</Text>
+                    <Text style={styles.modalBtnConfirmText}>SAVE CARD & SPONSOR $5</Text>
                   )}
                 </Pressable>
               </View>

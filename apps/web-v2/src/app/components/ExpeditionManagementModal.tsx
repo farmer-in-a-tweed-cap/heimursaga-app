@@ -8,6 +8,9 @@ import { formatDate } from '@/app/utils/dateFormat';
 import { expeditionApi, sponsorshipApi, paymentMethodApi, type PaymentMethodFull } from '@/app/services/api';
 import { useStripe, useElements, CardElement } from '@/app/context/StripeContext';
 import { toast } from 'sonner';
+import { calculateSponsorshipFees } from '@repo/types/sponsorship-fees';
+
+const formatTipCents = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
 interface ExpeditionManagementModalProps {
   isOpen: boolean;
@@ -61,6 +64,7 @@ export function ExpeditionManagementModal({
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [tipAmount, setTipAmount] = useState('');
+  const tipFees = calculateSponsorshipFees(Math.round((parseFloat(tipAmount) || 0) * 100));
   const [savedCard, setSavedCard] = useState<PaymentMethodFull | null>(null);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState('');
@@ -375,7 +379,7 @@ export function ExpeditionManagementModal({
                       </div>
                     )}
                     <p className="text-[10px] text-[#616161] dark:text-[#b5bcc4]">
-                      Guide receives 90% after platform fees. Payments processed securely by Stripe.
+                      You pay {formatTipCents(tipFees.amount)} · Heimursaga keeps {formatTipCents(tipFees.platformFee)} · Stripe processing {formatTipCents(tipFees.processingFee)} · Guide receives {formatTipCents(tipFees.explorerReceives)}.
                     </p>
                   </>
                 )}

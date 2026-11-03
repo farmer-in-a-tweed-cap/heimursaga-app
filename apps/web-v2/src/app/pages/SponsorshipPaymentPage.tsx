@@ -13,6 +13,7 @@ import { useStripe, useElements, CardElement } from '@/app/context/StripeContext
 import { useTheme } from '@/app/context/ThemeContext';
 import { toast } from 'sonner';
 import { getPerksForSlot, getTierLabel, getTierSlotConfig, ONE_TIME_TIER_SLOTS, MONTHLY_TIER_SLOTS } from '@repo/types/sponsorship-tiers';
+import { calculateSponsorshipFees, MIN_SPONSORSHIP_AMOUNT, PLATFORM_FEE_PERCENT } from '@repo/types/sponsorship-fees';
 
 type PaymentType = 'one-time' | 'recurring';
 
@@ -198,11 +199,14 @@ export function SponsorshipPaymentPage() {
 
   // Calculate final amount
   const finalAmount = selectedAmount || (customAmount ? parseFloat(customAmount) : 0);
-  const stripeFeePercent = 0.029;
-  const stripeFeeFixed = 0.30;
-  const platformFee = finalAmount > 0 ? finalAmount * 0.10 : 0;
-  const stripeFee = finalAmount > 0 ? (finalAmount * stripeFeePercent) + stripeFeeFixed : 0;
-  const explorerReceives = finalAmount > 0 ? finalAmount - platformFee - stripeFee : 0;
+  // What is actually charged (yearly = 12 months at a 10% discount)
+  const chargeAmount = paymentType === 'recurring' && billingInterval === 'yearly'
+    ? Math.round(finalAmount * 12 * 0.9 * 100) / 100
+    : finalAmount;
+  const fees = calculateSponsorshipFees(Math.round(chargeAmount * 100));
+  const platformFee = fees.platformFee / 100;
+  const stripeFee = fees.processingFee / 100;
+  const explorerReceives = fees.explorerReceives / 100;
 
   // Calculate current and projected funding relative to goal
   const currentTotalRaised = expedition
@@ -247,8 +251,8 @@ export function SponsorshipPaymentPage() {
       return;
     }
 
-    if (finalAmount < 5) {
-      toast.error('Minimum sponsorship amount is $5.00');
+    if (finalAmount < MIN_SPONSORSHIP_AMOUNT) {
+      toast.error(`Minimum sponsorship amount is $${MIN_SPONSORSHIP_AMOUNT}.00`);
       return;
     }
 
@@ -712,7 +716,7 @@ export function SponsorshipPaymentPage() {
 
                     {/* Custom amount */}
                     <div className={`border-2 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] mb-4 ${
-                      customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < 5
+                      customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < MIN_SPONSORSHIP_AMOUNT
                         ? 'border-[#994040]'
                         : 'border-[#202020] dark:border-[#616161]'
                     }`}>
@@ -732,17 +736,17 @@ export function SponsorshipPaymentPage() {
                               setSelectedAmount(null);
                             }
                           }}
-                          placeholder="Enter custom amount (min $5)"
+                          placeholder={`Enter custom amount (min $${MIN_SPONSORSHIP_AMOUNT})`}
                           className={`flex-1 px-4 py-3 border-2 outline-none text-xl font-bold bg-white dark:bg-[#202020] dark:text-[#e5e5e5] ${
-                            customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < 5
+                            customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < MIN_SPONSORSHIP_AMOUNT
                               ? 'border-[#994040] focus:border-[#994040]'
                               : 'border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46]'
                           }`}
                         />
                       </div>
-                      {customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < 5 ? (
+                      {customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < MIN_SPONSORSHIP_AMOUNT ? (
                         <div className="mt-2 text-xs text-[#994040] font-bold">
-                          Minimum amount is $5.00 — please increase your amount to continue.
+                          Minimum amount is ${MIN_SPONSORSHIP_AMOUNT}.00 — please increase your amount to continue.
                         </div>
                       ) : (
                         <div className="mt-2 text-xs text-[#616161] dark:text-[#b5bcc4]">
@@ -1103,7 +1107,7 @@ export function SponsorshipPaymentPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={processing || !agreeToTerms || finalAmount < 5}
+              disabled={processing || !agreeToTerms || finalAmount < MIN_SPONSORSHIP_AMOUNT}
               className="w-full py-4 bg-[#ac6d46] text-white text-lg font-bold hover:bg-[#8a5738] transition-all disabled:bg-[#b5bcc4] disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {processing ? (
@@ -1152,17 +1156,17 @@ export function SponsorshipPaymentPage() {
                   <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">FEE BREAKDOWN:</div>
 
                   <div className="flex justify-between">
-                    <span className="text-[#616161] dark:text-[#b5bcc4]">Your contribution:</span>
-                    <span className="font-bold dark:text-[#e5e5e5]">${formatCurrency(finalAmount)}</span>
+                    <span className="text-[#616161] dark:text-[#b5bcc4]">You pay:</span>
+                    <span className="font-bold dark:text-[#e5e5e5]">${formatCurrency(chargeAmount)}</span>
                   </div>
 
                   <div className="flex justify-between">
-                    <span className="text-[#616161] dark:text-[#b5bcc4]">Platform fee (10%):</span>
+                    <span className="text-[#616161] dark:text-[#b5bcc4]">Heimursaga keeps ({PLATFORM_FEE_PERCENT}%):</span>
                     <span className="text-[#ac6d46]">-${formatCurrency(platformFee)}</span>
                   </div>
 
                   <div className="flex justify-between">
-                    <span className="text-[#616161] dark:text-[#b5bcc4]">Stripe fee (2.9% + $0.30):</span>
+                    <span className="text-[#616161] dark:text-[#b5bcc4]">Stripe processing (2.9% + $0.30):</span>
                     <span className="text-[#ac6d46]">-${formatCurrency(stripeFee)}</span>
                   </div>
 
