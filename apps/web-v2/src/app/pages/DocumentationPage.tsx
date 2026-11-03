@@ -100,7 +100,7 @@ export function DocumentationPage() {
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Creating Your Account</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                 Register for a free Explorer account to start your journey. Your account is your journal — a single profile where all your expeditions and entries live. You'll be able to create expeditions, log entries,
-                follow other explorers, and send sponsorships. Upgrade to Explorer Pro to receive sponsorships for your own expeditions.
+                follow other explorers, send sponsorships and receive sponsorships for your own expeditions. Every feature is included; there are no paid plans.
               </p>
             </div>
           </div>
@@ -113,7 +113,7 @@ export function DocumentationPage() {
             <h2 className="text-lg font-bold">ACCOUNT TYPES</h2>
           </div>
           <div className="p-6">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
               {/* Explorer */}
               <div className="border-2 border-[#b5bcc4] dark:border-[#3a3a3a] p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -145,50 +145,27 @@ export function DocumentationPage() {
                     <span className="text-[#ac6d46] mt-1">●</span>
                     <span>Notifications and entry notes</span>
                   </li>
-                </ul>
-              </div>
-
-              {/* Explorer Pro */}
-              <div className="border-2 border-[#4676ac] dark:border-[#4676ac] p-4 bg-[#f8f9fa] dark:bg-[#2a2a2a]">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-[#202020] dark:text-white text-lg">Explorer Pro ($7/month or $50/year)</h3>
-                  <span className="px-2 py-1 bg-[#ac6d46] text-white text-xs font-bold">EXPLORER PRO</span>
-                </div>
-                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3 italic">
-                  All Explorer features, plus:
-                </p>
-                <ul className="space-y-2 text-sm text-[#202020] dark:text-[#e5e5e5]">
                   <li className="flex items-start gap-2">
-                    <span className="text-[#4676ac] mt-1">●</span>
+                    <span className="text-[#ac6d46] mt-1">●</span>
                     <span><strong>Receive sponsorships</strong> with custom tiers and Stripe Connect payouts</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-[#4676ac] mt-1">●</span>
+                    <span className="text-[#ac6d46] mt-1">●</span>
                     <span><strong>Expedition Notes:</strong> 500-character updates (public or sponsor-exclusive)</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-[#4676ac] mt-1">●</span>
+                    <span className="text-[#ac6d46] mt-1">●</span>
                     <span><strong>Private messaging</strong> with sponsors and explorers</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-[#4676ac] mt-1">●</span>
-                    <span>Up to <strong>10 photos per entry</strong> (vs 2 for free)</span>
+                    <span className="text-[#ac6d46] mt-1">●</span>
+                    <span>Up to <strong>10 photos per entry</strong>, every entry type, the full expedition builder</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-[#4676ac] mt-1">●</span>
+                    <span className="text-[#ac6d46] mt-1">●</span>
                     <span>Entry views and expedition insights</span>
                   </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[#4676ac] mt-1">●</span>
-                    <span>Additional entry types (Photo Essay, Data Log)</span>
-                  </li>
                 </ul>
-                <Link
-                  href="/settings/billing"
-                  className="block w-full mt-4 py-3 bg-[#4676ac] text-white text-center hover:bg-[#3a5f8c] transition-all text-sm font-bold"
-                >
-                  UPGRADE TO PRO
-                </Link>
               </div>
 
               {/* Expedition Guide */}
@@ -198,7 +175,7 @@ export function DocumentationPage() {
                   <span className="px-2 py-1 bg-[#598636] text-white text-xs font-bold">EXPEDITION GUIDE</span>
                 </div>
                 <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3 italic">
-                  All Explorer and Explorer Pro features, plus:
+                  All Explorer features, plus:
                 </p>
                 <ul className="space-y-2 text-sm text-[#202020] dark:text-[#e5e5e5]">
                   <li className="flex items-start gap-2">
@@ -275,7 +252,7 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span>Funding goals and sponsorship settings (Pro accounts only)</span>
+                  <span>Funding goals and sponsorship settings</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
@@ -380,7 +357,7 @@ export function DocumentationPage() {
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                 The program is invite-only. Request an invite via the <Link href="/contact" className="text-[#598636] hover:text-[#476b2b] underline">contact</Link> page,
                 then enter the invite code on the registration form. Your account is created with guide
-                status set, which unlocks the blueprint builder and bundles in Explorer Pro features.
+                status set, which unlocks the blueprint builder.
               </p>
             </div>
 
@@ -453,13 +430,13 @@ export function DocumentationPage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Journaling on a Guide Account</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Guides have the full Explorer and Explorer Pro experience available alongside the
+                Guides have the full Explorer experience available alongside the
                 guide-only features. To log a journal entry, open <strong>CREATE &rarr; LOG JOURNAL ENTRY</strong> in
                 the header (or visit <Link href="/select-expedition" className="text-[#598636] hover:text-[#476b2b] underline">/select-expedition</Link>).
                 Pick an existing live expedition, launch one of your own published blueprints from the
                 <strong> SHOW BLUEPRINTS</strong> toggle, or create a new standard expedition. Entries, photos, sponsor
-                tiers, expedition notes, and every other Pro feature work exactly as they do for any
-                other Explorer Pro account.
+                tiers, expedition notes, and every other feature work exactly as they do for any
+                other account.
               </p>
             </div>
 
@@ -526,7 +503,7 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span>Sponsorship settings (if Explorer Pro)</span>
+                  <span>Sponsorship settings</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
@@ -602,15 +579,15 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span><strong>Photo Essay</strong> (Pro): Image-focused entries with up to 10 photos</span>
+                  <span><strong>Photo Essay</strong>: Image-focused entries with up to 10 photos</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span><strong>Data Log</strong> (Pro): Structured data entries (temperature, humidity, wind, elevation, etc.). Sail/paddle expeditions can also log marine data: wave height, water temperature, sea state, tidal state, heading, current speed, and sail configuration</span>
+                  <span><strong>Data Log</strong>: Structured data entries (temperature, humidity, wind, elevation, etc.). Sail/paddle expeditions can also log marine data: wave height, water temperature, sea state, tidal state, heading, current speed, and sail configuration</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span><strong>Expedition Note</strong> (Pro): 500-character updates (visibility controlled per expedition — public or sponsor-exclusive)</span>
+                  <span><strong>Expedition Note</strong>: 500-character updates (visibility controlled per expedition — public or sponsor-exclusive)</span>
                 </li>
               </ul>
             </div>
@@ -619,7 +596,7 @@ export function DocumentationPage() {
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-4">
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span>Photo limits: 2 (free) / 5 (Pro standard) / 10 (Pro photo essay)</span>
+                  <span>Photo limits: 5 (standard) / 10 (photo essay)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
@@ -665,7 +642,7 @@ export function DocumentationPage() {
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">How Sponsorships Work</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                 Sponsorships are financial contributions that help fund explorer expeditions. All transactions are processed securely
-                through Stripe. Explorer Pro accounts can enable sponsorships on their expeditions, while all accounts can send sponsorships.
+                through Stripe. Every account can enable sponsorships on its expeditions and send sponsorships to others.
                 There are three ways to sponsor: <strong>one-time</strong> contributions, <strong>monthly recurring</strong> support,
                 and <strong>quick sponsors</strong> ($5 micro-sponsorships on individual journal entries).
               </p>
@@ -706,7 +683,7 @@ export function DocumentationPage() {
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Quick Sponsor</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
                 Quick Sponsor is a $5 micro-sponsorship to show appreciation for a specific journal entry. Click
-                &quot;QUICK SPONSOR $5&quot; at the bottom of any entry by an Explorer Pro with Stripe connected.
+                &quot;QUICK SPONSOR $5&quot; at the bottom of any entry by an explorer with Stripe connected.
               </p>
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-4">
                 <li className="flex items-start gap-2">
@@ -745,9 +722,9 @@ export function DocumentationPage() {
               </ul>
             </div>
             <div>
-              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Receiving Sponsorships (Pro Only)</h3>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Receiving Sponsorships</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
-                Explorer Pro accounts can enable sponsorships on individual expeditions and access:
+                Any explorer can enable sponsorships on individual expeditions and access:
               </p>
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-4">
                 <li className="flex items-start gap-2">
@@ -831,7 +808,7 @@ export function DocumentationPage() {
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-4">
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span><strong>Explorers:</strong> Browse all users with search. Filter by All, Active Now (currently on expedition), or Explorer Pro</span>
+                  <span><strong>Explorers:</strong> Browse all users with search. Filter by All, Active Now (currently on expedition), or Expedition Guide</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
@@ -1054,9 +1031,8 @@ export function DocumentationPage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Messaging</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Private messaging is available to <strong>Explorer Pro</strong> accounts. Pro explorers can send direct messages
+                Private messaging is available to every account. Explorers can send direct messages
                 to other explorers and sponsors. Messages are private and only visible to participants.
-                Free accounts can interact via entry notes and sponsorship messages.
               </p>
             </div>
             <div>
@@ -1101,7 +1077,7 @@ export function DocumentationPage() {
                 </div>
                 <div className="flex items-center gap-3 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                   <span className="text-[#ac6d46] font-bold w-32">SPONSOR-ONLY</span>
-                  <span className="text-[#202020] dark:text-[#e5e5e5]">Visible only to qualifying sponsors who meet the expedition&apos;s cumulative sponsorship threshold (used for Expedition Notes, Pro only)</span>
+                  <span className="text-[#202020] dark:text-[#e5e5e5]">Visible only to qualifying sponsors who meet the expedition&apos;s cumulative sponsorship threshold (used for Expedition Notes)</span>
                 </div>
                 <div className="flex items-center gap-3 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                   <span className="text-[#ac6d46] font-bold w-32">PRIVATE</span>
@@ -1208,9 +1184,9 @@ export function DocumentationPage() {
               </ul>
             </div>
             <div>
-              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Billing (Pro Accounts)</h3>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Billing</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Manage your Explorer Pro subscription, view payment history, update payment methods, and configure payout 
+                View payment history, update payment methods, and configure payout 
                 settings in Settings → Billing. All payments processed securely through Stripe.
               </p>
             </div>

@@ -25,7 +25,6 @@ import { useExplorerPageData } from '@/app/hooks/queries';
 import { useLiveTrack } from '@/app/hooks/useLiveTrack';
 import { LiveTrackBadge } from '@/app/components/expedition-detail/LiveTrackBadge';
 import { ExplorerProfileSkeleton } from '@/app/components/skeletons/PageSkeletons';
-import { ConfirmationModal } from '@/app/components/ConfirmationModal';
 import { toast } from 'sonner';
 import { CountryFlag } from '@/app/components/CountryFlag';
 import { ContinentIcon } from '@/app/components/ContinentIcon';
@@ -117,7 +116,6 @@ export function ExplorerProfilePage() {
   const [entriesLimit, setEntriesLimit] = useState(5);
   const [reportOpen, setReportOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
-  const [showActiveExpeditionModal, setShowActiveExpeditionModal] = useState(false);
 
   // Sync interaction state when data arrives
   useEffect(() => {
@@ -142,14 +140,6 @@ export function ExplorerProfilePage() {
       return;
     }
     try {
-      const userExps = await explorerApi.getExpeditions(user!.username);
-      const hasActiveOrPlanned = userExps.data.some(
-        (e: any) => (e.status === 'active' || e.status === 'planned'),
-      );
-      if (hasActiveOrPlanned) {
-        setShowActiveExpeditionModal(true);
-        return;
-      }
       const res = await expeditionApi.adopt(expeditionId);
       router.push(`/expedition-quick-entry/${res.expeditionId}`);
     } catch (err) {
@@ -310,7 +300,7 @@ export function ExplorerProfilePage() {
     id: username || '1',
     name: profile.username,
     fullName: profile.username, // API doesn't have display name
-    accountType: (profile.isGuide ? 'expedition-guide' : profile.creator ? 'explorer-pro' : 'explorer') as 'expedition-guide' | 'explorer-pro' | 'explorer',
+    accountType: (profile.isGuide ? 'expedition-guide' : 'explorer') as 'expedition-guide' | 'explorer',
     secondaryRole: profile.secondaryRole,
     journalName: profile.name || profile.username,
     tagline: '', // Not in API
@@ -400,7 +390,7 @@ export function ExplorerProfilePage() {
     recentFollowers: followers.slice(0, 4).map(f => ({
       id: f.username,
       name: f.username,
-      accountType: (f.isGuide ? 'expedition-guide' : f.creator ? 'explorer-pro' : 'explorer') as 'expedition-guide' | 'explorer-pro' | 'explorer',
+      accountType: (f.isGuide ? 'expedition-guide' : 'explorer') as 'expedition-guide' | 'explorer',
       avatarUrl: f.picture || '',
       mutualFollow: f.followed || false,
       followedSince: '',
@@ -670,11 +660,11 @@ export function ExplorerProfilePage() {
             <div className="flex items-start gap-3 md:gap-6 w-full">
               {/* Large Avatar */}
               <div className="flex-shrink-0 mt-2 flex flex-col items-center">
-                <div className={`w-20 h-20 md:w-40 md:h-40 border-2 md:border-4 ${explorer.accountType === 'expedition-guide' ? 'border-[#598636]' : explorer.accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020]`}>
+                <div className={`w-20 h-20 md:w-40 md:h-40 border-2 md:border-4 ${explorer.accountType === 'expedition-guide' ? 'border-[#598636]' : 'border-[#616161]'} overflow-hidden bg-[#202020]`}>
                   <ExplorerAvatar username={explorer.name} src={explorer.avatarUrl} size={160} className="w-full h-full" />
                 </div>
                 <span className={`mt-1.5 md:mt-2 px-2 py-0.5 md:px-3 md:py-1 ${explorer.accountType === 'expedition-guide' ? 'bg-[#598636]' : 'bg-[#ac6d46]'} text-white text-[10px] md:text-xs font-bold rounded-full whitespace-nowrap`}>
-                  {explorer.accountType === 'expedition-guide' ? 'EXPEDITION GUIDE' : explorer.accountType === 'explorer-pro' ? 'EXPLORER PRO' : 'EXPLORER'}
+                  {explorer.accountType === 'expedition-guide' ? 'EXPEDITION GUIDE' : 'EXPLORER'}
                 </span>
                 {explorer.secondaryRole && (
                   <span className="mt-1 px-2 py-0.5 md:px-3 md:py-1 bg-[#b5bcc4] text-[#202020] text-[10px] md:text-xs font-bold rounded-full whitespace-nowrap">
@@ -872,7 +862,7 @@ export function ExplorerProfilePage() {
             </div>
           </div>
         ) : (
-          <div className={`grid ${profile.creator ? 'grid-cols-3 md:grid-cols-6' : 'grid-cols-3 md:grid-cols-5'} border-t-2 border-b-2 border-[#202020] dark:border-[#616161]`}>
+          <div className={`grid grid-cols-3 md:grid-cols-6 border-t-2 border-b-2 border-[#202020] dark:border-[#616161]`}>
             <div className="p-2 md:p-4 border-r border-b md:border-b-0 border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
               <div className="text-lg md:text-2xl font-medium text-[#ac6d46]">{explorer.stats.totalExpeditions}</div>
               <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Expeditions</div>
@@ -881,13 +871,11 @@ export function ExplorerProfilePage() {
               <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{explorer.stats.totalEntries}</div>
               <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Entries</div>
             </div>
-            {/* Sponsors stat - only show for Explorer Pro accounts */}
-            {profile.creator && (
-              <div className="p-2 md:p-4 border-r border-b md:border-b-0 border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
-                <div className="text-lg md:text-2xl font-medium text-[#ac6d46]">{explorer.stats.totalSponsors}</div>
-                <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Sponsors</div>
-              </div>
-            )}
+            {/* Sponsors stat */}
+            <div className="p-2 md:p-4 border-r border-b md:border-b-0 border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
+              <div className="text-lg md:text-2xl font-medium text-[#ac6d46]">{explorer.stats.totalSponsors}</div>
+              <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Sponsors</div>
+            </div>
             <div className="p-2 md:p-4 border-r border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
               <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{explorer.stats.followers}</div>
               <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Followers</div>
@@ -953,8 +941,8 @@ export function ExplorerProfilePage() {
               CONTACT
             </button>
           )}
-          {/* Sponsor button - Visible when explorer is Pro with Stripe Connect and active/planned expedition */}
-          {!isOwnProfile && profile.creator && profile.stripeAccountConnected && sponsorableExpedition && (
+          {/* Sponsor button - Visible when explorer has Stripe Connect and an active/planned expedition */}
+          {!isOwnProfile && profile.stripeAccountConnected && sponsorableExpedition && (
             <Link
               href={isAuthenticated ? `/sponsor/${sponsorableExpedition.id}` : `/auth?redirect=${encodeURIComponent(`/sponsor/${sponsorableExpedition.id}`)}`}
               className="px-2 py-1.5 md:px-3 md:py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs md:text-sm font-bold font-mono flex items-center min-h-[36px] md:min-h-[44px] whitespace-nowrap flex-shrink-0"
@@ -990,8 +978,8 @@ export function ExplorerProfilePage() {
           )}
         </div>
 
-        {/* Stripe Connect Setup Banner — only shown to owner when Pro but not connected */}
-        {isOwnProfile && profile.creator && !profile.stripeAccountConnected && (
+        {/* Stripe Connect Setup Banner — owner is raising funds but can't be paid yet */}
+        {isOwnProfile && !profile.stripeAccountConnected && sponsorableExpedition && (
           <div className="px-4 py-3 bg-[#202020] dark:bg-[#1a1a1a] border-l-4 border-l-[#ac6d46] border-b-2 border-b-[#202020] dark:border-b-[#616161] flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 text-[#ac6d46] flex-shrink-0" />
             <div className="flex-1 min-w-0">
@@ -1132,7 +1120,6 @@ export function ExplorerProfilePage() {
                       onViewJournal={() => router.push(`/expedition/${expedition.id}`)}
                       onSupport={() => router.push(`/sponsor/${expedition.id}`)}
                       sponsorshipsEnabled={expedition.goal > 0}
-                      explorerIsPro={profile.creator}
                       stripeConnected={profile.stripeAccountConnected}
                       isBookmarked={bookmarkedExpeditions.has(expedition.id)}
                       onBookmark={() => handleBookmarkExpedition(expedition.id)}
@@ -1224,7 +1211,6 @@ export function ExplorerProfilePage() {
                         onViewJournal={() => router.push(`/expedition/${expedition.id}`)}
                         onSupport={() => router.push(`/sponsor/${expedition.id}`)}
                         sponsorshipsEnabled={expedition.goal > 0}
-                        explorerIsPro={profile.creator}
                         stripeConnected={profile.stripeAccountConnected}
                         isBookmarked={bookmarkedExpeditions.has(expedition.id)}
                         onBookmark={() => handleBookmarkExpedition(expedition.id)}
@@ -1505,7 +1491,7 @@ export function ExplorerProfilePage() {
                     onClick={() => router.push(`/journal/${follower.id}`)}
                     className="w-full flex items-center gap-2 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#4676ac] dark:hover:border-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] group"
                   >
-                    <div className={`w-8 h-8 flex-shrink-0 overflow-hidden border ${follower.accountType === 'expedition-guide' ? 'border-[#598636]' : follower.accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#b5bcc4] dark:border-[#616161]'}`}>
+                    <div className={`w-8 h-8 flex-shrink-0 overflow-hidden border ${follower.accountType === 'expedition-guide' ? 'border-[#598636]' : 'border-[#b5bcc4] dark:border-[#616161]'}`}>
                       <Image
                         src={follower.avatarUrl}
                         alt={follower.name}
@@ -1617,13 +1603,11 @@ export function ExplorerProfilePage() {
                     <span className="text-[#616161] dark:text-[#b5bcc4]">Total Views</span>
                     <span className="font-bold dark:text-[#e5e5e5]">{explorer.stats.totalViews.toLocaleString()}</span>
                   </div>
-                  {/* Sponsorship stats - only show for Explorer Pro accounts */}
-                  {profile.creator && (
-                    <div className="flex justify-between border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2">
-                      <span className="text-[#616161] dark:text-[#b5bcc4]">All-Time Sponsors</span>
-                      <span className="font-bold text-[#ac6d46]">{explorer.stats.totalSponsors}</span>
-                    </div>
-                  )}
+                  {/* Sponsorship stats */}
+                  <div className="flex justify-between border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2">
+                    <span className="text-[#616161] dark:text-[#b5bcc4]">All-Time Sponsors</span>
+                    <span className="font-bold text-[#ac6d46]">{explorer.stats.totalSponsors}</span>
+                  </div>
                 </>
               )}
             </div>
@@ -1664,7 +1648,7 @@ export function ExplorerProfilePage() {
               <div className="flex justify-between">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Account Type</span>
                 <span className={`font-bold ${explorer.accountType === 'expedition-guide' ? 'text-[#598636]' : 'dark:text-[#e5e5e5]'}`}>
-                  {explorer.accountType === 'expedition-guide' ? 'Expedition Guide' : explorer.accountType === 'explorer-pro' ? 'Explorer Pro' : 'Explorer'}
+                  {explorer.accountType === 'expedition-guide' ? 'Expedition Guide' : 'Explorer'}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -1695,17 +1679,6 @@ export function ExplorerProfilePage() {
           onClose={() => setContactOpen(false)}
         />
       )}
-      <ConfirmationModal
-        isOpen={showActiveExpeditionModal}
-        onClose={() => setShowActiveExpeditionModal(false)}
-        onConfirm={() => setShowActiveExpeditionModal(false)}
-        title="Cannot Launch Blueprint"
-        confirmLabel="OK"
-      >
-        <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
-          You already have an active or planned expedition. Complete or cancel your current expedition before launching a new one from a blueprint.
-        </p>
-      </ConfirmationModal>
     </div>
   );
 }

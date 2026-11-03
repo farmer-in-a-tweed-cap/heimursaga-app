@@ -1074,7 +1074,7 @@ export function AdminDashboardPage() {
                               ? 'bg-[#4676ac] text-white'
                               : 'bg-[#b5bcc4] text-[#202020] dark:bg-[#616161] dark:text-[#e5e5e5]'
                           }`}>
-                            {explorer.admin ? 'ADMIN' : explorer.isGuide ? 'EXPEDITION GUIDE' : explorer.role === 'creator' ? 'EXPLORER PRO' : explorer.role.toUpperCase()}
+                            {explorer.admin ? 'ADMIN' : explorer.isGuide ? 'EXPEDITION GUIDE' : explorer.role.toUpperCase()}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">

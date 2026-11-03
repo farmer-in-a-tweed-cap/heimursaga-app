@@ -1,5 +1,5 @@
 interface AccountTypeBadgeProps {
-  accountType: 'explorer' | 'explorer-pro' | 'expedition-guide' | 'sponsor';
+  accountType: 'explorer' | 'expedition-guide' | 'sponsor';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
@@ -27,17 +27,5 @@ export function AccountTypeBadge({
     );
   }
 
-  // Only show badge for Explorer Pro accounts
-  if (accountType !== 'explorer-pro') {
-    return null;
-  }
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full bg-[#ac6d46] text-white font-bold ${sizeClasses[size]} border border-[#ac6d46] ${className}`}
-      title="Explorer Pro - Premium account with sponsorship receiving capabilities"
-    >
-      EXPLORER PRO
-    </span>
-  );
+  return null;
 }

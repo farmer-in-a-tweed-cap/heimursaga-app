@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { formatCurrency } from '@/app/utils/formatCurrency';
-import { CreditCard, Check, AlertCircle, ArrowUpRight, Lock, DollarSign, Loader2, Trash2, Shield } from 'lucide-react';
+import { CreditCard, Check, AlertCircle, Lock, DollarSign, Loader2, Trash2, Shield } from 'lucide-react';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
 import { useAuth } from '@/app/context/AuthContext';
-import { useProFeatures } from '@/app/hooks/useProFeatures';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { paymentMethodApi, payoutApi, planApi, type PaymentMethodFull, type PayoutBalance, type SubscriptionStatus } from '@/app/services/api';
@@ -15,7 +14,6 @@ import { toast } from 'sonner';
 
 export function BillingSettingsPage() {
   const { user, isAuthenticated } = useAuth();
-  const { isPro } = useProFeatures();
   const router = useRouter();
   const pathname = usePathname();
   const stripe = useStripe();
@@ -31,7 +29,6 @@ export function BillingSettingsPage() {
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [showAddCard, setShowAddCard] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
-  const [isReactivating, setIsReactivating] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
   const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
@@ -47,20 +44,17 @@ export function BillingSettingsPage() {
       setPaymentMethods(methodsRes.data || []);
       setSubscription(subscriptionRes.subscription);
 
-      // Fetch balance if user is pro
-      if (isPro) {
-        const balanceRes = await payoutApi.getBalance().catch(() => ({
-          available: { amount: 0, currency: 'USD', symbol: '$' },
-          pending: { amount: 0, currency: 'USD', symbol: '$' },
-        }));
-        setBalance(balanceRes);
-      }
+      const balanceRes = await payoutApi.getBalance().catch(() => ({
+        available: { amount: 0, currency: 'USD', symbol: '$' },
+        pending: { amount: 0, currency: 'USD', symbol: '$' },
+      }));
+      setBalance(balanceRes);
     } catch {
       toast.error('Failed to load billing information');
     } finally {
       setIsLoading(false);
     }
-  }, [isPro]);
+  }, []);
 
   // Fetch data on mount
   useEffect(() => {
@@ -141,26 +135,13 @@ export function BillingSettingsPage() {
     setIsCanceling(true);
     try {
       await planApi.cancelSubscription();
-      toast.success('Subscription canceled. You will retain access until the end of your billing period.');
+      toast.success('Subscription canceled. It will not renew.');
       setShowCancelConfirm(false);
       fetchBillingData();
     } catch {
       toast.error('Failed to cancel subscription');
     } finally {
       setIsCanceling(false);
-    }
-  };
-
-  const handleReactivateSubscription = async () => {
-    setIsReactivating(true);
-    try {
-      await planApi.reactivateSubscription();
-      toast.success('Subscription reactivated! Your Pro access will continue.');
-      fetchBillingData();
-    } catch {
-      toast.error('Failed to reactivate subscription');
-    } finally {
-      setIsReactivating(false);
     }
   };
 
@@ -199,7 +180,11 @@ export function BillingSettingsPage() {
     );
   }
 
-  const isProAccount = isPro || (subscription?.status === 'active' || subscription?.status === 'trialing');
+  // Subscriptions bought before every feature became free. Kept until the
+  // subscriber cancels; nothing in the product depends on them.
+  const hasLegacySubscription = ['active', 'trialing', 'past_due', 'incomplete'].includes(subscription?.status ?? '');
+  const formatPeriodEnd = (date?: string | Date | null) =>
+    date ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'the end of the billing period';
 
   // Loading state
   if (isLoading) {
@@ -217,170 +202,62 @@ export function BillingSettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Current Plan */}
+          {/* Account */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
             <div className="bg-[#616161] dark:bg-[#3a3a3a] text-white px-4 py-3 font-bold text-sm flex items-center gap-2">
-              <Lock className="w-4 h-4" />
-              CURRENT SUBSCRIPTION
+              <Check className="w-4 h-4" />
+              YOUR ACCOUNT
             </div>
-            <div className="p-4 lg:p-6">
-              {!isProAccount ? (
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-xl font-bold mb-2 dark:text-[#e5e5e5]">Explorer (Free)</div>
-                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-1 mb-4">
-                        <div>* Create and manage expeditions</div>
-                        <div>* Write unlimited journal entries</div>
-                        <div>* Send sponsorships to other explorers</div>
-                        <div>* Access to community features</div>
-                      </div>
-                    </div>
-                    <div className="text-2xl font-bold whitespace-nowrap dark:text-[#e5e5e5]">$0/mo</div>
-                  </div>
-
-                  <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 border-[#4676ac] p-4">
-                    <div className="text-sm font-bold mb-2 text-[#4676ac]">
-                      UPGRADE TO EXPLORER PRO
-                    </div>
-                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
-                      Unlock the ability to receive sponsorships, access advanced analytics, priority support, and exclusive features.
-                    </div>
-                    <Link
-                      href="/upgrade"
-                      className="w-full px-4 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all flex items-center justify-center gap-2"
-                    >
-                      UPGRADE TO PRO - $7/MONTH
-                      <ArrowUpRight className="w-4 h-4" />
-                    </Link>
-                  </div>
+            <div className="p-4 lg:p-6 space-y-4">
+              <div>
+                <div className="text-xl font-bold mb-2 dark:text-[#e5e5e5]">Every feature, free</div>
+                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-1">
+                  <div>* Unlimited expeditions, the full expedition builder and every entry type</div>
+                  <div>* Receive sponsorships once Stripe payouts are set up</div>
+                  <div>* Messaging, insights and the sponsorship dashboard</div>
+                  <div>* Heimursaga keeps 10% of sponsorships you receive; Stripe processing is deducted too</div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Lock className="w-5 h-5 text-[#ac6d46]" />
-                        <div className="text-xl font-bold dark:text-[#e5e5e5]">Explorer Pro</div>
-                      </div>
-                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-1 mb-4">
-                        <div className="flex items-center gap-2">
-                          <Check className="w-3 h-3 text-[#4676ac]" />
-                          Receive expedition sponsorships
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Check className="w-3 h-3 text-[#4676ac]" />
-                          Advanced analytics and insights
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Check className="w-3 h-3 text-[#4676ac]" />
-                          Priority support
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Check className="w-3 h-3 text-[#4676ac]" />
-                          Custom journal branding
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Check className="w-3 h-3 text-[#4676ac]" />
-                          Sponsorship dashboard
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-2xl font-bold whitespace-nowrap dark:text-[#e5e5e5]">
-                      {subscription?.billingPeriod === 'year' ? '$50/yr' : '$7/mo'}
+              </div>
+
+              {hasLegacySubscription && (
+                <div className="pt-4 border-t-2 border-[#b5bcc4] dark:border-[#3a3a3a] space-y-3">
+                  <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500 text-xs">
+                    <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-amber-800 dark:text-amber-200">
+                      {subscription?.cancelAtPeriodEnd
+                        ? <>Your old paid subscription ends on {formatPeriodEnd(subscription.currentPeriodEnd)} and will not renew. Nothing else to do.</>
+                        : subscription?.source === 'apple'
+                          ? <>You still have a paid subscription from before all features became free, bought through Apple. Cancel it from your Apple account (Settings → Apple ID → Subscriptions). Cancelling changes nothing about your account.</>
+                          : <>You still have a paid subscription from before all features became free. It renews on {formatPeriodEnd(subscription?.currentPeriodEnd)} unless you cancel it. Cancelling changes nothing about your account.</>}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t-2 border-[#b5bcc4] dark:border-[#3a3a3a] text-xs">
-                    <div>
-                      <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Billing Cycle:</div>
-                      <div className="font-bold font-mono dark:text-[#e5e5e5]">{subscription?.billingPeriod === 'year' ? 'ANNUAL' : 'MONTHLY'}</div>
-                    </div>
-                    <div>
-                      <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Next Billing Date:</div>
-                      <div className="font-bold font-mono dark:text-[#e5e5e5]">
-                        {subscription?.currentPeriodEnd
-                          ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()
-                          : 'N/A'}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Subscription Status:</div>
-                      <div className={`font-bold ${subscription?.cancelAtPeriodEnd ? 'text-amber-600' : 'text-[#4676ac]'}`}>
-                        {subscription?.cancelAtPeriodEnd ? 'CANCELING' : (subscription?.status?.toUpperCase() || 'ACTIVE')}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Member Since:</div>
-                      <div className="font-bold font-mono dark:text-[#e5e5e5]">
-                        {user?.createdAt
-                          ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()
-                          : 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {subscription?.cancelAtPeriodEnd && (
-                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500 text-xs space-y-3">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                        <div className="text-amber-800 dark:text-amber-200">
-                          Your subscription will end on {new Date(subscription.currentPeriodEnd).toLocaleDateString()}.
-                          You will retain access until then.
-                        </div>
-                      </div>
+                  {!subscription?.cancelAtPeriodEnd && subscription?.source !== 'apple' && (!showCancelConfirm ? (
+                    <button
+                      onClick={() => setShowCancelConfirm(true)}
+                      className="w-full px-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] text-xs font-bold hover:bg-[#994040]/10 dark:hover:bg-[#994040]/20 hover:border-[#994040] hover:text-[#994040] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] flex items-center justify-center gap-2"
+                    >
+                      CANCEL OLD SUBSCRIPTION
+                    </button>
+                  ) : (
+                    <div className="flex gap-2">
                       <button
-                        onClick={handleReactivateSubscription}
-                        disabled={isReactivating}
-                        className="w-full px-4 py-2 bg-[#4676ac] text-white text-xs font-bold hover:bg-[#365a87] transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                        onClick={() => setShowCancelConfirm(false)}
+                        disabled={isCanceling}
+                        className="flex-1 px-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] text-xs font-bold hover:bg-[#b5bcc4] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] disabled:opacity-50"
                       >
-                        {isReactivating && <Loader2 className="w-3 h-3 animate-spin" />}
-                        REACTIVATE SUBSCRIPTION
+                        BACK
+                      </button>
+                      <button
+                        onClick={handleCancelSubscription}
+                        disabled={isCanceling}
+                        className="flex-1 px-4 py-2 bg-[#994040] text-white text-xs font-bold hover:bg-[#7a3333] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {isCanceling && <Loader2 className="w-3 h-3 animate-spin" />}
+                        CONFIRM CANCELLATION
                       </button>
                     </div>
-                  )}
-
-                  {!showCancelConfirm ? (
-                    <div className="flex gap-2 pt-4 border-t-2 border-[#b5bcc4] dark:border-[#3a3a3a]">
-                      {!subscription?.cancelAtPeriodEnd && (
-                        <button
-                          onClick={() => setShowCancelConfirm(true)}
-                          className="flex-1 px-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] text-xs font-bold hover:bg-[#994040]/10 dark:hover:bg-[#994040]/20 hover:border-[#994040] hover:text-[#994040] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] flex items-center justify-center gap-2"
-                        >
-                          CANCEL SUBSCRIPTION
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="pt-4 border-t-2 border-[#b5bcc4] dark:border-[#3a3a3a] space-y-3">
-                      <div className="flex items-start gap-2 p-3 bg-[#994040]/10 dark:bg-[#994040]/20 border-2 border-[#994040]">
-                        <AlertCircle className="w-4 h-4 text-[#994040] flex-shrink-0 mt-0.5" />
-                        <div className="text-xs text-[#7a3333] dark:text-[#b5bcc4]">
-                          Are you sure you want to cancel your Explorer Pro subscription? You will retain access to all Pro features until the end of your current billing period
-                          {subscription?.currentPeriodEnd
-                            ? ` (${new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})`
-                            : ''}.
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setShowCancelConfirm(false)}
-                          disabled={isCanceling}
-                          className="flex-1 px-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] text-xs font-bold hover:bg-[#b5bcc4] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] disabled:opacity-50"
-                        >
-                          KEEP SUBSCRIPTION
-                        </button>
-                        <button
-                          onClick={handleCancelSubscription}
-                          disabled={isCanceling}
-                          className="flex-1 px-4 py-2 bg-[#994040] text-white text-xs font-bold hover:bg-[#7a3333] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                          {isCanceling && <Loader2 className="w-3 h-3 animate-spin" />}
-                          CONFIRM CANCELLATION
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  ))}
                 </div>
               )}
             </div>
@@ -397,7 +274,7 @@ export function BillingSettingsPage() {
               <div className="mb-4 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
                   <span className="font-bold text-[#202020] dark:text-[#e5e5e5]">How payment methods are used:</span>
-                  {' '}Your saved cards are used for Explorer Pro subscription billing and sponsoring other explorers.
+                  {' '}Your saved cards are used for sponsoring other explorers.
                   Your default payment method will be charged automatically for recurring payments.
                 </div>
               </div>
@@ -512,8 +389,8 @@ export function BillingSettingsPage() {
             </div>
           </div>
 
-          {/* Sponsorship Earnings (Pro only) */}
-          {isProAccount && balance && (
+          {/* Sponsorship Earnings */}
+          {balance && (
             <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
               <div className="bg-[#ac6d46] text-white px-4 py-3 font-bold text-sm flex items-center gap-2">
                 <DollarSign className="w-4 h-4" />
@@ -553,7 +430,7 @@ export function BillingSettingsPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Subscription Summary */}
+          {/* Account Summary */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
             <div className="bg-[#4676ac] text-white px-4 py-3 font-bold text-sm">
               ACCOUNT STATUS
@@ -561,19 +438,7 @@ export function BillingSettingsPage() {
             <div className="p-4 space-y-3 text-xs">
               <div className="flex justify-between items-center">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Account Type:</span>
-                <span className="font-bold dark:text-[#e5e5e5]">{isProAccount ? 'EXPLORER PRO' : 'EXPLORER'}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Status:</span>
-                <span className={`font-bold ${subscription?.cancelAtPeriodEnd ? 'text-amber-600' : 'text-[#4676ac]'}`}>
-                  {subscription?.cancelAtPeriodEnd ? 'CANCELING' : 'ACTIVE'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center border-t border-[#b5bcc4] dark:border-[#616161] pt-3">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">{subscription?.billingPeriod === 'year' ? 'Annual Cost:' : 'Monthly Cost:'}</span>
-                <span className="font-bold dark:text-[#e5e5e5]">
-                  {isProAccount ? (subscription?.billingPeriod === 'year' ? '$50.00' : '$7.00') : '$0.00'}
-                </span>
+                <span className="font-bold dark:text-[#e5e5e5]">{user?.isGuide ? 'EXPEDITION GUIDE' : 'EXPLORER'}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Payment Methods:</span>
@@ -582,55 +447,13 @@ export function BillingSettingsPage() {
             </div>
           </div>
 
-          {/* Upgrade Benefits (if free) */}
-          {!isProAccount && (
-            <div className="bg-white dark:bg-[#202020] border-2 border-[#ac6d46]">
-              <div className="bg-[#ac6d46] text-white px-4 py-3 font-bold text-sm flex items-center gap-2">
-                <Lock className="w-4 h-4" />
-                PRO BENEFITS
-              </div>
-              <div className="p-4">
-                <div className="text-xs dark:text-[#e5e5e5] space-y-3 mb-4">
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-[#4676ac] flex-shrink-0 mt-0.5" />
-                    <div>Receive sponsorships from supporters worldwide</div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-[#4676ac] flex-shrink-0 mt-0.5" />
-                    <div>Advanced analytics on journal performance</div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-[#4676ac] flex-shrink-0 mt-0.5" />
-                    <div>Priority email support</div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-[#4676ac] flex-shrink-0 mt-0.5" />
-                    <div>Custom journal branding options</div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-[#4676ac] flex-shrink-0 mt-0.5" />
-                    <div>Sponsorship dashboard & tools</div>
-                  </div>
-                </div>
-                <Link
-                  href="/upgrade"
-                  className="block w-full px-4 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-center"
-                >
-                  UPGRADE NOW
-                </Link>
-              </div>
-            </div>
-          )}
-
           {/* Help */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#b5bcc4] dark:border-[#616161]">
             <div className="p-4">
               <div className="text-xs font-bold mb-2 dark:text-[#e5e5e5]">BILLING HELP</div>
               <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-2 leading-relaxed">
                 <div>* All payments processed securely via Stripe</div>
-                <div>* Cancel anytime, no commitments</div>
-                <div>* Invoices emailed automatically</div>
-                <div>* Access continues until end of billing period</div>
+                <div>* Sponsorship receipts emailed automatically</div>
               </div>
               <Link
                 href="/contact"

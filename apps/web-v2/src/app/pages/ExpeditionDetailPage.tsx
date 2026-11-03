@@ -11,7 +11,6 @@ import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from '@/app/context/MapLayerContext';
 import { ROUTE_MODE_STYLES, drawPerLegRouteLines } from '@/app/utils/mapRouteDrawing';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
-import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { usePageOwner } from '@/app/context/PageOwnerContext';
 import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
 import { ExpeditionManagementModal } from '@/app/components/ExpeditionManagementModal';
@@ -56,7 +55,6 @@ export function ExpeditionDetailPage() {
   const { theme } = useTheme();
   const { mapLayer, nauticalOverlay, setNauticalOverlay } = useMapLayer();
   const { formatDistance } = useDistanceUnit();
-  const { isPro } = useProFeatures();
   const { setIsOwnContent } = usePageOwner();
   const [selectedView, setSelectedView] = useState<'notes' | 'entries' | 'waypoints' | 'sponsors'>('entries');
   const [showUpdateLocationModal, setShowUpdateLocationModal] = useState(false);
@@ -1324,7 +1322,6 @@ export function ExpeditionDetailPage() {
           isBookmarked={isBookmarked}
           bookmarkLoading={bookmarkLoading}
           embedCopied={embedCopied}
-          isPro={isPro}
           apiExpedition={apiExpedition}
           totalDuration={totalDuration}
           formatDate={formatDate}
@@ -1386,7 +1383,7 @@ export function ExpeditionDetailPage() {
         <div className="md:hidden border-t-2 border-[#202020] dark:border-[#616161] px-6 py-4 bg-white dark:bg-[#202020]">
           <div className="flex items-center gap-3">
             <a href={`/journal/${expedition.explorerId}`} className="flex-shrink-0">
-              <div className={`w-10 h-10 border-2 ${expedition.explorerIsPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020]`}>
+              <div className={`w-10 h-10 border-2 border-[#616161] overflow-hidden bg-[#202020]`}>
                 <ExplorerAvatar username={expedition.explorerId} src={expedition.explorerPicture} size={40} />
               </div>
             </a>
@@ -1524,7 +1521,6 @@ export function ExpeditionDetailPage() {
           backers: expedition.sponsors,
           isRouteLocked: apiExpedition?.isRouteLocked,
         }}
-        isPro={isPro}
         sourceBlueprint={apiExpedition?.sourceBlueprint || undefined}
         onComplete={handleComplete}
         onCancel={async (reason) => {

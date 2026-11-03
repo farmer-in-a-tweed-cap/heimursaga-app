@@ -336,7 +336,6 @@ export function JournalEntryPage() {
       explorerId: author?.username || '',
       explorerName: author?.username || 'Unknown', // Use username for display
       explorerPicture: author?.picture,
-      explorerIsPro: api.author?.creator === true,
       journalId: '', // Not in API yet
       journalName: author?.name || author?.username || 'Unknown',
 
@@ -551,7 +550,7 @@ export function JournalEntryPage() {
                 <div className="flex gap-4 items-center">
                   {/* Explorer Avatar */}
                   <Link href={`/journal/${entry.explorerId}`} className="flex-shrink-0">
-                    <div className={`w-16 h-16 border-2 ${entry.explorerIsPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all shadow-lg`}>
+                    <div className={`w-16 h-16 border-2 border-[#616161] overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all shadow-lg`}>
                       <ExplorerAvatar username={entry.explorerId} src={entry.explorerPicture} size={64} className="w-full h-full" />
                     </div>
                   </Link>
@@ -605,7 +604,6 @@ export function JournalEntryPage() {
                     expeditionId={entry.expeditionId}
                     expeditionStatus={entry.expeditionStatus}
                     sponsorshipsEnabled={entry.expeditionSponsorshipsEnabled}
-                    explorerIsPro={entry.explorerIsPro}
                     stripeConnected={entry.stripeAccountConnected}
                     initialBookmarks={entry.bookmarksCount}
                     isBookmarked={entry.bookmarked || false}
@@ -1217,7 +1215,7 @@ export function JournalEntryPage() {
                       <div className="px-3 py-3">
                         <div className="flex items-start gap-3">
                           <Link href={`/journal/${comment.author.username}`} className="flex-shrink-0">
-                            <div className={`w-10 h-10 border-2 ${comment.author.creator ? 'border-[#ac6d46]' : 'border-[#616161] dark:border-[#3a3a3a]'} overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-colors`}>
+                            <div className={`w-10 h-10 border-2 border-[#616161] dark:border-[#3a3a3a] overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-colors`}>
                               <ExplorerAvatar username={comment.author.username} src={comment.author.picture} size={40} className="w-full h-full" />
                             </div>
                           </Link>
@@ -1352,7 +1350,7 @@ export function JournalEntryPage() {
                               {comment.replies.map((reply) => (
                                 <div key={reply.id} className="flex items-start gap-2">
                                   <Link href={`/journal/${reply.author.username}`} className="flex-shrink-0">
-                                    <div className={`w-6 h-6 border ${reply.author.creator ? 'border-[#ac6d46]' : 'border-[#616161] dark:border-[#3a3a3a]'} overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-colors`}>
+                                    <div className={`w-6 h-6 border border-[#616161] dark:border-[#3a3a3a] overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-colors`}>
                                       <ExplorerAvatar username={reply.author.username} src={reply.author.picture} size={24} className="w-full h-full" />
                                     </div>
                                   </Link>
@@ -1470,14 +1468,13 @@ export function JournalEntryPage() {
           )}
 
           {/* Quick Sponsor CTA */}
-          {!isOwner && entry.explorerIsPro && entry.stripeAccountConnected && (
+          {!isOwner && entry.stripeAccountConnected && (
             <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
               <div className="flex flex-col items-center gap-2">
                 <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">Appreciate this entry? Show your support.</p>
                 <QuickSponsorButton
                   entryPublicId={entry.id}
                   authorUsername={entry.explorerName}
-                  isProAuthor={entry.explorerIsPro}
                   stripeConnected={entry.stripeAccountConnected}
                   expeditionId={['planned', 'active'].includes(entry.expeditionStatus) ? entry.expeditionId : undefined}
                   expeditionTitle={['planned', 'active'].includes(entry.expeditionStatus) ? entry.expeditionTitle : undefined}
@@ -1561,7 +1558,7 @@ export function JournalEntryPage() {
             <div>
               <div className="flex items-center gap-3 mb-3">
                 <Link href={`/journal/${entry.explorerId}`} className="flex-shrink-0">
-                  <div className={`w-16 h-16 border-2 ${entry.explorerIsPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-all`}>
+                  <div className={`w-16 h-16 border-2 border-[#616161] overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-all`}>
                     <ExplorerAvatar username={entry.explorerId} src={entry.explorerPicture} size={64} className="w-full h-full" />
                   </div>
                 </Link>

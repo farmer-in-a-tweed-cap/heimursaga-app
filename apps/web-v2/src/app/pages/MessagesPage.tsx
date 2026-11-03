@@ -3,9 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Send, Trash2, Search, MessageSquare, User, Clock, MoreVertical, ArrowLeft, X, Lock, Loader2, BellOff, EyeOff, AlertCircle, Ban, CheckCircle } from 'lucide-react';
-import { ProRoute } from '@/app/components/ProRoute';
 import { useAuth } from '@/app/context/AuthContext';
-import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { useRouter, usePathname } from 'next/navigation';
 import { messageApi, searchApi, Conversation as ApiConversation, Message as ApiMessage, SearchUser } from '@/app/services/api';
 
@@ -68,7 +66,7 @@ function ComposeModal({
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Search for Explorer Pro users as user types
+  // Search for explorers as user types
   useEffect(() => {
     const searchUsers = async () => {
       if (searchQuery.trim().length < 2) {
@@ -79,8 +77,7 @@ function ComposeModal({
       try {
         setIsSearching(true);
         const response = await searchApi.search(searchQuery.trim());
-        // Filter to only show Explorer Pro users (role === 'creator')
-        const proUsers = response.data.users.filter(u => u.role === 'creator');
+        const proUsers = response.data.users;
         setSearchResults(proUsers);
       } catch {
         console.error('Search failed');
@@ -114,7 +111,7 @@ function ComposeModal({
       setError(null);
       await onSend(username, content.trim());
     } catch {
-      setError('Failed to send message. Make sure the user is an Explorer Pro member.');
+      setError('Failed to send message. Please try again.');
     } finally {
       setIsSending(false);
     }
@@ -136,7 +133,7 @@ function ComposeModal({
             </div>
           )}
           <div className="relative">
-            <label className="block text-sm font-medium mb-2 dark:text-[#e5e5e5]">TO (EXPLORER PRO)</label>
+            <label className="block text-sm font-medium mb-2 dark:text-[#e5e5e5]">TO</label>
             {selectedUser ? (
               <div className="flex items-center gap-3 px-4 py-2 border-2 border-[#ac6d46] bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                 {selectedUser.picture ? (
@@ -148,7 +145,6 @@ function ComposeModal({
                 )}
                 <div className="flex-1">
                   <div className="font-bold text-sm dark:text-[#e5e5e5]">{selectedUser.username}</div>
-                  <div className="text-xs text-[#ac6d46]">EXPLORER PRO</div>
                 </div>
                 <button
                   onClick={handleClearSelection}
@@ -163,7 +159,7 @@ function ComposeModal({
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search for Explorer Pro members..."
+                    placeholder="Search for explorers..."
                     value={searchQuery}
                     onChange={(e) => {
                       setSearchQuery(e.target.value);
@@ -184,7 +180,7 @@ function ComposeModal({
                   <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] max-h-48 overflow-y-auto z-10">
                     {searchResults.length === 0 && !isSearching ? (
                       <div className="p-4 text-sm text-[#616161] dark:text-[#b5bcc4] text-center">
-                        No Explorer Pro members found
+                        No explorers found
                       </div>
                     ) : (
                       searchResults.map((user) => (
@@ -193,7 +189,7 @@ function ComposeModal({
                           onClick={() => handleSelectUser(user)}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-colors text-left border-b border-[#b5bcc4] dark:border-[#616161] last:border-b-0"
                         >
-                          <div className={`w-8 h-8 flex-shrink-0 overflow-hidden border-2 ${user.isGuide ? 'border-[#598636]' : user.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161]'}`}>
+                          <div className={`w-8 h-8 flex-shrink-0 overflow-hidden border-2 ${user.isGuide ? 'border-[#598636]' : 'border-[#616161]'}`}>
                             {user.picture ? (
                               <Image src={user.picture} alt={`${user.username}'s avatar`} className="w-full h-full object-cover" width={32} height={32} />
                             ) : (
@@ -204,8 +200,8 @@ function ComposeModal({
                           </div>
                           <div>
                             <div className="font-bold text-sm dark:text-[#e5e5e5]">{user.username}</div>
-                            {user.role === 'creator' && (
-                              <div className={`text-xs ${user.isGuide ? 'text-[#598636]' : 'text-[#ac6d46]'}`}>{user.isGuide ? 'EXPEDITION GUIDE' : 'EXPLORER PRO'}</div>
+                            {user.isGuide && (
+                              <div className="text-xs text-[#598636]">EXPEDITION GUIDE</div>
                             )}
                           </div>
                         </button>
@@ -264,7 +260,6 @@ function ComposeModal({
 
 export function MessagesPage() {
   const { user, isAuthenticated } = useAuth();
-  const { isPro, isLoading: isProLoading } = useProFeatures();
   const router = useRouter();
   const pathname = usePathname();
   const [selectedFilter, setSelectedFilter] = useState<MessageFilter>('all');
@@ -336,9 +331,9 @@ export function MessagesPage() {
     }
   }, []);
 
-  // Load conversations on mount (only if user is Pro)
+  // Load conversations on mount
   useEffect(() => {
-    if (!isAuthenticated || !user || !isPro || isProLoading) return;
+    if (!isAuthenticated || !user) return;
 
     let cancelled = false;
 
@@ -366,14 +361,10 @@ export function MessagesPage() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, user, isPro, isProLoading]);
+  }, [isAuthenticated, user]);
 
-  // Load messages when conversation is selected (only if user is Pro)
+  // Load messages when conversation is selected
   useEffect(() => {
-    if (!isPro || isProLoading) {
-      setMessages([]);
-      return;
-    }
     if (!selectedConversation || !isAuthenticated) return;
 
     let cancelled = false;
@@ -427,7 +418,7 @@ export function MessagesPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedConversation, isAuthenticated, isPro, isProLoading]);
+  }, [selectedConversation, isAuthenticated]);
 
   // Filter conversations based on selected filter and search
   const filteredConversations = conversations.filter((conv) => {
@@ -547,10 +538,7 @@ export function MessagesPage() {
   }
 
   return (
-    <ProRoute
-      pageName="Messages & Conversations"
-      pageDescription="Communicate directly with other Explorer Pro members through the platform's built-in messaging system."
-    >
+    <>
       <div className="max-w-[1600px] mx-auto px-6 py-12">
         {/* Page Header */}
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
@@ -567,7 +555,7 @@ export function MessagesPage() {
                     )}
                   </div>
                   <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                    Direct messaging with Explorer Pro members · Pro-to-Pro communication only
+                    Direct messaging with other explorers
                   </p>
                 </div>
               </div>
@@ -886,7 +874,7 @@ export function MessagesPage() {
                     <MessageSquare className="w-16 h-16 text-[#b5bcc4] mx-auto mb-4" />
                     <h3 className="text-xl font-bold mb-2 dark:text-[#e5e5e5]">SELECT A CONVERSATION</h3>
                     <p className="text-sm text-[#616161] dark:text-[#b5bcc4] max-w-md">
-                      Choose a conversation from the list to view messages or start a new conversation with another Explorer Pro member.
+                      Choose a conversation from the list to view messages or start a new conversation with another explorer.
                     </p>
                   </div>
                 </div>
@@ -909,6 +897,6 @@ export function MessagesPage() {
           />
         )}
       </div>
-    </ProRoute>
+    </>
   );
 }

@@ -22,7 +22,6 @@ interface HeroBannerProps {
   isBookmarked: boolean;
   bookmarkLoading: boolean;
   embedCopied: boolean;
-  isPro: boolean;
   apiExpedition: Expedition | null;
   totalDuration: number | null;
   formatDate: (date: string | undefined) => string;
@@ -96,7 +95,6 @@ export function HeroBanner({
   isBookmarked,
   bookmarkLoading,
   embedCopied,
-  isPro,
   apiExpedition,
   totalDuration,
   formatDate,
@@ -252,7 +250,7 @@ export function HeroBanner({
 
             <div className="flex items-center gap-3 mb-4">
               <Link href={`/journal/${expedition.explorerId}`} className="flex-shrink-0">
-                <div className={`w-16 h-16 border-2 ${apiExpedition?.isBlueprint ? 'border-[#598636]' : expedition.explorerIsPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all`}>
+                <div className={`w-16 h-16 border-2 ${apiExpedition?.isBlueprint ? 'border-[#598636]' : 'border-[#616161]'} overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all`}>
                   <ExplorerAvatar
                     username={expedition.explorerId}
                     src={expedition.explorerPicture}
@@ -273,7 +271,7 @@ export function HeroBanner({
             <div className="space-y-2 border-t-2 border-[#616161] pt-3">
               <div className="flex justify-between gap-4">
                 <span className="text-[#b5bcc4]">Account Type:</span>
-                <span className={`font-bold ${apiExpedition?.isBlueprint ? 'text-[#598636]' : 'text-[#ac6d46]'}`}>{apiExpedition?.isBlueprint ? 'EXPEDITION GUIDE' : expedition.explorerIsPro ? 'EXPLORER PRO' : 'EXPLORER'}</span>
+                <span className={`font-bold ${apiExpedition?.isBlueprint ? 'text-[#598636]' : 'text-[#ac6d46]'}`}>{apiExpedition?.isBlueprint ? 'EXPEDITION GUIDE' : 'EXPLORER'}</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-[#b5bcc4]">{apiExpedition?.isBlueprint ? 'Total Blueprints:' : 'Total Expeditions:'}</span>
@@ -546,8 +544,8 @@ export function HeroBanner({
                 className="px-2 py-1.5 md:px-3 md:py-2 border-2 border-white/30 text-white hover:bg-white/10 transition-all text-xs md:text-sm font-bold font-mono whitespace-nowrap flex items-center gap-1.5 md:gap-2 min-h-[36px] md:min-h-[44px]"
                 dropdownDirection="up"
               />
-              {/* Embed button - Explorer Pro owners only */}
-              {isOwner && isPro && (
+              {/* Embed button - owners only */}
+              {isOwner && (
                 <button
                   onClick={onCopyEmbed}
                   className="px-2 py-1.5 md:px-3 md:py-2 border-2 border-white/30 text-white hover:bg-white/10 transition-all text-xs md:text-sm font-bold font-mono whitespace-nowrap flex items-center min-h-[36px] md:min-h-[44px]"

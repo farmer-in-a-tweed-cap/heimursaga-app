@@ -36,7 +36,7 @@ import { formatDate, formatDateWithOptionalTime } from '@/app/utils/dateFormat';
  *   - Every data field rendered by the current card is rendered here.
  *   - Status / account-type indicators preserved (just moved into a
  *     corner image chip or a single mono caption line).
- *   - The duplicated EXPLORER PRO / EXPEDITION GUIDE pill on the
+ *   - The duplicated EXPEDITION GUIDE pill on the
  *     explorer card is preserved alongside the top caption.
  *   - The blue Views accent on the entry stats, the copper Funding
  *     accent on the expedition stats, the copper Expeditions accent
@@ -268,7 +268,7 @@ interface ExplorerV2Props {
   journalName: string;
   avatarUrl?: string;
   location: string;
-  accountType: 'explorer' | 'explorer-pro' | 'expedition-guide';
+  accountType: 'explorer' | 'expedition-guide';
   activeExpeditions: number;
   totalEntries: number;
   onClick?: () => void;
@@ -287,15 +287,11 @@ export function ExplorerCardPortraitV2({
   const accentColor =
     accountType === 'expedition-guide'
       ? '#598636'
-      : accountType === 'explorer-pro'
-        ? '#ac6d46'
-        : '#616161';
+      : '#616161';
   const accountLabel =
     accountType === 'expedition-guide'
       ? 'EXPEDITION GUIDE'
-      : accountType === 'explorer-pro'
-        ? 'EXPLORER PRO'
-        : 'EXPLORER';
+      : 'EXPLORER';
 
   return (
     <div
@@ -333,8 +329,7 @@ export function ExplorerCardPortraitV2({
           <h3 className="text-base font-serif font-bold text-[#202020] dark:text-[#e5e5e5] group-hover:text-[#ac6d46] leading-snug truncate">
             {username}
           </h3>
-          {(accountType === 'expedition-guide' ||
-            accountType === 'explorer-pro') && (
+          {accountType === 'expedition-guide' && (
             <span
               className="px-2 py-0.5 text-white text-[10px] font-bold rounded-full whitespace-nowrap tracking-wider"
               style={{ background: accentColor }}

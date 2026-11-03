@@ -42,8 +42,6 @@ interface ExpeditionCardLandscapeProps {
   backers: number;
   /** Whether sponsorships are enabled for this expedition */
   sponsorshipsEnabled?: boolean;
-  /** Whether the expedition creator has an Explorer Pro account */
-  explorerIsPro?: boolean;
   /** Whether the expedition creator has completed Stripe Connect */
   stripeConnected?: boolean;
   onClick?: () => void;
@@ -69,13 +67,12 @@ export function ExpeditionCardLandscape({
   fundingPercentage,
   backers,
   sponsorshipsEnabled = false,
-  explorerIsPro = false,
   stripeConnected = false,
   onClick,
   onUnbookmark,
 }: ExpeditionCardLandscapeProps) {
-  // Only show sponsorship stats if explorer is Pro and sponsorships are enabled
-  const showSponsorshipStats = explorerIsPro && sponsorshipsEnabled && stripeConnected;
+  // Only show sponsorship stats if sponsorships are enabled and Stripe is connected
+  const showSponsorshipStats = sponsorshipsEnabled && stripeConnected;
   // Helper to get current location from waypoints/entries
   const getCurrentLocation = () => {
     if (currentLocationSource && currentLocationId) {

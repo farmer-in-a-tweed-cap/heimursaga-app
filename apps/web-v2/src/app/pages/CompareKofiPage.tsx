@@ -47,7 +47,7 @@ export function CompareKofiPage() {
                 { label: 'Platform fee on tips', a: '0%', b: '10% of sponsorships', aColor: 'text-[#598636]' },
                 { label: 'Platform fee on memberships', a: '5% (0% with Gold)', b: '10% of sponsorships' },
                 { label: 'Payment processing', a: '~3% + $0.30 (Stripe/PayPal)', b: '~2.9% + $0.30 (Stripe)' },
-                { label: 'Creator subscription', a: 'Free (Gold: $12/mo for 0% fees)', b: '$7/mo or $50/yr for Explorer Pro' },
+                { label: 'Creator subscription', a: 'Free (Gold: $12/mo for 0% fees)', b: 'Free — no paid plans' },
               ]}
             />
 
@@ -126,7 +126,7 @@ export function CompareKofiPage() {
                 { feature: 'Sponsor wall / public recognition', a: true, b: true, note: 'Ko-fi: supporter leaderboard. Heimursaga: sponsor wall with tier highlighting' },
                 { feature: 'Expedition notes access', a: false, b: true, note: 'All sponsor tiers get access to 500-character daily expedition updates' },
                 { feature: 'Voice note updates', a: false, b: true, note: 'Tier 3 sponsors get exclusive audio updates from the explorer' },
-                { feature: 'Direct messaging with creator', a: false, b: true, note: 'Ko-fi: messages on donations only. Heimursaga: full DM with Explorer Pro' },
+                { feature: 'Direct messaging with creator', a: false, b: true, note: 'Ko-fi: messages on donations only. Heimursaga: full DM for every account' },
                 { feature: 'Discord role integration', a: true, b: false },
               ]}
             />
@@ -200,7 +200,7 @@ export function CompareKofiPage() {
               headerB="Heimursaga"
               rows={[
                 { feature: 'Text posts', a: true, b: true, note: 'Ko-fi: blog-style posts. Heimursaga: journal entries' },
-                { feature: 'Photo galleries', a: true, b: true, note: 'Heimursaga: up to 10 photos per entry (Pro)' },
+                { feature: 'Photo galleries', a: true, b: true, note: 'Heimursaga: up to 10 photos per entry' },
                 { feature: 'Native video hosting', a: false, b: false, note: 'Neither platform hosts video natively' },
                 { feature: 'YouTube video embeds', a: true, b: true, note: 'Dedicated video entry type on Heimursaga' },
                 { feature: 'Audio uploads', a: true, b: true, note: 'Ko-fi: audio in posts. Heimursaga: voice notes per expedition' },
@@ -255,7 +255,7 @@ export function CompareKofiPage() {
               rows={[
                 { feature: 'Explore / discovery page', a: 'partial', b: true, note: 'Ko-fi: basic browse by category. Heimursaga: explorer search and browse' },
                 { feature: 'Comments on posts', a: true, b: true, note: 'Heimursaga: threaded replies on entries' },
-                { feature: 'Direct messaging', a: false, b: true, note: 'Ko-fi has donation messages only. Heimursaga: full DM with Explorer Pro' },
+                { feature: 'Direct messaging', a: false, b: true, note: 'Ko-fi has donation messages only. Heimursaga: full DM for every account' },
                 { feature: 'Follow / bookmark system', a: true, b: true },
                 { feature: 'Public sponsor wall', a: true, b: true, note: 'Ko-fi: supporter leaderboard. Heimursaga: sponsor wall with tier highlighting' },
                 { feature: 'Expedition notes', a: false, b: true, note: '500-character daily updates — public or sponsor-exclusive' },
@@ -374,7 +374,7 @@ export function CompareKofiPage() {
                 CREATE YOUR EXPLORER ACCOUNT
               </Link>
               <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-3">
-                Free to join. <Link href="/upgrade" className="text-[#ac6d46] hover:text-[#4676ac]">Upgrade to Explorer Pro</Link> when you're ready to receive sponsorships.
+                Free to join, with every feature included. <Link href="/auth" className="text-[#ac6d46] hover:text-[#4676ac]">Create an account</Link> and set up payouts when you're ready to receive sponsorships.
               </p>
             </div>
           </div>

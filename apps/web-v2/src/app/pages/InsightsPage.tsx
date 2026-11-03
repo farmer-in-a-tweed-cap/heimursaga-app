@@ -34,7 +34,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import Link from 'next/link';
-import { ProRoute } from '@/app/components/ProRoute';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
 import { useAuth } from '@/app/context/AuthContext';
 import {
@@ -399,10 +398,7 @@ export function InsightsPage() {
   }, [data.balance]);
 
   return (
-    <ProRoute
-      pageName="Insights & Analytics Dashboard"
-      pageDescription="Access comprehensive analytics and insights about your journal's performance, audience demographics, engagement patterns, and sponsorship trends."
-    >
+    <>
 
       <SettingsLayout>
         <div className="max-w-[1600px] mx-auto py-12">
@@ -748,6 +744,6 @@ export function InsightsPage() {
           )}
         </div>
       </SettingsLayout>
-    </ProRoute>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { Globe, BookOpen, DollarSign, User, MessageSquare, Shield, Database, Server, CheckCircle, XCircle, Target, Award, Compass, Navigation, Layers, CreditCard, BarChart3, Activity, Pause, Play, Info, Calendar, Settings, Bell, Lock, Eye } from 'lucide-react';
+import { Globe, BookOpen, DollarSign, User, MessageSquare, Shield, Database, Server, CheckCircle, Target, Award, Compass, Navigation, Layers, CreditCard, BarChart3, Activity, Pause, Play, Info, Calendar, Settings, Bell, Lock, Eye } from 'lucide-react';
 import Link from 'next/link';
 
 export function AboutPage() {
@@ -96,7 +96,7 @@ export function AboutPage() {
                                       <div className="ml-4 mt-1 space-y-1">
                                         <div>• Geo-tagged with coordinates</div>
                                         <div>• Visibility: PUBLIC | OFF-GRID | PRIVATE</div>
-                                        <div>• Media: Up to 2 images (Free) or 10 images (Pro) per entry</div>
+                                        <div>• Media: Up to 10 images per entry</div>
                                         <div>• Timestamps: Created, Published, Modified (all tracked)</div>
                                       </div>
                                     </div>
@@ -135,7 +135,7 @@ export function AboutPage() {
               { name: 'EXPLORER', desc: 'User Account', depth: 0, details: null },
               { name: 'JOURNAL', desc: '1:1 with Explorer', depth: 1, details: null },
               { name: 'EXPEDITION', desc: 'Many per Journal', depth: 2, details: ['Status: DRAFT | PLANNED | ACTIVE | COMPLETED | CANCELLED', 'Title, Description, Dates, Goals, Waypoints'] },
-              { name: 'JOURNAL ENTRY', desc: 'Many per Expedition', depth: 3, details: ['Geo-tagged with coordinates', 'Visibility: PUBLIC | OFF-GRID | PRIVATE', 'Up to 2 images (Free) or 10 images (Pro) per entry'] },
+              { name: 'JOURNAL ENTRY', desc: 'Many per Expedition', depth: 3, details: ['Geo-tagged with coordinates', 'Visibility: PUBLIC | OFF-GRID | PRIVATE', 'Up to 10 images per entry'] },
               { name: 'EXPEDITION NOTE', desc: 'Daily updates, 500 char max', depth: 3, details: ['Sponsor-only access', 'Single-threaded replies', 'Available during PLANNING, ACTIVE, post-COMPLETE'] },
             ].map((item) => (
               <div key={item.name} className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border border-[#202020] dark:border-[#616161] p-3 font-mono text-xs" style={{ marginLeft: `${item.depth * 12}px` }}>
@@ -295,7 +295,7 @@ export function AboutPage() {
                 </div>
                 <div>
                   <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] mb-1">TIERS</div>
-                  <div className="dark:text-[#e5e5e5]">Explorer Pro sets custom amounts (min $5/mo)</div>
+                  <div className="dark:text-[#e5e5e5]">Explorers set custom amounts (min $5/mo)</div>
                 </div>
                 <div>
                   <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] mb-1">BENEFITS</div>
@@ -336,103 +336,41 @@ export function AboutPage() {
       {/* Feature Matrix */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         <div className="bg-[#616161] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161]">
-          <h2 className="text-xl font-bold">ACCOUNT TYPES: FEATURE MATRIX</h2>
+          <h2 className="text-xl font-bold">WHAT EVERY ACCOUNT GETS</h2>
         </div>
 
         <div className="p-6">
-          {/* Desktop: table view */}
-          <table className="hidden md:table w-full text-sm border-2 border-[#202020] dark:border-[#616161]">
-            <thead>
-              <tr className="bg-[#b5bcc4] dark:bg-[#3a3a3a]">
-                <th className="text-left p-3 border border-[#202020] dark:border-[#616161] font-bold">FEATURE</th>
-                <th className="text-center p-3 border border-[#202020] dark:border-[#616161] font-bold">EXPLORER (FREE)</th>
-                <th className="text-center p-3 border border-[#202020] dark:border-[#616161] font-bold">EXPLORER PRO ($7/mo)</th>
-              </tr>
-            </thead>
-            <tbody className="font-mono text-xs">
-              {[
-                { feature: 'Create & publish journal entries', free: true, pro: true },
-                { feature: 'Geo-tagged waypoints on map', free: true, pro: true, alt: true },
-                { feature: 'Follow other explorers', free: true, pro: true },
-                { feature: 'Sponsor other explorers (send money)', free: true, pro: true, alt: true },
-                { feature: 'Bookmark & leave notes on entries', free: true, pro: true },
-                { feature: 'Reply to Expedition Notes (if monthly sponsor)', free: true, pro: true, alt: true },
-                { feature: 'Private messaging (DMs)', free: false, pro: true },
-                { feature: 'RECEIVE sponsorships (one-time + monthly)', free: false, pro: true, proOnly: true, bold: true },
-                { feature: 'Create expeditions (DRAFT/PLANNED/ACTIVE/COMPLETE)', free: false, pro: true, proOnly: true },
-                { feature: 'Create Expedition Notes (500 char daily updates)', free: false, pro: true, proOnly: true },
-                { feature: 'Set custom monthly subscription tiers', free: false, pro: true, proOnly: true },
-                { feature: 'View entry analytics (views, bookmarks, notes)', free: false, pro: true, proOnly: true },
-                { feature: 'Sponsorship admin dashboard (refunds, tracking)', free: false, pro: true, proOnly: true },
-                { feature: 'Stripe payout integration', free: false, pro: true, proOnly: true },
-              ].map((row, i) => (
-                <tr key={i} className={row.proOnly ? 'bg-[#ac6d46]/10' : row.alt ? 'bg-[#f5f5f5] dark:bg-[#2a2a2a]' : ''}>
-                  <td className={`p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] ${row.bold ? 'font-bold' : ''}`}>{row.feature}</td>
-                  <td className="text-center p-3 border border-[#202020] dark:border-[#616161]">{row.free ? <CheckCircle className="w-4 h-4 text-[#598636] mx-auto" /> : <XCircle className="w-4 h-4 text-[#994040] mx-auto" />}</td>
-                  <td className="text-center p-3 border border-[#202020] dark:border-[#616161]">{row.pro ? <CheckCircle className="w-4 h-4 text-[#598636] mx-auto" /> : <XCircle className="w-4 h-4 text-[#994040] mx-auto" />}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Mobile: two grouped lists */}
-          <div className="md:hidden space-y-6">
-            <div>
-              <div className="bg-[#b5bcc4] dark:bg-[#3a3a3a] p-3 border-2 border-[#202020] dark:border-[#616161] border-b-0">
-                <h4 className="font-bold text-sm">EXPLORER (FREE)</h4>
+          <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-4">
+            There is one account type, and it is free. Every account includes:
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 border-2 border-[#202020] dark:border-[#616161] divide-y md:divide-y-0 divide-[#202020] dark:divide-[#616161]">
+            {[
+              'Create expeditions (DRAFT/PLANNED/ACTIVE/COMPLETE)',
+              'Create & publish journal entries',
+              'Geo-tagged waypoints and the full expedition builder',
+              'Expedition Notes (500 char daily updates)',
+              'RECEIVE sponsorships (one-time + monthly)',
+              'Sponsor other explorers (send money)',
+              'Set custom monthly subscription tiers',
+              'Sponsorship admin dashboard (refunds, tracking)',
+              'Stripe payout integration',
+              'View entry analytics (views, bookmarks, notes)',
+              'Private messaging (DMs)',
+              'Follow, bookmark and reply to Expedition Notes',
+            ].map((f) => (
+              <div key={f} className="flex items-center gap-2 p-3 text-xs font-mono">
+                <CheckCircle className="w-4 h-4 text-[#598636] shrink-0" />
+                <span className="dark:text-[#e5e5e5]">{f}</span>
               </div>
-              <div className="border-2 border-[#202020] dark:border-[#616161] divide-y divide-[#202020] dark:divide-[#616161]">
-                {[
-                  'Create & publish journal entries',
-                  'Geo-tagged waypoints on map',
-                  'Follow other explorers',
-                  'Sponsor other explorers',
-                  'Bookmark & leave notes on entries',
-                  'Reply to Expedition Notes',
-                ].map((f) => (
-                  <div key={f} className="flex items-center gap-2 p-3 text-xs font-mono">
-                    <CheckCircle className="w-4 h-4 text-[#598636] shrink-0" />
-                    <span className="dark:text-[#e5e5e5]">{f}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className="bg-[#ac6d46] text-white p-3 border-2 border-[#202020] dark:border-[#616161] border-b-0">
-                <h4 className="font-bold text-sm">EXPLORER PRO ($7/mo)</h4>
-                <p className="text-xs opacity-80 mt-0.5">Everything in Free, plus:</p>
-              </div>
-              <div className="border-2 border-[#202020] dark:border-[#616161] divide-y divide-[#202020] dark:divide-[#616161]">
-                {[
-                  'Private messaging (DMs)',
-                  'Receive sponsorships (one-time + monthly)',
-                  'Create expeditions',
-                  'Create Expedition Notes (500 char)',
-                  'Set custom subscription tiers',
-                  'View entry analytics',
-                  'Sponsorship admin dashboard',
-                  'Stripe payout integration',
-                ].map((f) => (
-                  <div key={f} className="flex items-center gap-2 p-3 text-xs font-mono bg-[#ac6d46]/5">
-                    <CheckCircle className="w-4 h-4 text-[#598636] shrink-0" />
-                    <span className="dark:text-[#e5e5e5]">{f}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
+          <p className="mt-3 text-xs text-[#616161] dark:text-[#b5bcc4]">
+            Expedition Guides add blueprint publishing, GPX/KML/GeoJSON import, GPX export and reviews.
+          </p>
 
-          <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
-            <div>
-              <div className="font-bold mb-1 dark:text-[#e5e5e5]">PRICING TRANSPARENCY</div>
-              <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Explorer Pro: $7/month · Stripe processing: 2.9% + $0.30 per transaction · Platform fee: 10% of sponsorships · No hidden charges</div>
-            </div>
-            <Link
-              href="/settings/billing"
-              className="px-6 py-2 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all text-sm text-center shrink-0"
-            >
-              UPGRADE TO PRO
-            </Link>
+          <div className="mt-4 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
+            <div className="font-bold mb-1 dark:text-[#e5e5e5]">PRICING TRANSPARENCY</div>
+            <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Free account · Platform fee: 10% of sponsorships received · Stripe processing: 2.9% + $0.30 per transaction, deducted from the sponsorship · No hidden charges</div>
           </div>
         </div>
       </div>
@@ -469,21 +407,21 @@ export function AboutPage() {
                   <BookOpen className="w-4 h-4 text-[#4676ac]" />
                   <div className="flex-1">
                     <div className="font-bold">JOURNAL</div>
-                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Your expeditions, entries, waypoints, analytics (Pro)</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Your expeditions, entries, waypoints, analytics</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                   <DollarSign className="w-4 h-4 text-[#4676ac]" />
                   <div className="flex-1">
                     <div className="font-bold">SPONSOR</div>
-                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Manage sent/received sponsorships, admin tools (Pro)</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Manage sent/received sponsorships, admin tools</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                   <MessageSquare className="w-4 h-4 text-[#4676ac]" />
                   <div className="flex-1">
                     <div className="font-bold">MESSAGE</div>
-                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Direct messages (Pro only), Expedition Note replies</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Direct messages, Expedition Note replies</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
@@ -527,7 +465,7 @@ export function AboutPage() {
                   <CreditCard className="w-4 h-4 text-[#616161]" />
                   <div className="flex-1">
                     <div className="font-bold">BILLING</div>
-                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Pro subscription, Stripe setup, payout info</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Payment methods, Stripe setup, payout info</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
@@ -541,7 +479,7 @@ export function AboutPage() {
                   <BarChart3 className="w-4 h-4 text-[#616161]" />
                   <div className="flex-1">
                     <div className="font-bold">INSIGHTS</div>
-                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Analytics dashboard, entry performance, sponsor metrics (Pro)</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Analytics dashboard, entry performance, sponsor metrics</div>
                   </div>
                 </div>
               </div>
@@ -651,7 +589,7 @@ export function AboutPage() {
               </div>
               <div className="border border-[#616161] p-3">
                 <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Images per Entry</div>
-                <div className="text-lg font-bold dark:text-[#e5e5e5]">2 (Free) / 10 (Pro)</div>
+                <div className="text-lg font-bold dark:text-[#e5e5e5]">10</div>
               </div>
               <div className="border border-[#616161] p-3">
                 <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Expedition Note Length</div>

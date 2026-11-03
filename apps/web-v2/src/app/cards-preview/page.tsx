@@ -90,7 +90,6 @@ export default function CardsPreviewPage() {
     terrain: 'Mountain Passes',
     averageSpeed: 57.3,
     sponsorshipsEnabled: true,
-    explorerIsPro: true,
     stripeConnected: true,
     mode: 'cycle',
   };
@@ -122,7 +121,6 @@ export default function CardsPreviewPage() {
     terrain: 'Polar Ice',
     averageSpeed: 0,
     sponsorshipsEnabled: false,
-    explorerIsPro: false,
     stripeConnected: false,
     mode: 'sail',
   };
@@ -171,7 +169,7 @@ export default function CardsPreviewPage() {
     journalName: 'Wandering Chronicles',
     imageUrl: '', // empty so ExplorerAvatar falls back to colored initial
     location: 'Central Asia',
-    accountType: 'explorer-pro' as const,
+    accountType: 'explorer' as const,
     joined: 'Mar 2024',
     activeExpeditions: 2,
     totalEntries: 234,

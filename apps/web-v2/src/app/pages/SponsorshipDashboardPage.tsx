@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
-import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { CreditCard, RefreshCw, DollarSign, TrendingUp, Users, Search, ChevronDown, ChevronUp, ExternalLink, Pause, Play, X, Loader2, EyeOff, Map } from 'lucide-react';
 import { sponsorshipApi, payoutApi, type SponsorshipFull, type PayoutBalance } from '@/app/services/api';
 import { toast } from 'sonner';
@@ -14,7 +13,6 @@ type TabType = 'overview' | 'active' | 'history' | 'received';
 
 export function SponsorshipDashboardPage() {
   const { isAuthenticated } = useAuth();
-  const { isPro } = useProFeatures();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedTransaction, setExpandedTransaction] = useState<string | null>(null);
@@ -36,24 +34,22 @@ export function SponsorshipDashboardPage() {
 
       setMySponsorships(sponsorshipsRes.data || []);
 
-      // If user is pro, also fetch received sponsorships and balance
-      if (isPro) {
-        const [receivedRes, balanceRes] = await Promise.all([
-          sponsorshipApi.getReceivedSponsorships().catch(() => ({ results: 0, data: [] })),
-          payoutApi.getBalance().catch(() => ({
-            available: { amount: 0, currency: 'USD', symbol: '$' },
-            pending: { amount: 0, currency: 'USD', symbol: '$' },
-          })),
-        ]);
-        setReceivedSponsorships(receivedRes.data || []);
-        setBalance(balanceRes);
-      }
+      // Also fetch received sponsorships and balance
+      const [receivedRes, balanceRes] = await Promise.all([
+        sponsorshipApi.getReceivedSponsorships().catch(() => ({ results: 0, data: [] })),
+        payoutApi.getBalance().catch(() => ({
+          available: { amount: 0, currency: 'USD', symbol: '$' },
+          pending: { amount: 0, currency: 'USD', symbol: '$' },
+        })),
+      ]);
+      setReceivedSponsorships(receivedRes.data || []);
+      setBalance(balanceRes);
     } catch {
       toast.error('Failed to load sponsorship data');
     } finally {
       setIsLoading(false);
     }
-  }, [isPro]);
+  }, []);
 
   // Fetch data on mount
   useEffect(() => {
@@ -186,18 +182,16 @@ export function SponsorshipDashboardPage() {
           >
             PAYMENT HISTORY ({allPaymentHistory.length})
           </button>
-          {isPro && (
-            <button
-              onClick={() => setActiveTab('received')}
-              className={`px-6 py-3 font-bold text-sm transition-all ${
-                activeTab === 'received'
-                  ? 'bg-[#4676ac] text-white'
-                  : 'hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] dark:text-[#e5e5e5]'
-              }`}
-            >
-              RECEIVED SPONSORSHIPS ({receivedSponsorships.length})
-            </button>
-          )}
+          <button
+            onClick={() => setActiveTab('received')}
+            className={`px-6 py-3 font-bold text-sm transition-all ${
+              activeTab === 'received'
+                ? 'bg-[#4676ac] text-white'
+                : 'hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] dark:text-[#e5e5e5]'
+            }`}
+          >
+            RECEIVED SPONSORSHIPS ({receivedSponsorships.length})
+          </button>
         </div>
       </div>
 
@@ -688,11 +682,11 @@ export function SponsorshipDashboardPage() {
         </div>
       )}
 
-      {/* Received Sponsorships Tab (Explorer Pro Only) */}
-      {activeTab === 'received' && isPro && (
+      {/* Received Sponsorships Tab */}
+      {activeTab === 'received' && (
         <div className="space-y-6">
           <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 border-[#4676ac] p-6">
-            <h3 className="font-bold mb-2 dark:text-[#e5e5e5]">EXPLORER PRO REVENUE DASHBOARD</h3>
+            <h3 className="font-bold mb-2 dark:text-[#e5e5e5]">REVENUE DASHBOARD</h3>
             <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
               Track sponsorships received from your supporters. Manage your sponsorship settings from the{' '}
               <Link href="/sponsorships-admin" className="text-[#4676ac] hover:underline">

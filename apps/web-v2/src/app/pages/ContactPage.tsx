@@ -292,7 +292,7 @@ export function ContactPage() {
                           <p>Include in your message:</p>
                           <ul className="list-disc ml-4 space-y-0.5">
                             <li>Your username or email address</li>
-                            <li>Account type (Explorer or Explorer Pro)</li>
+                            <li>Account type (Explorer or Expedition Guide)</li>
                             <li>Detailed description of the issue</li>
                             <li>When the issue started</li>
                           </ul>
@@ -305,7 +305,7 @@ export function ContactPage() {
                             <li>Transaction date (if applicable)</li>
                             <li>Amount in question</li>
                             <li>Last 4 digits of card used</li>
-                            <li>Subscription type (Explorer Pro, etc.)</li>
+                            <li>Whether you have a legacy paid subscription</li>
                           </ul>
                         </>
                       )}

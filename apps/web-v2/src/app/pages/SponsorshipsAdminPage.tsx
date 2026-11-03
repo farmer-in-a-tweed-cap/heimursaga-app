@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/app/context/AuthContext';
-import { useProFeatures } from '@/app/hooks/useProFeatures';
 import {
   DollarSign,
   TrendingUp,
@@ -96,7 +95,6 @@ const STRIPE_SUPPORTED_COUNTRIES = [
 
 export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean }) {
   const { user } = useAuth();
-  const { isPro } = useProFeatures();
   const [selectedView, setSelectedView] = useState<ViewType>('overview');
   const [editingTiers, setEditingTiers] = useState(false);
 
@@ -167,10 +165,8 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
 
   // Fetch data on mount
   useEffect(() => {
-    if (isPro) {
-      fetchData();
-    }
-  }, [isPro]);
+    fetchData();
+  }, []);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -428,27 +424,6 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
   const stripeStatus = payoutMethods.length > 0
     ? (payoutMethods[0].accountStatus || (payoutMethods[0].isVerified ? 'active' : 'onboarding_incomplete'))
     : 'not_connected';
-
-  // Check if user is Explorer Pro (skip when embedded - parent handles access)
-  if (!embedded && !isPro) {
-    return (
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-8 text-center">
-          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-[#ac6d46]" />
-          <h1 className="text-2xl font-bold mb-4 dark:text-[#e5e5e5]">EXPLORER PRO REQUIRED</h1>
-          <p className="text-[#616161] dark:text-[#b5bcc4] mb-6">
-            Sponsorship management is only available for Explorer Pro accounts.
-          </p>
-          <Link
-            href="/upgrade"
-            className="inline-block px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
-          >
-            UPGRADE TO EXPLORER PRO
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -726,7 +701,6 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 <HandHeart className="w-6 h-6 text-[#ac6d46]" />
                 <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">SPONSORSHIP MANAGEMENT</h1>
               </div>
-              <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">EXPLORER PRO</span>
             </div>
             <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
               Manage your sponsorship tiers, sponsors, and payouts

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Lock, Shield, Monitor, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
-import { useAuth, useProFeatures } from '@/app/context/AuthContext';
+import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { authApi, explorerApi } from '@/app/services/api';
 
@@ -38,7 +38,6 @@ function parseUserAgent(ua?: string): string {
 
 export function PrivacySettingsPage() {
   const { isAuthenticated, user, logout } = useAuth();
-  const { isPro } = useProFeatures();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -376,8 +375,8 @@ export function PrivacySettingsPage() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Account:</span>
-                <span className={`font-bold ${isPro ? 'text-[#598636]' : ''} dark:text-[#e5e5e5]`}>
-                  {isPro ? 'EXPLORER PRO' : 'EXPLORER'}
+                <span className="font-bold dark:text-[#e5e5e5]">
+                  {user?.isGuide ? 'EXPEDITION GUIDE' : 'EXPLORER'}
                 </span>
               </div>
             </div>

@@ -7,7 +7,6 @@ interface FollowedExplorerStripProps {
     username: string;
     name?: string;
     picture?: string;
-    isPro?: boolean;
     isGuide?: boolean;
     status: 'exploring' | 'planning' | 'resting';
     lastEntryDate?: string;
@@ -64,7 +63,7 @@ export function FollowedExplorerStrip({ explorers, onViewExplorer }: FollowedExp
             className="flex-shrink-0 w-[180px] flex items-stretch gap-2.5 p-2.5 border-2 border-[#e5e5e5] dark:border-[#3a3a3a] hover:border-[#4676ac] dark:hover:border-[#4676ac] transition-all active:scale-[0.98] text-left"
           >
             {/* Avatar */}
-            <div className={`relative flex-shrink-0 w-10 overflow-hidden border-2 ${explorer.isPro ? 'border-[#ac6d46]' : 'border-[#616161] dark:border-[#3a3a3a]'}`}>
+            <div className={`relative flex-shrink-0 w-10 overflow-hidden border-2 border-[#616161] dark:border-[#3a3a3a]`}>
               {explorer.picture ? (
                 <Image
                   src={explorer.picture}

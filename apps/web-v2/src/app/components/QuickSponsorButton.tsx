@@ -15,7 +15,6 @@ const explorerReceives = (calculateSponsorshipFees(QUICK_SPONSOR_AMOUNT * 100).e
 interface QuickSponsorButtonProps {
   entryPublicId: string;
   authorUsername: string;
-  isProAuthor: boolean;
   stripeConnected: boolean;
   expeditionId?: string;
   expeditionTitle?: string;
@@ -24,7 +23,6 @@ interface QuickSponsorButtonProps {
 export function QuickSponsorButton({
   entryPublicId,
   authorUsername,
-  isProAuthor,
   stripeConnected,
   expeditionId,
   expeditionTitle,
@@ -52,7 +50,7 @@ export function QuickSponsorButton({
     }
   }, [isAuthenticated]);
 
-  if (!isProAuthor || !stripeConnected) return null;
+  if (!stripeConnected) return null;
 
   const handleClick = () => {
     if (!isAuthenticated) {

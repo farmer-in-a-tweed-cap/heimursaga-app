@@ -168,7 +168,7 @@ export function GuideProgramPage() {
           <div className="p-6 space-y-4">
             <div>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-3">
-                Guide accounts use the same expedition builder available to Explorer Pro accounts. The key
+                Guide accounts use the same expedition builder available to every account. The key
                 difference is that guides create blueprints instead of live expeditions&mdash;there are no start
                 dates, end dates, or sponsorship fields. The focus is entirely on the route.
               </p>
@@ -356,7 +356,7 @@ export function GuideProgramPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] mt-1">&bull;</span>
-                  <span>Sponsorship settings (if Explorer Pro)</span>
+                  <span>Sponsorship settings</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] mt-1">&bull;</span>
@@ -500,9 +500,9 @@ export function GuideProgramPage() {
             <div>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
                 A guide account is not a stripped-down or alternate Explorer&mdash;it&apos;s the full
-                Explorer Pro experience with guide-specific capabilities layered on top. Guides get
-                everything an Explorer Pro account has (live expeditions, journal entries, sponsor
-                tiers, expedition notes, messaging, etc.) without the subscription, plus the
+                Explorer experience with guide-specific capabilities layered on top. Guides get
+                everything every account has (live expeditions, journal entries, sponsor
+                tiers, expedition notes, messaging, etc.), plus the
                 guide-only features (blueprint publishing, tipping, portfolio framing, route file
                 import).
               </p>
@@ -515,7 +515,6 @@ export function GuideProgramPage() {
                   <tr className="border-b-2 border-[#202020] dark:border-[#616161]">
                     <th className="text-left py-2 pr-4 text-xs font-bold text-[#616161] dark:text-[#b5bcc4]">FEATURE</th>
                     <th className="text-center py-2 px-4 text-xs font-bold text-[#598636]">GUIDE</th>
-                    <th className="text-center py-2 px-4 text-xs font-bold text-[#ac6d46]">EXPLORER PRO</th>
                     <th className="text-center py-2 pl-4 text-xs font-bold text-[#4676ac]">EXPLORER</th>
                   </tr>
                 </thead>
@@ -523,67 +522,56 @@ export function GuideProgramPage() {
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
                     <td className="py-2 pr-4 text-xs">Create live expeditions</td>
                     <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
-                    <td className="py-2 px-4 text-center text-[#ac6d46] font-bold">Yes</td>
                     <td className="py-2 pl-4 text-center text-[#4676ac] font-bold">Yes</td>
                   </tr>
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
                     <td className="py-2 pr-4 text-xs">Log journal entries</td>
                     <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
-                    <td className="py-2 px-4 text-center text-[#ac6d46] font-bold">Yes</td>
                     <td className="py-2 pl-4 text-center text-[#4676ac] font-bold">Yes</td>
                   </tr>
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
                     <td className="py-2 pr-4 text-xs">Launch other guides&apos; blueprints</td>
                     <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
-                    <td className="py-2 px-4 text-center text-[#ac6d46] font-bold">Yes</td>
                     <td className="py-2 pl-4 text-center text-[#4676ac] font-bold">Yes</td>
                   </tr>
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
                     <td className="py-2 pr-4 text-xs">Expedition builder</td>
                     <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
-                    <td className="py-2 px-4 text-center text-[#ac6d46] font-bold">Yes</td>
-                    <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
+                    <td className="py-2 pl-4 text-center text-[#4676ac] font-bold">Yes</td>
                   </tr>
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
                     <td className="py-2 pr-4 text-xs">Receive expedition sponsorships</td>
                     <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
-                    <td className="py-2 px-4 text-center text-[#ac6d46] font-bold">Yes</td>
-                    <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
+                    <td className="py-2 pl-4 text-center text-[#4676ac] font-bold">Yes</td>
                   </tr>
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
                     <td className="py-2 pr-4 text-xs">Expedition notes &amp; messaging</td>
                     <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
-                    <td className="py-2 px-4 text-center text-[#ac6d46] font-bold">Yes</td>
-                    <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
+                    <td className="py-2 pl-4 text-center text-[#4676ac] font-bold">Yes</td>
                   </tr>
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
                     <td className="py-2 pr-4 text-xs">Publish expedition blueprints</td>
                     <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
-                    <td className="py-2 px-4 text-center text-[#616161]">&mdash;</td>
                     <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
                   </tr>
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
                     <td className="py-2 pr-4 text-xs">Receive tips on blueprints</td>
                     <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
-                    <td className="py-2 px-4 text-center text-[#616161]">&mdash;</td>
                     <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
                   </tr>
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
                     <td className="py-2 pr-4 text-xs">Route file import (GPX/KML/GeoJSON)</td>
                     <td className="py-2 px-4 text-center text-[#598636] font-bold">Yes</td>
-                    <td className="py-2 px-4 text-center text-[#616161]">&mdash;</td>
                     <td className="py-2 pl-4 text-center text-[#616161]">&mdash;</td>
                   </tr>
                   <tr className="border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
                     <td className="py-2 pr-4 text-xs">Account cost</td>
                     <td className="py-2 px-4 text-center text-xs text-[#598636]">Invite-only</td>
-                    <td className="py-2 px-4 text-center text-xs text-[#ac6d46]">Subscription</td>
-                    <td className="py-2 pl-4 text-center text-[#4676ac] font-bold">Free</td>
+                    <td className="py-2 pl-4 text-center text-xs text-[#4676ac]">Free</td>
                   </tr>
                   <tr>
                     <td className="py-2 pr-4 text-xs">Profile type</td>
                     <td className="py-2 px-4 text-center text-xs text-[#598636]">Portfolio + Journal</td>
-                    <td className="py-2 px-4 text-center text-xs text-[#ac6d46]">Journal</td>
                     <td className="py-2 pl-4 text-center text-xs text-[#4676ac]">Journal</td>
                   </tr>
                 </tbody>

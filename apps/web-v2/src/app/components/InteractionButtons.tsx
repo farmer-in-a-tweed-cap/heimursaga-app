@@ -12,7 +12,6 @@ interface InteractionButtonsProps {
   expeditionId?: string;
   expeditionStatus?: string;
   sponsorshipsEnabled?: boolean;
-  explorerIsPro?: boolean;
   stripeConnected?: boolean;
   initialBookmarks?: number;
   isBookmarked?: boolean;
@@ -31,7 +30,6 @@ export function InteractionButtons({
   expeditionId,
   expeditionStatus,
   sponsorshipsEnabled = true,
-  explorerIsPro = false,
   stripeConnected = false,
   initialBookmarks: _initialBookmarks = 0,
   isBookmarked = false,

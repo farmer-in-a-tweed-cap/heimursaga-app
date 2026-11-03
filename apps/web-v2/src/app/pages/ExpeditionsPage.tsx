@@ -12,18 +12,17 @@ const EXPEDITION_SORT_OPTIONS = [
   { key: 'newest', label: 'NEWEST' },
   { key: 'popular', label: 'MOST FUNDED' },
 ];
-import { expeditionApi, explorerApi, type Expedition } from '@/app/services/api';
+import { expeditionApi, type Expedition } from '@/app/services/api';
 import { calculateDaysElapsed } from '@/app/utils/dateFormat';
 import { useAuth } from '@/app/context/AuthContext';
 import { ExpeditionCardSkeleton, SKELETON_COUNT } from '@/app/components/skeletons/CardSkeletons';
 import { ErrorState } from '@/app/components/ErrorState';
-import { ConfirmationModal } from '@/app/components/ConfirmationModal';
 import { toast } from 'sonner';
 
 export function ExpeditionsPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   // API data state
   const [apiExpeditions, setApiExpeditions] = useState<Expedition[]>([]);
@@ -44,7 +43,6 @@ export function ExpeditionsPage() {
 
   // Loading state for async actions
   const [bookmarkingInProgress, setBookmarkingInProgress] = useState<Set<string>>(new Set());
-  const [showActiveExpeditionModal, setShowActiveExpeditionModal] = useState(false);
 
   // Handle adopt blueprint — block if user has active/planned expedition
   const handleAdoptBlueprint = async (expeditionId: string) => {
@@ -53,15 +51,6 @@ export function ExpeditionsPage() {
       return;
     }
     try {
-      // Check if user has any active or planned expeditions
-      const userExps = await explorerApi.getExpeditions(user!.username);
-      const hasActiveOrPlanned = userExps.data.some(
-        (e: any) => (e.status === 'active' || e.status === 'planned'),
-      );
-      if (hasActiveOrPlanned) {
-        setShowActiveExpeditionModal(true);
-        return;
-      }
       const res = await expeditionApi.adopt(expeditionId);
       router.push(`/expedition-quick-entry/${res.expeditionId}`);
     } catch (err) {
@@ -224,9 +213,8 @@ export function ExpeditionsPage() {
     averageSpeed: 0,
     daysRemaining: exp.endDate ? Math.max(0, Math.floor((new Date(exp.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null,
     visibility: (exp.visibility || 'public') as 'public' | 'off-grid' | 'private',
-    // Sponsorship visibility: only show if goal is set (implies Pro account and sponsorships enabled)
+    // Sponsorship visibility: only show if goal is set (implies sponsorships enabled)
     sponsorshipsEnabled: (exp.goal || 0) > 0,
-    explorerIsPro: (exp.goal || 0) > 0,
     stripeConnected: exp.author?.stripeAccountConnected === true,
     isBlueprint: exp.isBlueprint === true,
     mode: exp.mode,
@@ -448,7 +436,6 @@ export function ExpeditionsPage() {
                 terrain={expedition.terrain}
                 averageSpeed={expedition.averageSpeed}
                 sponsorshipsEnabled={expedition.sponsorshipsEnabled}
-                explorerIsPro={expedition.explorerIsPro}
                 stripeConnected={expedition.stripeConnected}
                 isBlueprint={expedition.isBlueprint}
                 mode={expedition.mode}
@@ -484,17 +471,6 @@ export function ExpeditionsPage() {
           </button>
         </div>
       )}
-      <ConfirmationModal
-        isOpen={showActiveExpeditionModal}
-        onClose={() => setShowActiveExpeditionModal(false)}
-        onConfirm={() => setShowActiveExpeditionModal(false)}
-        title="Cannot Launch Blueprint"
-        confirmLabel="OK"
-      >
-        <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
-          You already have an active or planned expedition. Complete or cancel your current expedition before launching a new one from a blueprint.
-        </p>
-      </ConfirmationModal>
     </div>
   );
 }

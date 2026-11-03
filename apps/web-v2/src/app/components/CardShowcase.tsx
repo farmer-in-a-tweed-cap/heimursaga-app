@@ -282,7 +282,7 @@ export function CardShowcase() {
               journalName="Wandering Chronicles"
               imageUrl="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHdvbWFuJTIwb3V0ZG9vcnN8ZW58MXx8fHwxNzY4MzE0MTU4fDA&ixlib=rb-4.1.0&q=80&w=1080"
               location="Central Asia Region"
-              accountType="explorer-pro"
+              accountType="explorer"
               joined="Mar 2024"
               activeExpeditions={2}
               totalEntries={234}
@@ -300,7 +300,7 @@ export function CardShowcase() {
               journalName="Field Notes from the Edge"
               imageUrl="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMG1hbiUyMG91dGRvb3JzfGVufDF8fHx8MTc2ODMxNDE1OHww&ixlib=rb-4.1.0&q=80&w=1080"
               location="Antarctic Region"
-              accountType="explorer-pro"
+              accountType="explorer"
               joined="Jan 2023"
               activeExpeditions={1}
               totalEntries={156}
@@ -415,7 +415,7 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
               journalName="Wandering Chronicles"
               avatarUrl="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHdvbWFuJTIwb3V0ZG9vcnN8ZW58MXx8fHwxNzY4MzE0MTU4fDA&ixlib=rb-4.1.0&q=80&w=1080"
               location="Central Asia"
-              accountType="explorer-pro"
+              accountType="explorer"
               activeExpeditions={2}
               totalEntries={234}
 
@@ -454,7 +454,7 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
               journalName="Field Notes from the Edge"
               avatarUrl="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMG1hbiUyMG91dGRvb3JzfGVufDF8fHx8MTc2ODMxNDE1OHww&ixlib=rb-4.1.0&q=80&w=1080"
               location="Antarctic Region"
-              accountType="explorer-pro"
+              accountType="explorer"
               activeExpeditions={1}
               totalEntries={156}
 
@@ -478,7 +478,7 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
               journalName="Wandering Chronicles"
               avatarUrl="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHdvbWFuJTIwb3V0ZG9vcnN8ZW58MXx8fHwxNzY4MzE0MTU4fDA&ixlib=rb-4.1.0&q=80&w=1080"
               location="Central Asia"
-              accountType="explorer-pro"
+              accountType="explorer"
               activeExpeditions={2}
               totalEntries={234}
 
@@ -558,7 +558,6 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
             <div className="border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] p-4">
               <h3 className="text-sm font-bold mb-2 text-[#202020] dark:text-[#e5e5e5] flex items-center gap-2">
                 Photo
-                <span className="text-xs text-[#ac6d46] px-2 py-0.5 bg-[#ac6d46]/10 rounded-full">EXPLORER PRO</span>
               </h3>
               <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
                 Image-focused format with captions. Ideal for visual storytelling and location documentation.
@@ -580,7 +579,6 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
             <div className="border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] p-4">
               <h3 className="text-sm font-bold mb-2 text-[#202020] dark:text-[#e5e5e5] flex items-center gap-2">
                 Data
-                <span className="text-xs text-[#ac6d46] px-2 py-0.5 bg-[#ac6d46]/10 rounded-full">EXPLORER PRO</span>
               </h3>
               <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
                 Structured format for scientific observations, measurements, and environmental data collection.
@@ -602,7 +600,6 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
             <div className="border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] p-4">
               <h3 className="text-sm font-bold mb-2 text-[#202020] dark:text-[#e5e5e5] flex items-center gap-2">
                 Waypoint
-                <span className="text-xs text-[#ac6d46] px-2 py-0.5 bg-[#ac6d46]/10 rounded-full">EXPLORER PRO</span>
               </h3>
               <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
                 Simplified location marker for tracking progress and documenting geographic milestones without full narrative.

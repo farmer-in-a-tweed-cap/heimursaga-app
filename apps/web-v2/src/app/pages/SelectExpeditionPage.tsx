@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuth } from '@/app/context/AuthContext';
-import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { Map, Zap, Lock, FileText, Archive, Loader2, AlertTriangle, Compass } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { explorerApi, expeditionApi, type ExplorerExpedition } from '@/app/services/api';
@@ -12,7 +11,6 @@ import { formatDate, formatDateTime } from '@/app/utils/dateFormat';
 
 export function SelectExpeditionPage() {
   const { isAuthenticated } = useAuth();
-  const { isPro } = useProFeatures();
   const router = useRouter();
   const pathname = usePathname();
   const [view, setView] = useState<'current' | 'completed' | 'blueprints'>('current');
@@ -321,14 +319,6 @@ export function SelectExpeditionPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Info Box */}
-                <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] p-4 border-l-2 border-[#616161]">
-                  <div className="text-xs font-bold mb-1 dark:text-[#e5e5e5]">ONE EXPEDITION RULE:</div>
-                  <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                    You can only have one active or planned expedition at a time. To start a new expedition, you must first complete or archive your current expedition.
-                  </p>
-                </div>
               </div>
             )}
 
@@ -454,8 +444,7 @@ export function SelectExpeditionPage() {
                           <button
                             type="button"
                             onClick={() => handleLaunchBlueprint(blueprint.id)}
-                            disabled={isLaunching || !!currentExpedition}
-                            title={currentExpedition ? 'Finish or archive your current expedition first' : undefined}
+                            disabled={isLaunching}
                             className="px-6 py-3 bg-[#598636] text-white font-bold hover:bg-[#476b2b] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#598636] text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
                           >
                             {isLaunching ? (
@@ -519,14 +508,13 @@ export function SelectExpeditionPage() {
                 </Link>
               </div>
 
-              {/* Expedition Builder (Pro Only) */}
-              <div className={`border-2 p-5 ${isPro ? 'border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#4676ac]' : 'border-[#b5bcc4] dark:border-[#3a3a3a] opacity-70'} transition-all`}>
+              {/* Expedition Builder */}
+              <div className="border-2 p-5 border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#4676ac] transition-all">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className={`p-2 text-white ${isPro ? 'bg-[#4676ac]' : 'bg-[#616161]'}`}>
+                  <div className="p-2 text-white bg-[#4676ac]">
                     <Map className="w-6 h-6" />
                   </div>
                   <h3 className="font-bold text-base dark:text-[#e5e5e5]">EXPEDITION BUILDER</h3>
-                  {!isPro && <span className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-bold">PRO</span>}
                 </div>
                 <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
                   Use the Expedition Builder for multi-waypoint expeditions with detailed route planning and interactive maps.
@@ -545,8 +533,7 @@ export function SelectExpeditionPage() {
                     <span>Visual route display</span>
                   </li>
                 </ul>
-                {isPro ? (
-                  isMobile ? (
+                {isMobile ? (
                     <div className="w-full text-center px-4 py-2 bg-[#616161] text-white text-xs">
                       Open on desktop to use the builder
                     </div>
@@ -557,17 +544,6 @@ export function SelectExpeditionPage() {
                     >
                       EXPEDITION BUILDER
                     </Link>
-                  )
-                ) : (
-                  <div>
-                    <div className="w-full text-center px-4 py-2 bg-[#616161] text-white font-bold cursor-not-allowed text-sm opacity-60">
-                      EXPLORER PRO REQUIRED
-                    </div>
-                    <div className="mt-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
-                      <strong className="text-[#ac6d46]">PRO FEATURE:</strong> The Expedition Builder with waypoints, route planning, and interactive maps requires Explorer Pro.{' '}
-                      <Link href="/settings/billing" className="text-[#4676ac] hover:underline">Upgrade to Pro</Link>
-                    </div>
-                  </div>
                 )}
               </div>
             </div>

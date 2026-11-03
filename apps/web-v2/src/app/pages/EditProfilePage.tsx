@@ -9,7 +9,6 @@ import { Camera, Shield, Home, Navigation, Info, Loader2, Image as ImageIcon, Ph
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
 import { CoverPhotoCropper } from '@/app/components/CoverPhotoCropper';
-// import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { LocationAutocompleteInput } from '@/app/components/LocationAutocompleteInput';
 import {
   formatLocationByPrivacy,
@@ -352,7 +351,7 @@ export function EditProfilePage() {
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         <div className="bg-[#202020] dark:bg-[#2a2a2a] text-white px-4 lg:px-6 py-2 text-xs font-mono">
           <div className="flex flex-wrap items-center gap-4 lg:gap-6">
-            <div>ACCOUNT: {user.isGuide ? 'EXPEDITION GUIDE' : user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}</div>
+            <div>ACCOUNT: {user.isGuide ? 'EXPEDITION GUIDE' : 'EXPLORER'}</div>
             <div>EMAIL: {user.isEmailVerified ? '✓ VERIFIED' : '✗ UNVERIFIED'}</div>
             {isDirty && <div className="text-[#ac6d46]">● UNSAVED CHANGES</div>}
             {saveStatus === 'saving' && (
@@ -455,7 +454,7 @@ export function EditProfilePage() {
 
                 {/* Current Avatar or Preview */}
                 <div className="flex items-start gap-4 mb-3">
-                  <div className={`w-32 h-32 border-2 ${user?.isGuide ? 'border-[#598636]' : user?.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161] dark:border-[#3a3a3a]'} overflow-hidden`}>
+                  <div className={`w-32 h-32 border-2 ${user?.isGuide ? 'border-[#598636]' : 'border-[#616161] dark:border-[#3a3a3a]'} overflow-hidden`}>
                     {avatarPreview ? (
                       <NextImage src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" width={128} height={128} />
                     ) : (
@@ -907,7 +906,7 @@ export function EditProfilePage() {
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                     {([
-                      { value: 'message', label: 'IN-APP MESSAGE', Icon: MessageSquare, desc: 'Explorer Pro members DM you on Heimursaga.' },
+                      { value: 'message', label: 'IN-APP MESSAGE', Icon: MessageSquare, desc: 'Explorers DM you on Heimursaga.' },
                       { value: 'email', label: 'EMAIL', Icon: Mail, desc: 'Your account email is shown publicly.' },
                       { value: 'phone', label: 'PHONE', Icon: Phone, desc: 'Phone number below is shown publicly.' },
                     ] as const).map(({ value, label, Icon, desc }) => {
@@ -936,11 +935,6 @@ export function EditProfilePage() {
                       );
                     })}
                   </div>
-                  {formData.preferredContactMethod === 'message' && (
-                    <p className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mt-2 leading-snug">
-                      Note: In-app messaging is an Explorer Pro feature, so only Explorer Pro members will be able to reach you this way. Free explorers will see Email or Phone as fallbacks if you provide them.
-                    </p>
-                  )}
                 </div>
 
                 <div>

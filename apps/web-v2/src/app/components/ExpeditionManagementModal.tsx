@@ -28,7 +28,6 @@ interface ExpeditionManagementModalProps {
     backers?: number;
     isRouteLocked?: boolean;
   };
-  isPro?: boolean;
   onStatusChange?: (newStatus: 'active' | 'completed') => void;
   onComplete?: (actualEndDate: string) => Promise<void>;
   onCancel?: (reason: string) => Promise<void>;
@@ -43,7 +42,6 @@ export function ExpeditionManagementModal({
   isOpen,
   onClose,
   expedition,
-  isPro = false,
   onStatusChange: _onStatusChange,
   onComplete,
   onCancel,
@@ -509,23 +507,19 @@ export function ExpeditionManagementModal({
                     <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
                       {expedition.isRouteLocked
                         ? 'Update expedition details, dates, description, and cover image. Route and waypoints are locked from the original blueprint.'
-                        : isPro
-                          ? isCompleted
-                            ? 'Update title, description, and cover image. Dates, waypoints, route, and sponsorship settings are locked for completed expeditions.'
-                            : 'Modify expedition details, dates, description, waypoints, and route planning. Changes will be reflected immediately across all journal views.'
-                          : 'Update expedition details, dates, description, and cover image using the quick entry form.'}
+                        : isCompleted
+                          ? 'Update title, description, and cover image. Dates, waypoints, route, and sponsorship settings are locked for completed expeditions.'
+                          : 'Modify expedition details, dates, description, waypoints, and route planning. Changes will be reflected immediately across all journal views.'}
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => router.push(expedition.isRouteLocked || !isPro ? `/expedition-quick-entry/${expedition.id}` : `/expedition-builder/${expedition.id}`)}
+                  onClick={() => router.push(expedition.isRouteLocked ? `/expedition-quick-entry/${expedition.id}` : `/expedition-builder/${expedition.id}`)}
                   className="w-full px-4 py-3 bg-[#ac6d46] text-white text-sm font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center justify-center gap-2"
                 >
                   {expedition.isRouteLocked
                     ? 'EDIT EXPEDITION DETAILS'
-                    : isPro
-                      ? isCompleted ? 'EDIT TITLE & DESCRIPTION' : 'EDIT DETAILS & WAYPOINTS'
-                      : 'EDIT EXPEDITION'}
+                    : isCompleted ? 'EDIT TITLE & DESCRIPTION' : 'EDIT DETAILS & WAYPOINTS'}
                 </button>
               </div>
             )}

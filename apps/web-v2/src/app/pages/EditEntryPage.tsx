@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
-import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { LocationMap } from '@/app/components/LocationMap';
 import { DatePicker } from '@/app/components/DatePicker';
 import { X, Image as ImageIcon, Clock, Lock, Camera, Loader2, AlertCircle, AlertTriangle, Trash2 } from 'lucide-react';
@@ -19,7 +18,6 @@ import { checkImageExif, type ExifResult } from '@/app/utils/exifCheck';
 
 export function EditEntryPage() {
   const { user, isAuthenticated } = useAuth();
-  const { isPro } = useProFeatures();
   const { distanceLabel, speedLabel } = useDistanceUnit();
 
   const { entryId } = useParams<{ entryId: string }>();
@@ -39,7 +37,7 @@ export function EditEntryPage() {
   // Media upload state
   const [uploadedMedia, setUploadedMedia] = useState<Array<{ id: string; name: string; type: string; size: number; url?: string; thumbnail?: string; exifResult?: ExifResult }>>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const mediaLimit = entryType === 'video' ? 0 : isPro ? (entryType === 'photo' ? 10 : 5) : 2;
+  const mediaLimit = entryType === 'video' ? 0 : entryType === 'photo' ? 10 : 5;
   const [selectedMediaForEdit, setSelectedMediaForEdit] = useState<string | null>(null);
   const [mediaMetadata, setMediaMetadata] = useState<Record<string, { caption: string; altText: string; credit: string }>>({});
   const [coverPhotoId, setCoverPhotoId] = useState<string | null>(null);
@@ -935,12 +933,7 @@ Remember: Your sponsors and followers are reading this to understand your journe
                     <div className="mb-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#4676ac] text-xs">
                       <div className="flex items-center justify-between">
                         <span className="text-[#616161] dark:text-[#b5bcc4]">
-                          {isPro ? 'Pro: up to 10 photos' : 'Basic: up to 2 photos'}
-                          {!isPro && (
-                            <Link href="/settings/billing" className="text-[#ac6d46] hover:underline ml-1">
-                              (Upgrade)
-                            </Link>
-                          )}
+                          Up to {mediaLimit} photos
                         </span>
                         {uploadedMedia.length > 0 && (
                           <span className="text-[#616161] dark:text-[#b5bcc4]">
@@ -1174,12 +1167,7 @@ Remember: Your sponsors and followers are reading this to understand your journe
                     <div className="mb-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#4676ac] text-xs">
                       <div className="flex items-center justify-between">
                         <span className="text-[#616161] dark:text-[#b5bcc4]">
-                          {isPro ? `Pro: up to ${mediaLimit} photos` : 'Basic: up to 2 photos'}
-                          {!isPro && (
-                            <Link href="/settings/billing" className="text-[#ac6d46] hover:underline ml-1">
-                              (Upgrade)
-                            </Link>
-                          )}
+                          Up to {mediaLimit} photos
                         </span>
                         {uploadedMedia.length > 0 && (
                           <span className="text-[#616161] dark:text-[#b5bcc4]">

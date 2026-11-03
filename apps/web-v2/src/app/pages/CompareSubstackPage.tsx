@@ -48,7 +48,7 @@ export function CompareSubstackPage() {
                 { label: 'Payment processing', a: '2.9% + $0.30', b: '~2.9% + $0.30 (Stripe)' },
                 { label: 'Recurring billing fee', a: '+0.7% on subscriptions', b: 'None', aColor: 'text-[#994040]', bColor: 'text-[#598636]' },
                 { label: 'Effective total fee', a: '~13–16% per transaction', b: '~13% per transaction' },
-                { label: 'Creator subscription', a: 'Free to start', b: '$7/mo or $50/yr for Explorer Pro', aColor: 'text-[#598636]' },
+                { label: 'Creator subscription', a: 'Free to start', b: 'Free — no paid plans', aColor: 'text-[#598636]', bColor: 'text-[#598636]' },
               ]}
             />
 
@@ -73,7 +73,7 @@ export function CompareSubstackPage() {
               </div>
               <p className="text-[10px] sm:text-xs text-[#616161] dark:text-[#b5bcc4] mt-3">
                 At small amounts, fees are nearly identical. Substack's extra 0.7% recurring billing fee adds up at scale.
-                Heimursaga requires Explorer Pro ($7/mo or $50/yr) to receive sponsorships — Substack has no upfront cost.
+                Neither platform charges a subscription to receive support.
               </p>
             </div>
           </div>
@@ -121,7 +121,7 @@ export function CompareSubstackPage() {
                 { feature: 'Sponsor wall / public recognition', a: false, b: true, note: 'Heimursaga: name on sponsor wall, highlighted at top tier' },
                 { feature: 'Expedition notes access', a: false, b: true, note: 'All sponsor tiers get access to 500-character daily expedition updates' },
                 { feature: 'Voice note updates', a: false, b: true, note: 'Tier 3 sponsors get exclusive audio updates from the explorer' },
-                { feature: 'Direct messaging with creator', a: true, b: true, note: 'Substack: can restrict to paid/founding. Heimursaga: available with Explorer Pro' },
+                { feature: 'Direct messaging with creator', a: true, b: true, note: 'Substack: can restrict to paid/founding. Heimursaga: available to every account' },
                 { feature: 'Founding member tier', a: true, b: false, note: 'Substack: optional higher-priced tier for superfans with creator-defined perks' },
                 { feature: 'Tiered perk structure', a: true, b: true, note: 'Substack: free / paid / founding with creator-defined perks. Heimursaga: 3 tiers with automatic escalating perks' },
               ]}
@@ -196,7 +196,7 @@ export function CompareSubstackPage() {
               headerB="Heimursaga"
               rows={[
                 { feature: 'Long-form writing', a: true, b: true, note: 'Substack: newsletter editor. Heimursaga: journal entries' },
-                { feature: 'Photo galleries', a: 'partial', b: true, note: 'Substack: inline images. Heimursaga: up to 10 photos per entry (Pro)' },
+                { feature: 'Photo galleries', a: 'partial', b: true, note: 'Substack: inline images. Heimursaga: up to 10 photos per entry' },
                 { feature: 'Native video hosting', a: true, b: false, note: 'Substack: recording studio, livestreaming, TV app' },
                 { feature: 'YouTube video embeds', a: true, b: true, note: 'Dedicated video entry type on Heimursaga' },
                 { feature: 'Podcasting / audio', a: true, b: true, note: 'Substack: RSS distribution to Apple/Spotify. Heimursaga: voice notes per expedition' },
@@ -348,7 +348,7 @@ export function CompareSubstackPage() {
                 CREATE YOUR EXPLORER ACCOUNT
               </Link>
               <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-3">
-                Free to join. <Link href="/upgrade" className="text-[#ac6d46] hover:text-[#4676ac]">Upgrade to Explorer Pro</Link> when you're ready to receive sponsorships.
+                Free to join, with every feature included. <Link href="/auth" className="text-[#ac6d46] hover:text-[#4676ac]">Create an account</Link> and set up payouts when you're ready to receive sponsorships.
               </p>
             </div>
           </div>

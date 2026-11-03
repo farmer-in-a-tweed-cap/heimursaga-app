@@ -143,7 +143,7 @@ export function GuideMarketingPage() {
           <div className="mb-8">
             <h3 className="text-sm font-bold text-[#598636] mb-4 tracking-[0.1em]">CREATING A BLUEPRINT</h3>
             <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-4 leading-relaxed">
-              Guide accounts use the same expedition builder available to Explorer Pro accounts. The key
+              Guide accounts use the same expedition builder available to every account. The key
               difference is that guides create blueprints instead of live expeditions — there are no start
               dates, end dates, or sponsorship fields. The focus is entirely on the route.
             </p>

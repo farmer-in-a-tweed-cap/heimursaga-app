@@ -47,7 +47,7 @@ export function ComparePage() {
                 { label: 'Platform fee', a: '10% of earnings', b: '10% of sponsorships' },
                 { label: 'Payment processing', a: '2.9% + $0.30', b: '~2.9% + $0.30 (Stripe)' },
                 { label: 'Currency conversion', a: '2.5% fee', b: 'Handled by Stripe' },
-                { label: 'Creator subscription', a: 'Free to start', b: '$7/mo or $50/yr for Explorer Pro', aColor: 'text-[#598636]' },
+                { label: 'Creator subscription', a: 'Free to start', b: 'Free — no paid plans', aColor: 'text-[#598636]', bColor: 'text-[#598636]' },
               ]}
             />
 
@@ -71,7 +71,7 @@ export function ComparePage() {
                 </div>
               </div>
               <p className="text-[10px] sm:text-xs text-[#616161] dark:text-[#b5bcc4] mt-3">
-                Fees are effectively identical. The difference: Heimursaga requires Explorer Pro ($7/mo or $50/yr) to receive sponsorships. Patreon has no upfront cost.
+                Fees are effectively identical, and neither platform charges a subscription to receive support.
               </p>
             </div>
           </div>
@@ -120,7 +120,7 @@ export function ComparePage() {
                 { feature: 'Sponsor wall / public recognition', a: false, b: true, note: 'Heimursaga: name on sponsor wall, highlighted at top tier' },
                 { feature: 'Expedition notes access', a: false, b: true, note: 'All sponsor tiers get access to 500-character daily expedition updates' },
                 { feature: 'Voice note updates', a: false, b: true, note: 'Tier 3 sponsors get exclusive audio updates from the explorer' },
-                { feature: 'Direct messaging with creator', a: true, b: true, note: 'Patreon: varies by tier. Heimursaga: available with Explorer Pro' },
+                { feature: 'Direct messaging with creator', a: true, b: true, note: 'Patreon: varies by tier. Heimursaga: available to every account' },
                 { feature: 'Physical rewards / merch', a: true, b: false },
                 { feature: 'Discord / community integration', a: true, b: false },
               ]}
@@ -195,7 +195,7 @@ export function ComparePage() {
               headerB="Heimursaga"
               rows={[
                 { feature: 'Text posts / journal entries', a: true, b: true },
-                { feature: 'Photo galleries', a: true, b: true, note: 'Up to 10 photos per entry (Pro)' },
+                { feature: 'Photo galleries', a: true, b: true, note: 'Up to 10 photos per entry' },
                 { feature: 'Native video hosting', a: true, b: false, note: 'Patreon: 100hrs/mo, 1080p, ad-free' },
                 { feature: 'YouTube video embeds', a: true, b: true, note: 'Dedicated video entry type on Heimursaga' },
                 { feature: 'Audio / voice notes', a: true, b: true, note: 'Patreon: RSS feeds. Heimursaga: in-app recording per expedition' },
@@ -344,7 +344,7 @@ export function ComparePage() {
                 CREATE YOUR EXPLORER ACCOUNT
               </Link>
               <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-3">
-                Free to join. <Link href="/upgrade" className="text-[#ac6d46] hover:text-[#4676ac]">Upgrade to Explorer Pro</Link> when you're ready to receive sponsorships.
+                Free to join, with every feature included. <Link href="/auth" className="text-[#ac6d46] hover:text-[#4676ac]">Create an account</Link> and set up payouts when you're ready to receive sponsorships.
               </p>
             </div>
           </div>

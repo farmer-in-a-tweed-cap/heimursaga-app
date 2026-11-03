@@ -88,7 +88,7 @@ interface ExpeditionV2Props {
   isBookmarkLoading?: boolean;
   isFullyFunded?: boolean;
   sponsorshipsEnabled?: boolean;
-  /** Production card derives this from explorerIsPro + stripeConnected; pass already-resolved. */
+  /** Production card derives this from sponsorshipsEnabled + stripeConnected; pass already-resolved. */
   showSponsorshipSection?: boolean;
   /** Production card derives a textual progress %; pass already-resolved (0-100). */
   timelineProgress?: number;
@@ -563,7 +563,7 @@ interface ExplorerV2Props {
   journalName: string;
   imageUrl?: string;
   location: string;
-  accountType: 'explorer' | 'explorer-pro' | 'expedition-guide';
+  accountType: 'explorer' | 'expedition-guide';
   activeExpeditions: number;
   totalEntries: number;
   followers: number;
@@ -602,15 +602,11 @@ export function ExplorerCardV2({
   const accentColor =
     accountType === 'expedition-guide'
       ? '#598636'
-      : accountType === 'explorer-pro'
-        ? '#ac6d46'
-        : '#616161';
+      : '#616161';
   const accountLabel =
     accountType === 'expedition-guide'
       ? 'EXPEDITION GUIDE'
-      : accountType === 'explorer-pro'
-        ? 'EXPLORER PRO'
-        : 'EXPLORER';
+      : 'EXPLORER';
 
   return (
     <div className="group flex flex-col bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] hover:border-[#ac6d46] dark:hover:border-[#ac6d46] transition-colors h-full w-full max-w-lg">
@@ -660,8 +656,7 @@ export function ExplorerCardV2({
           <h3 className="text-base md:text-lg font-serif font-bold text-[#202020] dark:text-[#e5e5e5] group-hover:text-[#ac6d46] leading-snug">
             {username}
           </h3>
-          {(accountType === 'expedition-guide' ||
-            accountType === 'explorer-pro') && (
+          {accountType === 'expedition-guide' && (
             <span
               className="px-2 py-0.5 text-white text-[10px] font-bold rounded-full whitespace-nowrap tracking-wider"
               style={{ background: accentColor }}

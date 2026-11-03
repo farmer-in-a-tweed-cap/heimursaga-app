@@ -126,7 +126,6 @@ export function useExpeditionData(
       explorerId: api.author?.username || api.explorer?.username || '',
       explorerName: api.author?.username || api.explorer?.username || 'Unknown',
       explorerPicture: api.author?.picture || api.explorer?.picture,
-      explorerIsPro: api.author?.creator === true,
       stripeAccountConnected: api.author?.stripeAccountConnected === true,
       status: (api.status || 'active') as 'active' | 'planned' | 'completed' | 'cancelled',
       category: api.category || '',

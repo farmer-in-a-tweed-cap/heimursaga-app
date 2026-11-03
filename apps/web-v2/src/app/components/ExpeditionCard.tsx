@@ -9,7 +9,7 @@ import { RadialProgress } from "@/app/components/ui/radial-progress";
 import { Progress } from "@/app/components/ui/progress";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import { useAuth } from "@/app/context/AuthContext";
-import { useProFeatures } from "@/app/hooks/useProFeatures";
+import { useExplorerFeatures } from "@/app/hooks/useExplorerFeatures";
 import { useDistanceUnit } from "@/app/context/DistanceUnitContext";
 import { useTheme } from "@/app/context/ThemeContext";
 import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from "@/app/context/MapLayerContext";
@@ -63,8 +63,6 @@ interface ExpeditionCardProps {
   averageSpeed: number;
   visibility?: 'public' | 'off-grid' | 'private';
   sponsorshipsEnabled?: boolean;
-  /** Whether the expedition creator has an Explorer Pro account (required for sponsorships) */
-  explorerIsPro?: boolean;
   /** Whether the explorer's Stripe Connect account is verified and ready to receive payments */
   stripeConnected?: boolean;
   isBookmarked?: boolean;
@@ -110,7 +108,6 @@ export function ExpeditionCard({
   region,
   locationName,
   sponsorshipsEnabled = true,
-  explorerIsPro = false,
   stripeConnected = false,
   isBookmarked = false,
   isBookmarkLoading = false,
@@ -130,7 +127,7 @@ export function ExpeditionCard({
   onAdopt,
 }: ExpeditionCardProps) {
   const { isAuthenticated, user } = useAuth();
-  const { canAdoptBlueprints } = useProFeatures();
+  const { canAdoptBlueprints } = useExplorerFeatures();
   const { unit: distanceUnit, distanceLabel } = useDistanceUnit();
   const { theme } = useTheme();
   const { mapLayer, nauticalOverlay } = useMapLayer();
@@ -141,8 +138,8 @@ export function ExpeditionCard({
     sail: 'SAIL', drive: 'DRIVE', mixed: 'MIXED',
   };
 
-  // Sponsorship UI only shows if explorer is Pro AND sponsorships are enabled AND Stripe Connect is verified
-  const showSponsorshipSection = !isBlueprint && explorerIsPro && sponsorshipsEnabled && stripeConnected;
+  // Sponsorship UI only shows if sponsorships are enabled AND Stripe Connect is verified
+  const showSponsorshipSection = !isBlueprint && sponsorshipsEnabled && stripeConnected;
 
   // Blueprint route map (real Mapbox GL instance, non-interactive)
   const blueprintMapRef = useRef<HTMLDivElement>(null);

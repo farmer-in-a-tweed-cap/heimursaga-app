@@ -95,7 +95,7 @@ export function ContentTabs({
             JOURNAL ENTRIES ({expedition.totalEntries})
           </button>
         )}
-        {!isBlueprint && expedition.explorerIsPro && expedition.privacy !== 'private' && (
+        {!isBlueprint && expedition.privacy !== 'private' && (
           <button
             onClick={() => onSelectView('notes')}
             className={`flex-1 py-3 text-sm font-bold ${
@@ -151,7 +151,7 @@ export function ContentTabs({
           </div>
         )}
 
-        {selectedView === 'notes' && expedition.explorerIsPro && expedition.privacy !== 'private' && (
+        {selectedView === 'notes' && expedition.privacy !== 'private' && (
           <div ref={notesSectionRef}>
             {/* Sub-tabs: Text Notes / Voice Notes */}
             <div className="flex mb-4 border-2 border-[#202020] dark:border-[#616161]">

@@ -23,7 +23,6 @@ interface ExplorerInfo {
   name?: string;
   picture?: string;
   bio?: string;
-  isPro?: boolean;
   stripeAccountConnected?: boolean;
 }
 
@@ -83,7 +82,6 @@ export function SponsorshipPaymentPage() {
           name: explorerData.name,
           picture: explorerData.picture,
           bio: explorerData.bio,
-          isPro: explorerData.creator === true,
           stripeAccountConnected: explorerData.stripeAccountConnected,
         });
 
@@ -517,7 +515,7 @@ export function SponsorshipPaymentPage() {
         <div className="p-6 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161]">
           <div className="flex items-start gap-6">
             <Link href={`/journal/${explorer?.username}`} className="flex-shrink-0">
-              <div className={`w-24 h-24 border-4 ${explorer?.isPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden`}>
+              <div className={`w-24 h-24 border-4 border-[#616161] overflow-hidden`}>
                 <ExplorerAvatar username={explorer?.username || ''} src={explorer?.picture} size={96} className="w-full h-full" />
               </div>
             </Link>

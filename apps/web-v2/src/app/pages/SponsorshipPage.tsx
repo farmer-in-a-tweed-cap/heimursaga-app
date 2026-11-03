@@ -3,7 +3,6 @@
 import { Fragment, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/app/context/AuthContext';
-import { useProFeatures } from '@/app/hooks/useProFeatures';
 import {
   DollarSign,
   RefreshCw,
@@ -30,8 +29,7 @@ type OutgoingSubTab = 'overview' | 'active' | 'history';
 
 export function SponsorshipPage() {
   const { isAuthenticated } = useAuth();
-  const { isPro } = useProFeatures();
-  const [mainTab, setMainTab] = useState<MainTab>(isPro ? 'incoming' : 'outgoing');
+  const [mainTab, setMainTab] = useState<MainTab>('incoming');
 
   // Outgoing state
   const [outgoingSubTab, setOutgoingSubTab] = useState<OutgoingSubTab>('overview');
@@ -191,21 +189,15 @@ export function SponsorshipPage() {
         <div className="p-6">
           <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
             <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">SPONSORSHIP MANAGEMENT</h1>
-            {isPro && (
-              <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">EXPLORER PRO</span>
-            )}
           </div>
           <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
-            {isPro
-              ? 'Manage your incoming sponsorships and outgoing contributions'
-              : 'Manage your sponsorship contributions and subscriptions'}
+            Manage your incoming sponsorships and outgoing contributions
           </p>
         </div>
       </div>
 
-      {/* Pro Binary Tab Selector */}
-      {isPro && (
-        <div className="grid grid-cols-2 gap-0 border-2 border-[#202020] dark:border-[#616161] overflow-hidden mb-6">
+      {/* Binary Tab Selector */}
+      <div className="grid grid-cols-2 gap-0 border-2 border-[#202020] dark:border-[#616161] overflow-hidden mb-6">
           <button
             onClick={() => setMainTab('incoming')}
             className={`p-4 transition-all text-sm ${
@@ -230,14 +222,13 @@ export function SponsorshipPage() {
               <span className="font-bold">OUTGOING</span>
             </div>
           </button>
-        </div>
-      )}
+      </div>
 
-      {/* INCOMING Tab Content (Pro Only) */}
-      {mainTab === 'incoming' && isPro && <SponsorshipsAdminPage embedded />}
+      {/* INCOMING Tab Content */}
+      {mainTab === 'incoming' && <SponsorshipsAdminPage embedded />}
 
       {/* OUTGOING Tab Content */}
-      {(mainTab === 'outgoing' || !isPro) && (
+      {mainTab === 'outgoing' && (
         <>
           {isLoadingOutgoing ? (
             <div className="text-center py-12">

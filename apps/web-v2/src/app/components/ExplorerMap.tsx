@@ -487,7 +487,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
             type: 'Point',
             coordinates: [explorer.coords.lng, explorer.coords.lat],
           },
-          properties: { index: i, creator: explorer.creator ? 1 : 0 },
+          properties: { index: i },
         })),
       };
 
@@ -555,7 +555,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
         source: 'explorer-source',
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-color': ['case', ['==', ['get', 'creator'], 1], '#ac6d46', '#4676ac'],
+          'circle-color': '#4676ac',
           'circle-radius': 14,
           'circle-stroke-width': 3,
           'circle-stroke-color': '#ffffff',
@@ -944,7 +944,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
 
             <div className="p-3 text-xs font-mono">
               <div className="flex items-center gap-2 border-b-2 border-[#202020] dark:border-[#616161] pb-2 mb-2">
-                <div className={`w-8 h-8 border-2 ${clickedExplorer.creator ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden flex-shrink-0`}>
+                <div className={`w-8 h-8 border-2 border-[#616161] overflow-hidden flex-shrink-0`}>
                   <ExplorerAvatar username={clickedExplorer.username} src={clickedExplorer.picture} size={32} className="w-full h-full" />
                 </div>
                 <div>
@@ -1188,10 +1188,6 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
               <div className="border-l-2 border-[#ac6d46] pl-3">
                 <div className="text-[#b5bcc4]">IN VIEW</div>
                 <div className="font-bold text-base md:text-lg">{visibleExplorers.length}</div>
-              </div>
-              <div className="border-l-2 border-[#ac6d46] pl-3">
-                <div className="text-[#b5bcc4]">PRO EXPLORERS</div>
-                <div className="font-bold text-base md:text-lg text-[#ac6d46]">{visibleExplorers.filter(e => e.creator).length}</div>
               </div>
               <div className="border-l-2 border-[#ac6d46] pl-3">
                 <div className="text-[#b5bcc4]">TOTAL ENTRIES</div>

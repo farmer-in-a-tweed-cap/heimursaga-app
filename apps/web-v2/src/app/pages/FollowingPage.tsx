@@ -12,7 +12,7 @@ export function FollowingPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'mutual' | 'pro'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'mutual'>('all');
 
   // API data state
   const [profile, setProfile] = useState<ExplorerProfile | null>(null);
@@ -77,8 +77,6 @@ export function FollowingPage() {
 
     if (filterType === 'mutual') {
       return matchesSearch && follow.followed;
-    } else if (filterType === 'pro') {
-      return matchesSearch && follow.creator;
     }
     return matchesSearch;
   });
@@ -115,7 +113,6 @@ export function FollowingPage() {
   }
 
   const mutualCount = following.filter(f => f.followed).length;
-  const proCount = following.filter(f => f.creator).length;
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-12">
@@ -178,16 +175,6 @@ export function FollowingPage() {
               >
                 MUTUAL ({mutualCount})
               </button>
-              <button
-                onClick={() => setFilterType('pro')}
-                className={`px-4 py-2 text-xs font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
-                  filterType === 'pro'
-                    ? 'bg-[#ac6d46] text-white border-2 border-[#ac6d46]'
-                    : 'bg-white dark:bg-[#202020] text-[#202020] dark:text-[#e5e5e5] border-2 border-[#202020] dark:border-[#616161] hover:border-[#ac6d46] dark:hover:border-[#ac6d46]'
-                }`}
-              >
-                PRO ONLY ({proCount})
-              </button>
             </div>
           </div>
         </div>
@@ -211,7 +198,7 @@ export function FollowingPage() {
               <div className="flex items-start gap-3 mb-3">
                 <button
                   onClick={() => router.push(`/journal/${follow.username}`)}
-                  className={`w-16 h-16 flex-shrink-0 overflow-hidden border-2 ${follow.creator ? 'border-[#ac6d46]' : 'border-[#b5bcc4] dark:border-[#616161]'} hover:border-[#4676ac] dark:hover:border-[#4676ac] transition-all bg-[#616161]`}
+                  className={`w-16 h-16 flex-shrink-0 overflow-hidden border-2 border-[#b5bcc4] dark:border-[#616161] hover:border-[#4676ac] dark:hover:border-[#4676ac] transition-all bg-[#616161]`}
                 >
                   {follow.picture ? (
                     <Image
@@ -235,11 +222,6 @@ export function FollowingPage() {
                     >
                       {follow.username}
                     </button>
-                    {follow.creator && (
-                      <span className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-bold flex-shrink-0 rounded-full">
-                        PRO
-                      </span>
-                    )}
                   </div>
                   {follow.followed && (
                     <div className="flex items-center gap-1 mb-1">

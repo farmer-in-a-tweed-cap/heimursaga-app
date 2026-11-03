@@ -16,7 +16,6 @@ import { Globe, Users, Loader2 } from "lucide-react";
 import { expeditionApi, explorerApi, entryApi, type Expedition, type ExplorerListItem, type Entry } from "@/app/services/api";
 import { useGlobalFeed, useFollowingFeed } from "@/app/hooks/queries";
 import { HomePageSkeleton } from "@/app/components/skeletons/PageSkeletons";
-import { ConfirmationModal } from "@/app/components/ConfirmationModal";
 import { toast } from "sonner";
 import { truncateExcerpt } from "@/app/utils/truncateExcerpt";
 import { calculateDaysElapsed } from "@/app/utils/dateFormat";
@@ -52,7 +51,6 @@ function transformExpedition(exp: Expedition) {
     averageSpeed: 0,
     visibility: (exp.visibility || 'public') as 'public' | 'off-grid' | 'private',
     sponsorshipsEnabled: (exp.goal || 0) > 0,
-    explorerIsPro: (exp.goal || 0) > 0,
     stripeConnected: exp.author?.stripeAccountConnected === true,
     isBlueprint: exp.isBlueprint === true,
     mode: exp.mode,
@@ -79,7 +77,7 @@ function transformExplorer(exp: ExplorerListItem) {
     journalName: exp.name || '',
     imageUrl: exp.picture || '',
     location: exp.locationLives || exp.locationFrom || '',
-    accountType: (exp.isGuide ? 'expedition-guide' : exp.creator ? 'explorer-pro' : 'explorer') as 'expedition-guide' | 'explorer-pro' | 'explorer',
+    accountType: (exp.isGuide ? 'expedition-guide' : 'explorer') as 'expedition-guide' | 'explorer',
     joined: exp.memberDate ? new Date(exp.memberDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '',
     activeExpeditions: exp.expeditionsCount || 0,
     totalEntries: exp.entriesCount || 0,
@@ -114,7 +112,7 @@ function transformEntry(entry: Entry) {
 export function HomePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [viewMode, setViewMode] = useState<'global' | 'following'>('global');
   const [viewModeRestored, setViewModeRestored] = useState(false);
 
@@ -169,7 +167,6 @@ export function HomePage() {
   }, [globalData]);
 
   // Blueprint adoption state
-  const [showActiveExpeditionModal, setShowActiveExpeditionModal] = useState(false);
 
   // Loading states
   const [explorerBookmarkingInProgress, setExplorerBookmarkingInProgress] = useState<Set<string>>(new Set());
@@ -183,14 +180,6 @@ export function HomePage() {
       return;
     }
     try {
-      const userExps = await explorerApi.getExpeditions(user!.username);
-      const hasActiveOrPlanned = userExps.data.some(
-        (e: any) => (e.status === 'active' || e.status === 'planned'),
-      );
-      if (hasActiveOrPlanned) {
-        setShowActiveExpeditionModal(true);
-        return;
-      }
       const res = await expeditionApi.adopt(expeditionId);
       router.push(`/expedition-quick-entry/${res.expeditionId}`);
     } catch (err) {
@@ -324,7 +313,6 @@ export function HomePage() {
     username: exp.username,
     name: exp.name,
     picture: exp.picture,
-    isPro: exp.creator === true,
     isGuide: exp.isGuide === true,
     status: getExplorerStatus(exp),
     lastEntryDate: exp.lastEntryDate,
@@ -599,17 +587,6 @@ export function HomePage() {
           </>
         )}
       </div>
-      <ConfirmationModal
-        isOpen={showActiveExpeditionModal}
-        onClose={() => setShowActiveExpeditionModal(false)}
-        onConfirm={() => setShowActiveExpeditionModal(false)}
-        title="Cannot Launch Blueprint"
-        confirmLabel="OK"
-      >
-        <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
-          You already have an active or planned expedition. Complete or cancel your current expedition before launching a new one from a blueprint.
-        </p>
-      </ConfirmationModal>
     </>
   );
 }

@@ -6,7 +6,6 @@ import { useRouter, usePathname, useParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
-import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { LocationMap } from '@/app/components/LocationMap';
 import { WaypointSelectorMap } from '@/app/components/WaypointSelectorMap';
 import { DatePicker } from '@/app/components/DatePicker';
@@ -16,12 +15,10 @@ import { entryApi, expeditionApi, uploadApi, type Expedition, type Entry } from 
 import { formatDateTime } from '@/app/utils/dateFormat';
 import { useContentValidation } from '@/app/hooks/useContentValidation';
 import { checkImageExif, type ExifResult } from '@/app/utils/exifCheck';
-import { projectToSegment } from '@/app/utils/routeSnapping';
 
 export function CreateEntryPage() {
   const { isAuthenticated } = useAuth();
   const { distanceLabel, speedLabel } = useDistanceUnit();
-  const { isPro } = useProFeatures();
   const { expeditionId } = useParams<{ expeditionId: string }>();
   const router = useRouter();
   const pathname = usePathname();
@@ -38,7 +35,6 @@ export function CreateEntryPage() {
   const [newWaypointCoords, setNewWaypointCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [newWaypointSequence, setNewWaypointSequence] = useState<number>(0);
   const [showWaypointSelector, setShowWaypointSelector] = useState(false);
-  const shouldAutoCreateWaypoint = !isStandalone && !isPro;
   const [entryDate, setEntryDate] = useState('');
   const [entryTime, setEntryTime] = useState('');
   const [entryLocation, setEntryLocation] = useState('');
@@ -47,7 +43,7 @@ export function CreateEntryPage() {
   // Media upload state
   const [uploadedMedia, setUploadedMedia] = useState<Array<{ id: string; name: string; type: string; size: number; url: string; thumbnail: string; exifResult?: ExifResult }>>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const mediaLimit = entryType === 'video' ? 0 : isPro ? (entryType === 'photo' ? 10 : 5) : 2;
+  const mediaLimit = entryType === 'video' ? 0 : entryType === 'photo' ? 10 : 5;
   const [selectedMediaForEdit, setSelectedMediaForEdit] = useState<string | null>(null);
   const [mediaMetadata, setMediaMetadata] = useState<Record<string, { caption: string; altText: string; credit: string }>>({});
   const [coverPhotoId, setCoverPhotoId] = useState<string | null>(null);
@@ -58,7 +54,6 @@ export function CreateEntryPage() {
   const [, setDraftCheckComplete] = useState(false);
 
   // Notification state for entry type restrictions
-  const [entryTypeNotification, setEntryTypeNotification] = useState<{ type: 'pro'; message: string } | null>(null);
 
   // Content state for word count validation
   const [standardContent, setStandardContent] = useState('');
@@ -656,7 +651,7 @@ export function CreateEntryPage() {
           errors.push(`Entry content must not exceed 2,000 words (currently ${wordCount})`);
         }
       }
-      if (isPro && !isStandalone && !selectedWaypointId && waypointMode !== 'new') {
+      if (!isStandalone && !selectedWaypointId && waypointMode !== 'new') {
         errors.push('Please select a waypoint or create a new one');
       }
 
@@ -676,7 +671,7 @@ export function CreateEntryPage() {
 
       if (!isDraft && !isStandalone && expedition) {
         if (waypointMode === 'new' && newWaypointCoords) {
-          // Pro user chose "New Waypoint" on map — create it now
+          // Explorer chose "New Waypoint" on map — create it now
           const expId = expedition.publicId || expeditionId;
           const wpResult = await expeditionApi.createWaypoint(expId, {
             title: entryTitle || 'Waypoint',
@@ -684,18 +679,6 @@ export function CreateEntryPage() {
             lon: newWaypointCoords.lng,
             date: entryDate || undefined,
             sequence: newWaypointSequence,
-          });
-          resolvedWaypointId = wpResult.waypointId;
-        } else if (shouldAutoCreateWaypoint && coordinates && !resolvedWaypointId) {
-          // Regular user — auto-create waypoint behind the scenes
-          const sequence = computeInsertionSequence(coordinates);
-          const expId = expedition.publicId || expeditionId;
-          const wpResult = await expeditionApi.createWaypoint(expId, {
-            title: entryTitle || 'Waypoint',
-            lat: coordinates.lat,
-            lon: coordinates.lng,
-            date: entryDate || undefined,
-            sequence,
           });
           resolvedWaypointId = wpResult.waypointId;
         }
@@ -761,22 +744,6 @@ export function CreateEntryPage() {
     setShowWaypointSelector(false);
   };
 
-  // Compute insertion sequence for auto-created waypoints (regular users)
-  const computeInsertionSequence = (coords: { lat: number; lng: number }): number => {
-    const waypoints = expedition?.waypoints?.filter(wp => wp.lat && wp.lon) || [];
-    if (waypoints.length < 2) return waypoints.length;
-    let bestSeg = 0;
-    let bestDist = Infinity;
-    for (let i = 0; i < waypoints.length - 1; i++) {
-      const { distSq } = projectToSegment(
-        coords,
-        { lat: waypoints[i].lat!, lng: waypoints[i].lon! },
-        { lat: waypoints[i + 1].lat!, lng: waypoints[i + 1].lon! },
-      );
-      if (distSq < bestDist) { bestDist = distSq; bestSeg = i; }
-    }
-    return (waypoints[bestSeg].sequence ?? bestSeg) + 1;
-  };
 
   // Get the selected waypoint's title for display
   const selectedWaypointTitle = selectedWaypointId
@@ -937,71 +904,41 @@ export function CreateEntryPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (!isPro) {
-                      setEntryTypeNotification({
-                        type: 'pro',
-                        message: 'Photo entries are an Explorer Pro feature. Upgrade to Explorer Pro to create photo entries with visual storytelling and image galleries.'
-                      });
-                      return;
-                    }
                     setEntryType('photo');
                   }}
                   className={`py-2 text-xs font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center justify-center gap-1 ${
                     entryType === 'photo'
                       ? 'bg-[#ac6d46] text-white border-2 border-[#ac6d46]'
-                      : !isPro
-                      ? 'border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#b5bcc4] opacity-60 cursor-not-allowed'
                       : 'border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#e5e5e5] hover:border-[#ac6d46]'
                   }`}
                 >
                   PHOTO
-                  {!isPro && <span className="text-xs text-[#ac6d46]">PRO</span>}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    if (!isPro) {
-                      setEntryTypeNotification({
-                        type: 'pro',
-                        message: 'Video entries are an Explorer Pro feature. Upgrade to Explorer Pro to create video entries with embedded footage.'
-                      });
-                      return;
-                    }
                     setEntryType('video');
                   }}
                   className={`py-2 text-xs font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center justify-center gap-1 ${
                     entryType === 'video'
                       ? 'bg-[#ac6d46] text-white border-2 border-[#ac6d46]'
-                      : !isPro
-                      ? 'border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#b5bcc4] opacity-60 cursor-not-allowed'
                       : 'border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#e5e5e5] hover:border-[#ac6d46]'
                   }`}
                 >
                   VIDEO
-                  {!isPro && <span className="text-xs text-[#ac6d46]">PRO</span>}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    if (!isPro) {
-                      setEntryTypeNotification({
-                        type: 'pro',
-                        message: 'Data entries are an Explorer Pro feature. Upgrade to Explorer Pro to create technical data entries with environmental and activity metrics.'
-                      });
-                      return;
-                    }
                     setEntryType('data');
                   }}
                   className={`py-2 text-xs font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center justify-center gap-1 ${
                     entryType === 'data'
                       ? 'bg-[#ac6d46] text-white border-2 border-[#ac6d46]'
-                      : !isPro
-                      ? 'border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#b5bcc4] opacity-60 cursor-not-allowed'
                       : 'border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#e5e5e5] hover:border-[#ac6d46]'
                   }`}
                 >
                   DATA
-                  {!isPro && <span className="text-xs text-[#ac6d46]">PRO</span>}
                 </button>
               </div>
               
@@ -1022,33 +959,6 @@ export function CreateEntryPage() {
               </div>
             </div>
 
-            {/* Entry Type Restriction Notification */}
-            {entryTypeNotification && (
-              <div className="mb-6 p-4 border-2 bg-[#fff8e1] dark:bg-[#3a3320] border-[#ac6d46]">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="text-xs font-bold mb-2 dark:text-[#e5e5e5]">
-                      EXPLORER PRO FEATURE
-                    </div>
-                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                      {entryTypeNotification.message}
-                    </div>
-                    <Link
-                      href="/settings/billing"
-                      className="inline-block mt-3 px-4 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
-                    >
-                      UPGRADE TO EXPLORER PRO
-                    </Link>
-                  </div>
-                  <button
-                    onClick={() => setEntryTypeNotification(null)}
-                    className="text-[#616161] dark:text-[#b5bcc4] hover:text-[#202020] dark:hover:text-[#e5e5e5] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
-                  >
-                    <X size={16} strokeWidth={2} />
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Standalone Entry Notice */}
             {isStandalone && (
@@ -1063,8 +973,8 @@ export function CreateEntryPage() {
               </div>
             )}
 
-            {/* Waypoint Selector — Pro users with expedition */}
-            {isPro && !isStandalone && (
+            {/* Waypoint Selector — entries within an expedition */}
+            {!isStandalone && (
               <div className="mb-6">
                 <label className="block text-xs font-medium mb-3 text-[#202020] dark:text-[#e5e5e5]">
                   SELECT WAYPOINT <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
@@ -1186,8 +1096,8 @@ export function CreateEntryPage() {
                     GPS COORDINATES
                     <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
                   </label>
-                  {isPro && !isStandalone ? (
-                    /* Pro users: coordinates are derived from waypoint selection */
+                  {!isStandalone ? (
+                    /* Coordinates are derived from waypoint selection */
                     <div>
                       <input
                         type="text"
@@ -1348,12 +1258,7 @@ Remember: Your sponsors and followers are reading this to understand your journe
                     <div className="mb-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#4676ac] text-xs">
                       <div className="flex items-center justify-between">
                         <span className="text-[#616161] dark:text-[#b5bcc4]">
-                          {isPro ? `Pro: up to ${mediaLimit} photos` : 'Basic: up to 2 photos'}
-                          {!isPro && (
-                            <Link href="/settings/billing" className="text-[#ac6d46] hover:underline ml-1">
-                              (Upgrade)
-                            </Link>
-                          )}
+                          Up to {mediaLimit} photos
                         </span>
                         {uploadedMedia.length > 0 && (
                           <span className="text-[#616161] dark:text-[#b5bcc4]">
@@ -1533,12 +1438,7 @@ Remember: Your sponsors and followers are reading this to understand your journe
                     <div className="mb-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#4676ac] text-xs">
                       <div className="flex items-center justify-between">
                         <span className="text-[#616161] dark:text-[#b5bcc4]">
-                          {isPro ? `Pro: up to ${mediaLimit} photos` : 'Basic: up to 2 photos'}
-                          {!isPro && (
-                            <Link href="/settings/billing" className="text-[#ac6d46] hover:underline ml-1">
-                              (Upgrade)
-                            </Link>
-                          )}
+                          Up to {mediaLimit} photos
                         </span>
                         {uploadedMedia.length > 0 && (
                           <span className="text-[#616161] dark:text-[#b5bcc4]">
@@ -2215,31 +2115,22 @@ Include:
               <div>
                 <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-1 flex items-center gap-1">
                   Photo
-                  <span className="text-xs text-[#ac6d46]">PRO</span>
                 </div>
                 <div className="text-[#616161] dark:text-[#b5bcc4]">Visual storytelling with image galleries and captions</div>
               </div>
               <div>
                 <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-1 flex items-center gap-1">
                   Video
-                  <span className="text-xs text-[#ac6d46]">PRO</span>
                 </div>
                 <div className="text-[#616161] dark:text-[#b5bcc4]">Single video embed with narrative context</div>
               </div>
               <div>
                 <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-1 flex items-center gap-1">
                   Data
-                  <span className="text-xs text-[#ac6d46]">PRO</span>
                 </div>
                 <div className="text-[#616161] dark:text-[#b5bcc4]">Technical documentation with environmental and activity metrics</div>
               </div>
             </div>
-            {!isPro && (
-              <div className="mt-3 pt-3 border-t border-[#202020] dark:border-[#616161] text-xs text-[#616161] dark:text-[#b5bcc4]">
-                <span className="font-bold text-[#ac6d46]">NOTE:</span> Photo, Video, and Data entries require Explorer Pro.
-                <Link href="/settings/billing" className="text-[#4676ac] hover:underline ml-1">Upgrade to Pro</Link>
-              </div>
-            )}
           </div>
 
           {/* Tips */}
@@ -2302,10 +2193,10 @@ Include:
         />
       )}
 
-      {/* Waypoint Selector Map Modal - Pro users */}
-      {showWaypointSelector && expedition?.waypoints && (
+      {/* Waypoint Selector Map Modal */}
+      {showWaypointSelector && expedition && (
         <WaypointSelectorMap
-          expeditionWaypoints={expedition.waypoints.map((wp, idx) => ({
+          expeditionWaypoints={(expedition.waypoints ?? []).map((wp, idx) => ({
             id: String(wp.id),
             lat: wp.lat || 0,
             lng: wp.lon || 0,

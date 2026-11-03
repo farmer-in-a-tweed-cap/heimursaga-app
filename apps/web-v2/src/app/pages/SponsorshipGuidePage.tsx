@@ -128,12 +128,12 @@ export function SponsorshipGuidePage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Who Can Participate?</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
-                <strong>Sending Sponsorships:</strong> All account types (Explorer and Explorer Pro) can send sponsorships 
+                <strong>Sending Sponsorships:</strong> Every account can send sponsorships 
                 to support other explorers.
               </p>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                <strong>Receiving Sponsorships:</strong> Only Explorer Pro accounts ($7/month or $50/year) can enable sponsorships
-                on their expeditions and receive financial support from the community.
+                <strong>Receiving Sponsorships:</strong> Every account can enable sponsorships on its expeditions and
+                receive financial support from the community once Stripe payouts are set up. Accounts are free.
               </p>
             </div>
           </div>
@@ -187,7 +187,7 @@ export function SponsorshipGuidePage() {
               <h3 id="quick-sponsor" className="font-bold mb-2 text-[#202020] dark:text-white">Quick Sponsor</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
                 Quick Sponsor is a fast, lightweight way to show appreciation for a specific journal entry. Look for
-                the &quot;QUICK SPONSOR $5&quot; button at the bottom of any entry by an Explorer Pro.
+                the &quot;QUICK SPONSOR $5&quot; button at the bottom of any entry by an explorer with payouts set up.
               </p>
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6">
                 <li className="flex items-start gap-2">
@@ -216,7 +216,7 @@ export function SponsorshipGuidePage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Sponsorship Tiers</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
-                When an Explorer Pro has a sponsorship-enabled planned or active expedition, sponsors can support them through two tier-based sponsorship types, each with different scope and perks:
+                When an explorer has a sponsorship-enabled planned or active expedition, sponsors can support them through two tier-based sponsorship types, each with different scope and perks:
               </p>
 
               {/* Monthly Tiers */}
@@ -301,7 +301,7 @@ export function SponsorshipGuidePage() {
         <section id="receiving-sponsorships" className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
           <div className="bg-[#616161] dark:bg-[#3a3a3a] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
             <TrendingUp className="w-5 h-5" />
-            <h2 className="text-lg font-bold">RECEIVING SPONSORSHIPS (Explorer Pro)</h2>
+            <h2 className="text-lg font-bold">RECEIVING SPONSORSHIPS</h2>
           </div>
           <div className="p-6 space-y-4">
             <div>
@@ -310,10 +310,6 @@ export function SponsorshipGuidePage() {
                 To receive sponsorships, you must:
               </p>
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6">
-                <li className="flex items-start gap-2">
-                  <span className="text-[#4676ac] mt-1">•</span>
-                  <span>Have an active Explorer Pro account ($7/month or $50/year)</span>
-                </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] mt-1">•</span>
                   <span>Connect your account to Stripe for payment processing</span>
@@ -374,7 +370,7 @@ export function SponsorshipGuidePage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Sponsorship Dashboard</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
-                Explorer Pro accounts have access to a detailed Sponsorship Dashboard showing:
+                Every account has a detailed Sponsorship Dashboard showing:
               </p>
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6">
                 <li className="flex items-start gap-2">
@@ -455,7 +451,7 @@ export function SponsorshipGuidePage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Configuring Sponsorship Tiers</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
-                Your tiers are automatically created when you upgrade to Explorer Pro. From the TIERS tab on your
+                Your tiers are created automatically when you set up payouts. From the TIERS tab on your
                 Sponsorship Dashboard, you can adjust the price for each tier within its allowed range and enable
                 or disable individual tiers.
               </p>
@@ -473,7 +469,7 @@ export function SponsorshipGuidePage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Expedition Notes Visibility</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
-                Explorer Pro accounts can control who can read their Expedition Notes. When creating or editing an expedition,
+                Explorers can control who can read their Expedition Notes. When creating or editing an expedition,
                 you can set notes visibility to:
               </p>
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6 mb-3">
@@ -869,7 +865,7 @@ export function SponsorshipGuidePage() {
       <div className="mt-8 bg-[#616161] dark:bg-[#3a3a3a] border-2 border-[#202020] dark:border-[#616161] p-6 text-center">
         <h3 className="text-lg font-bold text-white mb-2">Ready to Get Involved?</h3>
         <p className="text-sm text-[#b5bcc4] mb-4">
-          Support explorers you believe in or upgrade to Explorer Pro to receive sponsorships for your expeditions.
+          Support explorers you believe in, or set up payouts to receive sponsorships for your own expeditions.
         </p>
         <div className="flex justify-center gap-3">
           <Link
@@ -879,10 +875,10 @@ export function SponsorshipGuidePage() {
             FIND EXPEDITIONS TO SPONSOR
           </Link>
           <Link
-            href="/settings/billing"
+            href="/sponsorship"
             className="px-6 py-3 border-2 border-white text-white hover:bg-white hover:text-[#202020] transition-all text-sm font-bold"
           >
-            UPGRADE TO EXPLORER PRO
+            SET UP PAYOUTS
           </Link>
         </div>
       </div>

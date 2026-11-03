@@ -15,7 +15,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from '@/app/context/MapLayerContext';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
-import { useProFeatures } from '@/app/hooks/useProFeatures';
+import { useExplorerFeatures } from '@/app/hooks/useExplorerFeatures';
 import { toast } from 'sonner';
 import { expeditionApi, entryApi, uploadApi, routingApi, type RouteObstacle } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
@@ -279,7 +279,7 @@ export function ExpeditionBuilderPage() {
   const nauticalOverlayRef = useRef(nauticalOverlay);
   nauticalOverlayRef.current = nauticalOverlay;
   const { formatDistance, unit } = useDistanceUnit();
-  const { isPro, isGuide, canCreateBlueprints: canCreateBlueprintsRaw } = useProFeatures();
+  const { isGuide, canCreateBlueprints: canCreateBlueprintsRaw } = useExplorerFeatures();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -4160,47 +4160,6 @@ export function ExpeditionBuilderPage() {
     );
   }
 
-  if (!isPro) {
-    return (
-      <div className="max-w-lg mx-auto px-6 py-12">
-        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
-          <div className="p-5 border-b-2 border-[#202020] dark:border-[#616161] bg-[#4676ac] text-white">
-            <div className="flex items-center gap-3">
-              <Lock size={22} strokeWidth={2} />
-              <h2 className="text-base font-bold">EXPLORER PRO FEATURE</h2>
-            </div>
-          </div>
-          <div className="p-6 space-y-4">
-            <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-              The expedition builder with interactive maps, waypoint management, and route planning is available to <strong>Explorer Pro</strong> subscribers.
-            </p>
-            <div className="bg-[#faf6f2] dark:bg-[#2a2520] border border-[#ac6d46]/30 p-4 space-y-2">
-              <p className="text-xs font-bold text-[#ac6d46]">YOU CAN STILL</p>
-              <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
-                Use the <strong className="text-[#202020] dark:text-[#e5e5e5]">quick entry form</strong> to log journal entries and edit expedition details. Each entry you log automatically builds your expedition route on the map.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3">
-              {isEditMode && expeditionId && (
-                <button
-                  onClick={() => router.push(`/log-entry/${expeditionId}`)}
-                  className="w-full px-5 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all text-sm"
-                >
-                  LOG JOURNAL ENTRY
-                </button>
-              )}
-              <button
-                onClick={() => router.push(isEditMode && expeditionId ? `/expedition/${expeditionId}` : '/select-expedition')}
-                className="w-full px-5 py-3 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] font-bold hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all text-sm"
-              >
-                {isEditMode ? 'VIEW EXPEDITION' : 'GO BACK'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Show loading state in edit mode
   if (isLoading) {
@@ -4599,7 +4558,6 @@ export function ExpeditionBuilderPage() {
                           strokeDasharray={style.dash ? style.dash.join(' ') : 'none'} />
                       </svg>
                       <span className="text-[10px] font-semibold" style={{ color: style.color }}>{style.label}</span>
-                      {!isStraightLike(mode) && !isPro && <Lock size={8} className="text-[#ac6d46]" />}
                     </div>
                   ))}
                 </div>
@@ -5458,21 +5416,17 @@ export function ExpeditionBuilderPage() {
                                         {(['straight', 'passage', 'walking', 'cycling', 'driving', 'trail', 'waterway'] as RouteMode[]).map(mode => {
                                           const mStyle = ROUTE_MODE_STYLES[mode];
                                           const isActive = legMode === mode;
-                                          const disabled = !isStraightLike(mode) && !isPro;
                                           return (
                                             <button
                                               key={mode}
                                               onClick={(e) => {
                                                 e.stopPropagation();
-                                                if (!disabled && mode !== legMode) {
+                                                if (mode !== legMode) {
                                                   handleLegModeChangeRef.current(legIdx, mode);
                                                   setExpandedLegCard(null);
                                                 }
                                               }}
-                                              disabled={disabled}
-                                              className={`px-2 py-1.5 text-[10px] font-bold border-2 transition-all ${
-                                                disabled ? 'opacity-40 cursor-not-allowed' : ''
-                                              }`}
+                                              className="px-2 py-1.5 text-[10px] font-bold border-2 transition-all"
                                               style={{
                                                 borderColor: mStyle.color,
                                                 backgroundColor: isActive ? mStyle.color : 'transparent',
@@ -5480,7 +5434,6 @@ export function ExpeditionBuilderPage() {
                                               }}
                                             >
                                               {isStraightLike(mode) ? (mode === 'passage' ? 'Passage' : 'Line') : mStyle.label}
-                                              {disabled && <Lock size={8} className="inline ml-0.5 -mt-0.5" />}
                                             </button>
                                           );
                                         })}
@@ -5866,7 +5819,6 @@ export function ExpeditionBuilderPage() {
           <div className="mt-6 border-2 border-[#ac6d46] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
             <label className="block text-xs font-medium mb-3 text-[#202020] dark:text-[#e5e5e5] flex items-center gap-2">
               ENABLE SPONSORSHIPS
-              <span className="text-xs text-[#ac6d46]">PRO</span>
               <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>
             </label>
             <div className="flex items-start gap-2 mb-3">
@@ -5886,19 +5838,13 @@ export function ExpeditionBuilderPage() {
                     setNotesVisibility('public');
                   }
                 }}
-                disabled={!isPro || !user?.stripeAccountConnected || status === 'completed'}
+                disabled={!user?.stripeAccountConnected || status === 'completed'}
               />
-              <label htmlFor="enable-sponsorships" className={`text-xs ${!isPro || !user?.stripeAccountConnected || status === 'completed' ? 'text-[#b5bcc4] dark:text-[#616161]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+              <label htmlFor="enable-sponsorships" className={`text-xs ${!user?.stripeAccountConnected || status === 'completed' ? 'text-[#b5bcc4] dark:text-[#616161]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
                 Allow others to financially support this expedition through the platform
               </label>
             </div>
-            {!isPro && (
-              <div className="mb-3 p-3 bg-white dark:bg-[#202020] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
-                <strong className="text-[#ac6d46]">PRO FEATURE:</strong> Receiving sponsorships requires Explorer Pro.
-                <Link href="/settings/billing" className="text-[#4676ac] hover:underline ml-1">Upgrade to Pro</Link>
-              </div>
-            )}
-            {isPro && !user?.stripeAccountConnected && status !== 'completed' && (
+            {!user?.stripeAccountConnected && status !== 'completed' && (
               <div className="mb-3 p-3 bg-white dark:bg-[#202020] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
                 <strong className="text-[#ac6d46]">STRIPE CONNECT REQUIRED:</strong> Complete your Stripe onboarding before enabling sponsorships.
                 <Link href="/sponsorship" className="text-[#4676ac] hover:underline ml-1">Complete setup</Link>
@@ -5909,7 +5855,7 @@ export function ExpeditionBuilderPage() {
                 <strong>COMPLETED EXPEDITION:</strong> Sponsorships are not available for completed expeditions.
               </div>
             )}
-            {sponsorshipsEnabled && isPro && (
+            {sponsorshipsEnabled && (
               <div>
                 <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                   SPONSORSHIP GOAL (USD)
@@ -5929,7 +5875,7 @@ export function ExpeditionBuilderPage() {
                 </div>
               </div>
             )}
-            {sponsorshipsEnabled && isPro && notesVisibility === 'sponsor' && (
+            {sponsorshipsEnabled && notesVisibility === 'sponsor' && (
               <div className="mt-4">
                 <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                   EXPEDITION NOTES ACCESS THRESHOLD (USD)
@@ -5950,8 +5896,8 @@ export function ExpeditionBuilderPage() {
           </div>
           )}
 
-          {/* Expedition Notes Visibility - Pro only, hidden for guides */}
-          {!canCreateBlueprints && isPro && expeditionData.visibility !== 'private' && <div className="mt-6 border-2 border-[#616161] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+          {/* Expedition Notes Visibility - hidden for guides */}
+          {!canCreateBlueprints && expeditionData.visibility !== 'private' && <div className="mt-6 border-2 border-[#616161] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
             <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">EXPEDITION NOTES VISIBILITY</div>
             <div className="space-y-2">
               <div className="flex items-start gap-2">
@@ -5979,18 +5925,18 @@ export function ExpeditionBuilderPage() {
                   checked={notesVisibility === 'sponsor'}
                   onChange={() => {
                     setNotesVisibility('sponsor');
-                    if (isPro && user?.stripeAccountConnected && status !== 'completed') {
+                    if (user?.stripeAccountConnected && status !== 'completed') {
                       setSponsorshipsEnabled(true);
                     }
                   }}
-                  disabled={!isPro || !user?.stripeAccountConnected || status === 'completed'}
+                  disabled={!user?.stripeAccountConnected || status === 'completed'}
                 />
-                <label htmlFor="notes-sponsor" className={`text-xs ${!isPro || !user?.stripeAccountConnected || status === 'completed' ? 'text-[#b5bcc4] dark:text-[#616161]' : ''}`}>
+                <label htmlFor="notes-sponsor" className={`text-xs ${!user?.stripeAccountConnected || status === 'completed' ? 'text-[#b5bcc4] dark:text-[#616161]' : ''}`}>
                   <div className="font-bold text-[#202020] dark:text-[#e5e5e5]">SPONSOR EXCLUSIVE</div>
                   <div className="text-[#616161] dark:text-[#b5bcc4] mt-0.5">
                     Only sponsors meeting the access threshold can read expedition notes.
-                    {(!isPro || !user?.stripeAccountConnected) && (
-                      <span className="text-[#ac6d46] ml-1">Requires Explorer Pro with Stripe Connect.</span>
+                    {!user?.stripeAccountConnected && (
+                      <span className="text-[#ac6d46] ml-1">Requires Stripe Connect.</span>
                     )}
                   </div>
                 </label>
@@ -5998,8 +5944,8 @@ export function ExpeditionBuilderPage() {
             </div>
           </div>}
 
-          {/* Early Entry Access - Pro only, requires sponsorships, hidden for guides */}
-          {!canCreateBlueprints && isPro && sponsorshipsEnabled && (
+          {/* Early Entry Access - requires sponsorships, hidden for guides */}
+          {!canCreateBlueprints && sponsorshipsEnabled && (
             <div className="mt-6 border-2 border-[#616161] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
               <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">EARLY ENTRY ACCESS</div>
               <div className="flex items-start gap-2">

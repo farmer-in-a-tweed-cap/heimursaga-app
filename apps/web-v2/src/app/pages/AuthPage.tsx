@@ -644,7 +644,7 @@ export function AuthPage() {
                   <div>• Plan and track expeditions with GPS mapping</div>
                   <div>• Upload photos with each entry</div>
                   <div>• Connect with the global explorer community</div>
-                  <div>• Upgrade to Explorer Pro to receive sponsorships</div>
+                  <div>• Receive sponsorships for your expeditions</div>
                 </div>
               </div>
 

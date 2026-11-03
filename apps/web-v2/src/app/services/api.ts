@@ -1873,10 +1873,10 @@ export interface SendMessagePayload {
   recipientUsername: string;
 }
 
-// Message API endpoints (Explorer Pro only)
+// Message API endpoints
 export const messageApi = {
   /**
-   * Send a message to another Explorer Pro member
+   * Send a message to another explorer
    */
   send: (payload: SendMessagePayload) =>
     api.post<void>('/messages/send', payload),
@@ -2055,7 +2055,7 @@ export interface SponsorshipsResponse {
   data: Sponsorship[];
 }
 
-// Insights API endpoints (Pro features)
+// Insights API endpoints
 export const insightsApi = {
   /**
    * Get entry/post performance insights (requires auth)
@@ -2095,22 +2095,10 @@ export const insightsApi = {
 };
 
 // ============================================
-// PLAN / SUBSCRIPTION API
+// LEGACY SUBSCRIPTION API
 // ============================================
-
-export interface Plan {
-  id: string;
-  slug: string;
-  name: string;
-  priceMonth: number;
-  priceYear: number;
-  discountYear: number;
-  features?: string[];
-}
-
-export interface PlansResponse {
-  data: Plan[];
-}
+// Paid plans were retired; every account has every feature. These remain
+// only so explorers with an old subscription can see and cancel it.
 
 export interface SubscriptionStatus {
   id: string;
@@ -2119,74 +2107,22 @@ export interface SubscriptionStatus {
   status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete';
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
-}
-
-export interface UpgradeCheckoutPayload {
-  planSlug: string;
-  billingPeriod?: 'MONTHLY' | 'YEARLY';
-  promoCode?: string;
-}
-
-export interface UpgradeCheckoutResponse {
-  clientSecret: string;
-  subscriptionId?: string;
-}
-
-export interface PromoValidationResponse {
-  valid: boolean;
-  discountPercent?: number;
-  discountAmount?: number;
-  finalPrice?: number;
+  /** 'apple' subscriptions are billed and cancelled through the buyer's Apple account */
+  source?: 'stripe' | 'apple';
 }
 
 export const planApi = {
   /**
-   * Get all available plans
-   */
-  getPlans: () =>
-    api.get<PlansResponse>('/plans'),
-
-  /**
-   * Get a specific plan by slug
-   */
-  getPlanBySlug: (slug: string) =>
-    api.get<Plan>(`/plans/${slug}`),
-
-  /**
-   * Get current user's subscription status
+   * Get current user's legacy subscription, if any
    */
   getSubscription: () =>
     api.get<{ subscription: SubscriptionStatus | null }>('/plan/subscription'),
 
   /**
-   * Start upgrade checkout flow (creates Stripe subscription with pending payment)
-   */
-  createUpgradeCheckout: (payload: UpgradeCheckoutPayload) =>
-    api.post<UpgradeCheckoutResponse>('/checkout/subscription-upgrade', payload),
-
-  /**
-   * Complete the subscription upgrade after payment succeeds
-   */
-  completeUpgrade: () =>
-    api.post<{ success: boolean }>('/checkout/subscription-upgrade/complete'),
-
-  /**
-   * Cancel subscription (will remain active until period end)
+   * Cancel a legacy subscription (stops renewal at period end)
    */
   cancelSubscription: () =>
     api.post<void>('/plan/downgrade'),
-
-  /**
-   * Reactivate a subscription that is scheduled for cancellation
-   */
-  reactivateSubscription: () =>
-    api.post<void>('/plan/reactivate'),
-
-  /**
-   * Validate a promo/coupon code
-   */
-  validatePromoCode: (code: string, planSlug: string) =>
-    api.post<PromoValidationResponse>('/promo/validate', { code, planSlug }),
 };
 
 // ============================================
@@ -2458,7 +2394,7 @@ export const sponsorshipApi = {
   toggleEmailDelivery: (sponsorshipId: string, enabled: boolean) =>
     api.patch<{ success: boolean }>(`/sponsorships/${sponsorshipId}/email-delivery`, { enabled }),
 
-  // ===== TIER MANAGEMENT (Explorer Pro) =====
+  // ===== TIER MANAGEMENT =====
 
   /**
    * Get current user's sponsorship tiers (for editing)

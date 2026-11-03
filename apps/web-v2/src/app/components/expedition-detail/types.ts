@@ -54,7 +54,6 @@ export type TransformedExpedition = {
   explorerId: string;
   explorerName: string;
   explorerPicture?: string;
-  explorerIsPro: boolean;
   stripeAccountConnected: boolean;
   status: 'active' | 'planned' | 'completed' | 'cancelled';
   category: string;

@@ -175,25 +175,5 @@ export function useAuth() {
   return context;
 }
 
-// Helper hook for checking pro features
-// Explorer Pro is determined by role === 'creator' (set by Stripe subscription webhooks)
-export function useProFeatures() {
-  const { user } = useAuth();
-  const isPro = user?.role === 'creator';
-
-  return {
-    isPro,
-    canAccessSponsorship: isPro,
-    canAccessAnalytics: isPro,
-    canAccessCustomDomain: isPro,
-    canAccessDataExport: isPro,
-    canAccessScheduling: isPro,
-    canAccessPrioritySupport: isPro,
-    canAccessAdvancedMaps: isPro,
-    maxExpeditions: isPro ? Infinity : 3,
-    maxPhotosPerEntry: isPro ? 10 : 2,
-  };
-}
-
 // Re-export ApiError for use in components
 export { ApiError };

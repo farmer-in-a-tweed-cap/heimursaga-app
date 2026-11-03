@@ -261,7 +261,7 @@ export function WelcomeModal({ open, onClose, onSaveComplete, username, isGuide 
                 </div>
                 {preferredContactMethod === 'message' && (
                   <p className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mt-2 leading-snug">
-                    Note: In-app messaging is an Explorer Pro feature, so only Explorer Pro members will be able to reach you this way.
+                    Any signed-in explorer can reach you this way.
                   </p>
                 )}
               </div>

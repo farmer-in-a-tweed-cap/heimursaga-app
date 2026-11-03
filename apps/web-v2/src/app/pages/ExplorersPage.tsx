@@ -239,7 +239,7 @@ export function ExplorersPage() {
   const transformedExplorers = useMemo(() => apiExplorers.map(exp => ({
     id: exp.username,
     username: exp.username,
-    accountType: (exp.isGuide ? 'expedition-guide' : exp.creator ? 'explorer-pro' : 'explorer') as 'expedition-guide' | 'explorer-pro' | 'explorer',
+    accountType: (exp.isGuide ? 'expedition-guide' : 'explorer') as 'expedition-guide' | 'explorer',
     journalName: exp.name || '',
     bio: exp.bio || '',
     location: exp.locationLives || exp.locationFrom || '',
@@ -358,7 +358,6 @@ export function ExplorersPage() {
             {[
               { key: 'all', label: 'ALL' },
               { key: 'active', label: 'ACTIVE NOW' },
-              { key: 'pro', label: 'EXPLORER PRO' },
               { key: 'guide', label: 'EXPEDITION GUIDE' },
             ].map(({ key, label }) => (
               <button

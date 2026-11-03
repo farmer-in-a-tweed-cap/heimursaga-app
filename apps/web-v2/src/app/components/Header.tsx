@@ -9,13 +9,11 @@ import { Bell, Settings, Sun, Moon, ChevronDown } from 'lucide-react';
 import { useTheme } from '@/app/context/ThemeContext';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { NotificationsDropdown } from '@/app/components/NotificationsDropdown';
-import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { usePageOwner } from '@/app/context/PageOwnerContext';
 import { notificationApi, messageApi } from '@/app/services/api';
 
 export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
-  const { isPro } = useProFeatures();
   const { isOwnContent } = usePageOwner();
   const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
@@ -74,9 +72,9 @@ export function Header() {
     }
   }, [notificationsOpen, isAuthenticated]);
 
-  // Fetch unread messages count (Explorer Pro only)
+  // Fetch unread messages count
   useEffect(() => {
-    if (!isAuthenticated || !isPro) {
+    if (!isAuthenticated) {
       return () => {
         setUnreadMessagesCount(0);
       };
@@ -107,7 +105,7 @@ export function Header() {
       clearInterval(interval);
       window.removeEventListener('messages-read', handleMessagesRead);
     };
-  }, [isAuthenticated, isPro]);
+  }, [isAuthenticated]);
 
   // Update current time every minute
   // useEffect(() => {
@@ -383,7 +381,7 @@ export function Header() {
                   </Link>
                 </div>
                 <div>
-                  {user.isGuide ? 'EXPEDITION GUIDE' : user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}
+                  {user.isGuide ? 'EXPEDITION GUIDE' : 'EXPLORER'}
                 </div>
                 <div className="text-xs">
                   <button className="hover:text-[#ac6d46] transition-all focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#ac6d46]" onClick={handleLogout}>
@@ -454,7 +452,7 @@ export function Header() {
             {/* User Avatar */}
             {isAuthenticated && user && (
               <Link href={`/journal/${user.username}`} className="flex-shrink-0 flex items-center">
-                <div className={`w-[66px] h-[66px] border-2 ${user.isGuide ? 'border-[#598636]' : user.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden hover:border-[#4676ac] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4676ac]`}>
+                <div className={`w-[66px] h-[66px] border-2 ${user.isGuide ? 'border-[#598636]' : 'border-[#616161]'} overflow-hidden hover:border-[#4676ac] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4676ac]`}>
                   <ExplorerAvatar username={user.username} src={user.picture} size={66} className="w-full h-full" />
                 </div>
               </Link>
@@ -523,7 +521,7 @@ export function Header() {
                       </Link>
                     </div>
                     <div className="text-xs font-mono text-[#b5bcc4]">
-                      {user.isGuide ? 'EXPEDITION GUIDE' : user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}
+                      {user.isGuide ? 'EXPEDITION GUIDE' : 'EXPLORER'}
                     </div>
                   </div>
                   <button className="text-xs text-[#ac6d46] hover:text-white transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:underline" onClick={handleLogout}>

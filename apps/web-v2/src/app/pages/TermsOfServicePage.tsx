@@ -64,18 +64,10 @@ export function TermsOfServicePage() {
 
           <h3 className="font-bold mb-2 text-[#202020] dark:text-white">3.2 Account Types</h3>
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
-            Heimursaga offers two types of accounts:
+            Heimursaga accounts are free. Every account can create journals, log entries, follow other explorers,
+            send sponsorships, and receive sponsorships for its expeditions. Expedition Guide accounts, available
+            by invitation, add guide-specific tools.
           </p>
-          <ul className="space-y-2 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6 mb-4">
-            <li className="flex items-start gap-2">
-              <span className="text-[#ac6d46] mt-1">•</span>
-              <span><strong>Explorer (Free):</strong> Create journals, log entries, follow other explorers, and send sponsorships.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#ac6d46] mt-1">•</span>
-              <span><strong>Explorer Pro ($5/month):</strong> All Explorer features plus the ability to receive sponsorships for your expeditions.</span>
-            </li>
-          </ul>
 
           <h3 className="font-bold mb-2 text-[#202020] dark:text-white">3.3 Account Security</h3>
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
@@ -312,11 +304,11 @@ export function TermsOfServicePage() {
             transactions are processed through Stripe, our secure third-party payment processor.
           </p>
 
-          <h3 className="font-bold mb-2 text-[#202020] dark:text-white">8.2 Explorer Pro Subscriptions</h3>
+          <h3 className="font-bold mb-2 text-[#202020] dark:text-white">8.2 Legacy Subscriptions</h3>
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
-            Explorer Pro subscriptions are billed monthly at $5 USD through Stripe. Subscriptions automatically 
-            renew unless cancelled before the next billing date. Cancellations take effect at the end of the 
-            current billing period. We do not provide refunds for partial months.
+            Heimursaga no longer sells paid account subscriptions. Subscriptions purchased before November 3, 2026
+            continue to renew until cancelled from Settings &rarr; Billing (or, for purchases made through Apple,
+            from your Apple account). Cancellations take effect at the end of the current billing period.
           </p>
 
           <h3 className="font-bold mb-2 text-[#202020] dark:text-white">8.3 Financial Responsibility</h3>

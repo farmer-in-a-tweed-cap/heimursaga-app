@@ -304,7 +304,6 @@ export function BookmarksPage() {
                 fundingPercentage={expedition.goal && expedition.goal > 0 ? Math.round(((expedition.raised || 0) / expedition.goal) * 100) : 0}
                 backers={expedition.sponsorsCount || 0}
                 sponsorshipsEnabled={(expedition.goal || 0) > 0}
-                explorerIsPro={(expedition.goal || 0) > 0}
                 stripeConnected={expedition.stripeAccountConnected === true}
                 onClick={() => router.push(`/expedition/${expedition.id}`)}
                 onUnbookmark={() => handleUnbookmarkExpedition(expedition.id)}
@@ -327,7 +326,7 @@ export function BookmarksPage() {
                 journalName={explorer.name || explorer.username}
                 avatarUrl={explorer.picture || ''}
                 location={explorer.locationLives || explorer.locationFrom || ''}
-                accountType={explorer.isGuide ? 'expedition-guide' : explorer.isPremium ? 'explorer-pro' : 'explorer'}
+                accountType={explorer.isGuide ? 'expedition-guide' : 'explorer'}
                 activeExpeditions={explorer.expeditionsCount || 0}
                 totalEntries={explorer.entriesCount || 0}
                 onClick={() => router.push(`/journal/${explorer.username}`)}

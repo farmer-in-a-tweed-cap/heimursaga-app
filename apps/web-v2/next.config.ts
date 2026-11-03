@@ -74,6 +74,10 @@ const nextConfig: NextConfig = {
       { source: '/login', destination: '/auth', permanent: true },
       { source: '/signup', destination: '/auth', permanent: true },
       { source: '/user-guide', destination: '/documentation', permanent: true },
+      // Explorer Pro was retired; every account has every feature.
+      { source: '/upgrade', destination: '/settings/billing', permanent: true },
+      { source: '/upgrade-success', destination: '/settings/billing', permanent: true },
+      { source: '/checkout', destination: '/settings/billing', permanent: true },
     ];
   },
 };
