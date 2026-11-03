@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { permanentRedirect } from 'next/navigation';
 import { getEntry } from '@/lib/server-api';
+import { DEFAULT_OG_IMAGE, OG_IMAGE_SIZE, staticMapUrl } from '@/lib/static-map';
 import { JournalEntryPage } from '@/app/pages/JournalEntryPage';
 import {
   EntryArticleSsr,
@@ -59,11 +60,21 @@ export async function generateMetadata({
     'Read this journal entry on Heimursaga.'
   ).slice(0, 160);
 
-  const images = entry.coverImage
-    ? [entry.coverImage]
-    : entry.authorPicture
-      ? [entry.authorPicture]
-      : [];
+  // Cover photo, else a map of where it was written, else the author's
+  // picture, else the site image.
+  const mapImage =
+    entry.lat !== undefined && entry.lon !== undefined
+      ? staticMapUrl([{ lat: entry.lat, lon: entry.lon }])
+      : null;
+  const images = [
+    entry.coverImage
+      ? { url: entry.coverImage, alt: cleanTitle }
+      : mapImage
+        ? { ...OG_IMAGE_SIZE, url: mapImage, alt: `Map of ${entry.place || cleanTitle}` }
+        : entry.authorPicture
+          ? { url: entry.authorPicture, alt: entry.authorUsername || 'Explorer' }
+          : { ...OG_IMAGE_SIZE, url: DEFAULT_OG_IMAGE, alt: 'Heimursaga' },
+  ];
 
   const canonical = `https://heimursaga.com/entry/${entry.slug || entry.publicId}`;
 
@@ -80,7 +91,7 @@ export async function generateMetadata({
       ...(entry.publishedAt && { publishedTime: entry.publishedAt }),
     },
     twitter: {
-      card: entry.coverImage ? 'summary_large_image' : 'summary',
+      card: entry.authorPicture && !entry.coverImage && !mapImage ? 'summary' : 'summary_large_image',
       title,
       description,
       images,

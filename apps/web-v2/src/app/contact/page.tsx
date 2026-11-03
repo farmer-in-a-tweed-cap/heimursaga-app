@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ContactPage } from '@/app/pages/ContactPage';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/contact' },
   title: 'Contact',
   description:
     'Get in touch with the Heimursaga team for support, feedback, or partnerships.',

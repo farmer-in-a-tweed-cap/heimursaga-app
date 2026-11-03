@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { CompareKofiPage } from '@/app/pages/CompareKofiPage';
+import { DEFAULT_OG_IMAGE } from '@/lib/static-map';
 
 export const metadata: Metadata = {
   title: 'Ko-fi vs Heimursaga for Expedition Creators (2026)',
@@ -7,6 +8,7 @@ export const metadata: Metadata = {
     'Compare Ko-fi and Heimursaga side by side — 0% tip fees vs expedition-specific tools, memberships, mapping features, and sponsorship for adventure creators.',
   alternates: { canonical: '/compare/ko-fi' },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: 'Ko-fi vs Heimursaga | Heimursaga',
     description:
       'Compare Ko-fi and Heimursaga side by side — 0% tip fees vs expedition-specific tools, memberships, and sponsorship for adventure creators.',

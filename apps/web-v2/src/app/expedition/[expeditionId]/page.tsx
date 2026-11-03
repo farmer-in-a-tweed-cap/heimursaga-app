@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { permanentRedirect } from 'next/navigation';
 import { getExpedition } from '@/lib/server-api';
+import { DEFAULT_OG_IMAGE, OG_IMAGE_SIZE, staticMapUrl } from '@/lib/static-map';
 import { ExpeditionDetailPage } from '@/app/pages/ExpeditionDetailPage';
 import {
   ExpeditionArticleSsr,
@@ -26,7 +27,15 @@ export async function generateMetadata({
   const description =
     expedition.description?.slice(0, 160) ||
     'Follow this expedition on Heimursaga.';
-  const images = expedition.coverImage ? [expedition.coverImage] : [];
+  // Cover photo, else a map of the route, else the site image.
+  const mapImage = staticMapUrl(expedition.waypoints ?? []);
+  const images = [
+    expedition.coverImage
+      ? { url: expedition.coverImage, alt: expedition.title }
+      : mapImage
+        ? { ...OG_IMAGE_SIZE, url: mapImage, alt: `Map of ${expedition.title}` }
+        : { ...OG_IMAGE_SIZE, url: DEFAULT_OG_IMAGE, alt: 'Heimursaga' },
+  ];
 
   const canonical = `https://heimursaga.com/expedition/${expedition.slug || expedition.publicId}`;
 
@@ -42,7 +51,7 @@ export async function generateMetadata({
       images,
     },
     twitter: {
-      card: expedition.coverImage ? 'summary_large_image' : 'summary',
+      card: 'summary_large_image',
       title,
       description,
       images,

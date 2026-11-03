@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { DEFAULT_OG_IMAGE } from '@/lib/static-map';
 
 export const metadata: Metadata = {
   title: 'Compare Platforms for Expedition Creators',
@@ -7,6 +8,7 @@ export const metadata: Metadata = {
     'See how Heimursaga compares to Patreon, Substack, Ko-fi, and other creator platforms — fees, features, and expedition tools side by side.',
   alternates: { canonical: '/compare' },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: 'Compare Platforms | Heimursaga',
     description:
       'See how Heimursaga compares to Patreon, Substack, Ko-fi, and other creator platforms — fees, features, and expedition tools side by side.',

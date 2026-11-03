@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { explorerApi, expeditionApi, entryApi } from '@/app/services/api';
+import { MIN_PUBLIC_EXPLORER_COUNT } from '@/app/utils/publicStats';
 
 interface PlatformStats {
   explorers: number | null;
@@ -93,7 +94,9 @@ export function Footer() {
             </h4>
             <ul className="text-xs space-y-2 text-[#b5bcc4] font-mono">
               <li>Platform Version: 3.0.0</li>
-              <li>Registered Explorers: {formatStat(stats.explorers)}</li>
+              {stats.explorers !== null && stats.explorers >= MIN_PUBLIC_EXPLORER_COUNT && (
+                <li>Registered Explorers: {formatStat(stats.explorers)}</li>
+              )}
               <li>Total Expeditions: {formatStat(stats.expeditions)}</li>
               <li>Active Expeditions: {formatStat(stats.activeExpeditions)}</li>
               <li>Journal Entries: {formatStat(stats.entries)}</li>

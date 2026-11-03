@@ -17,6 +17,7 @@ import {
   regionForExpedition,
 } from './buckets';
 import { HistoricalArchiveMap } from './HistoricalArchiveMap';
+import { DEFAULT_OG_IMAGE } from '@/lib/static-map';
 
 const SITE_URL = 'https://heimursaga.com';
 const PAGE_URL = `${SITE_URL}/historical-archive`;
@@ -33,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
   // double-fetch with the page render.
   const data = await getHistoricalArchive();
   const cover = data?.expeditions.find((x) => x.coverImage)?.coverImage;
-  const images = cover ? [cover] : undefined;
+  const images = [cover || DEFAULT_OG_IMAGE];
   return {
     title: META_TITLE,
     description: META_DESCRIPTION,
@@ -46,7 +47,7 @@ export async function generateMetadata(): Promise<Metadata> {
       images,
     },
     twitter: {
-      card: cover ? 'summary_large_image' : 'summary',
+      card: 'summary_large_image',
       title: META_TITLE,
       description: META_DESCRIPTION,
       images,

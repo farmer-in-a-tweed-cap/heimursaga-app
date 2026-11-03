@@ -65,7 +65,6 @@ export const metadata: Metadata = {
   },
   icons: { icon: '/favicon.ico' },
   metadataBase: new URL('https://heimursaga.com'),
-  alternates: { canonical: '/' },
   other: {
     'theme-color': '#ac6d46',
   },

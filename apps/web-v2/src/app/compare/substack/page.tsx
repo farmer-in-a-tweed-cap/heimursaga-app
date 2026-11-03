@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { CompareSubstackPage } from '@/app/pages/CompareSubstackPage';
+import { DEFAULT_OG_IMAGE } from '@/lib/static-map';
 
 export const metadata: Metadata = {
   title: 'Substack vs Heimursaga for Expedition Creators (2026)',
@@ -7,6 +8,7 @@ export const metadata: Metadata = {
     'Compare Substack and Heimursaga side by side — newsletter delivery vs expedition maps, subscription fees, content tools, and storytelling for adventure creators.',
   alternates: { canonical: '/compare/substack' },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: 'Substack vs Heimursaga | Heimursaga',
     description:
       'Compare Substack and Heimursaga side by side — newsletter delivery vs expedition maps, subscription fees, and storytelling for adventure creators.',

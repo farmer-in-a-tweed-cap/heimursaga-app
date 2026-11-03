@@ -17,6 +17,7 @@ export interface ExpeditionMeta {
   endDate?: string;
   authorUsername?: string;
   authorName?: string;
+  waypoints?: Array<{ lat: number; lon: number }>;
 }
 
 export interface EntryMeta {
@@ -64,6 +65,11 @@ export async function getExpedition(id: string): Promise<ExpeditionMeta | null> 
       endDate: data.endDate || data.end_date,
       authorUsername: data.author?.username,
       authorName: data.author?.name || data.author?.username,
+      waypoints: Array.isArray(data.waypoints)
+        ? data.waypoints
+            .filter((w: { lat?: unknown; lon?: unknown }) => typeof w.lat === 'number' && typeof w.lon === 'number')
+            .map((w: { lat: number; lon: number }) => ({ lat: w.lat, lon: w.lon }))
+        : undefined,
     };
   } catch {
     return null;

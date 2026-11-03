@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { ComparePage } from '@/app/pages/ComparePage';
+import { DEFAULT_OG_IMAGE } from '@/lib/static-map';
 
 export const metadata: Metadata = {
   title: 'Patreon vs Heimursaga for Expedition Creators (2026)',
@@ -7,6 +8,7 @@ export const metadata: Metadata = {
     'Compare Patreon and Heimursaga side by side — fees, sponsorship tools, mapping features, and expedition storytelling for sailors, overlanders, and adventure creators.',
   alternates: { canonical: '/compare/patreon' },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: 'Patreon vs Heimursaga | Heimursaga',
     description:
       'Compare Patreon and Heimursaga side by side — fees, sponsorship tools, mapping features, and expedition storytelling for adventure creators.',

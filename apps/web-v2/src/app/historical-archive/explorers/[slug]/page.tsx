@@ -9,6 +9,7 @@ import type {
   IHistoricalArchiveExpedition,
 } from '@repo/types';
 import { explorerSlug } from '../../buckets';
+import { DEFAULT_OG_IMAGE } from '@/lib/static-map';
 import {
   EXPLORER_BIOS,
   bioBySlug,
@@ -60,13 +61,13 @@ export async function generateMetadata({
       url: canonical,
       title,
       description,
-      images: cover ? [cover] : undefined,
+      images: [cover || DEFAULT_OG_IMAGE],
     },
     twitter: {
-      card: cover ? 'summary_large_image' : 'summary',
+      card: 'summary_large_image',
       title,
       description,
-      images: cover ? [cover] : undefined,
+      images: [cover || DEFAULT_OG_IMAGE],
     },
   };
 }

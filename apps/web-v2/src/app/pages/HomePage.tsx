@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { truncateExcerpt } from "@/app/utils/truncateExcerpt";
 import { calculateDaysElapsed } from "@/app/utils/dateFormat";
 import { getExplorerStatus, getCurrentExpeditionInfo } from "@/app/components/ExplorerStatusBadge";
+import { MIN_PUBLIC_EXPLORER_COUNT } from '@/app/utils/publicStats';
 
 // Shared transform: raw API expedition -> ExpeditionCard props
 function transformExpedition(exp: Expedition) {
@@ -140,6 +141,8 @@ export function HomePage() {
   const explorers = globalData?.explorers.data || [];
   const entries = globalData?.entries.data || [];
   const explorerCount = globalData?.explorers.results || 0;
+  // A tiny or not-yet-loaded count reads as "empty"; only show it once it means something.
+  const showExplorerCount = explorerCount >= MIN_PUBLIC_EXPLORER_COUNT;
 
   const followingExpeditions = followingData?.expeditions.data || [];
   const followingExplorers = followingData?.explorers.data || [];
@@ -349,9 +352,11 @@ export function HomePage() {
             <div className="flex items-center justify-center gap-2">
               <Globe className="w-4 h-4" />
               <span className="font-bold">GLOBAL</span>
-              <span className={`font-mono hidden md:inline ${viewMode === 'global' ? 'text-white/80' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
-                ({explorerCount} explorer{explorerCount !== 1 ? 's' : ''})
-              </span>
+              {showExplorerCount && (
+                <span className={`font-mono hidden md:inline ${viewMode === 'global' ? 'text-white/80' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                  ({explorerCount} explorers)
+                </span>
+              )}
             </div>
           </button>
 

@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { AuthPage } from '@/app/pages/AuthPage';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/auth' },
   title: 'Log In or Register',
   description:
     'Log in or create a Heimursaga account to start documenting your expeditions.',
