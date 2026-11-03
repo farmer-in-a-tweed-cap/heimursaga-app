@@ -17,7 +17,6 @@ import {
   IWaypointUpdatePayload,
   SponsorshipStatus,
   UserNotificationContext,
-  UserRole,
 } from '@repo/types';
 import {
   getEarlyAccessHoursForAmount,
@@ -34,7 +33,7 @@ import {
   idOrSlug,
 } from '@/lib/slug';
 import { getStaticMediaUrl } from '@/lib/upload';
-import { matchRoles, sortByDate } from '@/lib/utils';
+import { sortByDate } from '@/lib/utils';
 
 import {
   ServiceBadRequestException,
@@ -1781,7 +1780,7 @@ export class ExpeditionService {
     IExpeditionCreatePayload
   >): Promise<IExpeditionCreateResponse> {
     try {
-      const { explorerId, userRole } = session;
+      const { explorerId } = session;
 
       // check access - any authenticated user can create expeditions
       if (!explorerId) throw new ServiceForbiddenException();
@@ -1885,30 +1884,6 @@ export class ExpeditionService {
             'You already have an existing draft. Please finish or delete it before creating a new one.',
           );
         }
-      }
-
-      // Sponsorship goal requires Explorer Pro (not applicable to blueprints)
-      if (
-        !isBlueprint &&
-        payload.goal &&
-        payload.goal > 0 &&
-        !matchRoles(userRole, [UserRole.CREATOR])
-      ) {
-        throw new ServiceBadRequestException(
-          'Setting a sponsorship goal requires Explorer Pro',
-        );
-      }
-
-      // Notes access threshold requires Explorer Pro
-      if (
-        !isBlueprint &&
-        payload.notesAccessThreshold &&
-        payload.notesAccessThreshold > 0 &&
-        !matchRoles(userRole, [UserRole.CREATOR])
-      ) {
-        throw new ServiceBadRequestException(
-          'Setting a notes access threshold requires Explorer Pro',
-        );
       }
 
       // The "Historical Archive" category is gated to official accounts —
@@ -2076,7 +2051,7 @@ export class ExpeditionService {
   >): Promise<void> {
     try {
       const { id } = query;
-      const { explorerId, userRole } = session;
+      const { explorerId } = session;
 
       // check access - any authenticated user can update their own expeditions
       if (!explorerId) throw new ServiceForbiddenException();
@@ -2298,24 +2273,10 @@ export class ExpeditionService {
         updateData.cover_image = coverImage;
       }
       if (goal !== undefined) {
-        // Sponsorship goal requires Explorer Pro
-        if (goal > 0 && !matchRoles(userRole, [UserRole.CREATOR])) {
-          throw new ServiceBadRequestException(
-            'Setting a sponsorship goal requires Explorer Pro',
-          );
-        }
         updateData.goal = Math.round(goal * 100);
       }
       const notesAccessThreshold = (payload as any).notesAccessThreshold;
       if (notesAccessThreshold !== undefined) {
-        if (
-          notesAccessThreshold > 0 &&
-          !matchRoles(userRole, [UserRole.CREATOR])
-        ) {
-          throw new ServiceBadRequestException(
-            'Setting a notes access threshold requires Explorer Pro',
-          );
-        }
         updateData.notes_access_threshold = Math.round(
           notesAccessThreshold * 100,
         );
@@ -3454,7 +3415,7 @@ export class ExpeditionService {
   }: ISessionQuery<{ id: string }>): Promise<void> {
     try {
       const { id } = query;
-      const { explorerId, userRole } = session;
+      const { explorerId } = session;
 
       if (!explorerId) throw new ServiceForbiddenException();
       if (!id) throw new ServiceNotFoundException('expedition not found');
@@ -3514,22 +3475,6 @@ export class ExpeditionService {
         if (!expedition.category?.trim()) errors.push('Category is required');
         if (!expedition.start_date) errors.push('Start date is required');
         if (!expedition.cover_image) errors.push('Cover image is required');
-
-        // Pro checks
-        if (
-          expedition.goal &&
-          expedition.goal > 0 &&
-          !matchRoles(userRole, [UserRole.CREATOR])
-        ) {
-          errors.push('Setting a sponsorship goal requires Explorer Pro');
-        }
-        if (
-          expedition.notes_access_threshold &&
-          expedition.notes_access_threshold > 0 &&
-          !matchRoles(userRole, [UserRole.CREATOR])
-        ) {
-          errors.push('Setting a notes access threshold requires Explorer Pro');
-        }
       }
 
       if (errors.length > 0) {

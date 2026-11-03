@@ -192,9 +192,7 @@ const templates: {
   {
     key: EMAIL_TEMPLATES.WELCOME,
     subject: 'Welcome to Heimursaga',
-    html: (
-      v: { username?: string; accountType?: 'explorer' | 'explorer_pro' } = {},
-    ) => {
+    html: (v: { username?: string } = {}) => {
       const content = emailSection(`
         ${emailHeading('WELCOME TO HEIMURSAGA', 1)}
 
@@ -205,18 +203,6 @@ const templates: {
         <p style="margin: 0 0 16px 0; line-height: 1.6;">
           Your account has been created successfully. You now have access to the platform's journaling and exploration tools.
         </p>
-
-        ${
-          v.accountType === 'explorer_pro'
-            ? emailInfoBox(
-                `
-          <strong style="display: block; margin-bottom: 8px;">EXPLORER PRO ACCOUNT ACTIVE</strong>
-          Your account includes sponsorship reception capabilities, advanced analytics, and premium features.
-        `,
-                'success',
-              )
-            : ''
-        }
 
         ${emailHeading('GETTING STARTED', 2)}
 
@@ -1088,7 +1074,7 @@ const templates: {
 
             <div style="font-size: 12px; color: #616161; margin-top: 24px; padding: 12px; background-color: #f5f5f5; border: 1px solid #b5bcc4; line-height: 1.6;">
               <strong style="display: block; margin-bottom: 4px; color: #202020;">WHAT'S NEXT?</strong>
-              Share your completed expedition with your network, or start planning your next journey. Remember: you can have one active or planned expedition at a time.
+              Share your completed expedition with your network, or start planning your next journey.
             </div>
           `
               : ''

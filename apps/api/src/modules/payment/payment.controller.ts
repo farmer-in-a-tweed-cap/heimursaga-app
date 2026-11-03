@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -12,16 +11,11 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 
-import { Public, Session } from '@/common/decorators';
-import { ParamPublicIdDto, ParamSlugDto } from '@/common/dto';
+import { Session } from '@/common/decorators';
+import { ParamPublicIdDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
-import {
-  AppleReceiptDto,
-  PaymentMethodCreateDto,
-  PlanUpgradeCheckoutDto,
-  ValidatePromoCodeDto,
-} from './payment.dto';
+import { PaymentMethodCreateDto } from './payment.dto';
 import { PaymentService } from './payment.service';
 
 @ApiTags('payment-methods')
@@ -95,32 +89,6 @@ export class PaymentMethodController {
   }
 }
 
-@ApiTags('plans')
-@Controller('plans')
-export class PlansController {
-  constructor(private paymentService: PaymentService) {}
-
-  @Public()
-  @Get()
-  @HttpCode(HttpStatus.OK)
-  async getAll(@Session() session: ISession) {
-    return await this.paymentService.getPlans({
-      query: {},
-      session,
-    });
-  }
-
-  @Public()
-  @Get(':slug')
-  @HttpCode(HttpStatus.OK)
-  async getBySlug(@Session() session: ISession, @Param() param: ParamSlugDto) {
-    return await this.paymentService.getPlanBySlug({
-      query: { slug: param.slug },
-      session,
-    });
-  }
-}
-
 @ApiTags('plan')
 @Controller('plan')
 export class PlanController {
@@ -135,74 +103,12 @@ export class PlanController {
     });
   }
 
-  @Post('upgrade/checkout')
-  @HttpCode(HttpStatus.OK)
-  async checkoutUpgrade(
-    @Session() session: ISession,
-    @Body() body: PlanUpgradeCheckoutDto,
-  ) {
-    return await this.paymentService.checkoutSubscriptionPlanUpgrade({
-      query: {},
-      session,
-      payload: body,
-    });
-  }
-
   @Post('downgrade')
   @HttpCode(HttpStatus.OK)
   async downgrade(@Session() session: ISession) {
     return await this.paymentService.downgradeSubscriptionPlan({
       session,
       query: {},
-    });
-  }
-
-  @Post('reactivate')
-  @HttpCode(HttpStatus.OK)
-  async reactivate(@Session() session: ISession) {
-    return await this.paymentService.reactivateSubscription({
-      session,
-      query: {},
-    });
-  }
-
-  @Post('validate-promo-code')
-  @HttpCode(HttpStatus.OK)
-  async validatePromoCode(
-    @Session() session: ISession,
-    @Body() body: ValidatePromoCodeDto,
-  ) {
-    return await this.paymentService.validatePromoCode({
-      session,
-      payload: body,
-    });
-  }
-
-  @Post('upgrade/apple')
-  @HttpCode(HttpStatus.OK)
-  async upgradeViaApple(
-    @Session() session: ISession,
-    @Body() body: AppleReceiptDto,
-  ) {
-    return await this.paymentService.upgradeViaAppleReceipt({
-      session,
-      payload: body,
-    });
-  }
-
-  @Post('complete-checkout/:checkoutId')
-  @HttpCode(HttpStatus.OK)
-  async completeCheckout(
-    @Session() session: ISession,
-    @Param('checkoutId') checkoutId: string,
-  ) {
-    const id = parseInt(checkoutId, 10);
-    if (isNaN(id) || id <= 0) {
-      throw new BadRequestException('Invalid checkout ID');
-    }
-    return await this.paymentService.manuallyCompleteCheckout({
-      session,
-      checkoutId: id,
     });
   }
 }

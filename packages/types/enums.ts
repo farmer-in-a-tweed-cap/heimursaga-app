@@ -5,7 +5,7 @@ export enum AppErrorCode {
 
 export enum UserRole {
   ADMIN = 'admin',
-  CREATOR = 'creator', // Displayed to users as "Explorer Pro"
+  CREATOR = 'creator', // Legacy paid-plan role; grants nothing extra since all features are free
   USER = 'user',
 }
 

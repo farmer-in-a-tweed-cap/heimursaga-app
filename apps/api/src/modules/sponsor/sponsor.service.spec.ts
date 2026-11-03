@@ -102,21 +102,32 @@ describe('SponsorService', () => {
   });
 
   // ─── D7: checkout — non-CREATOR → 400 ───
-  describe('checkout — D7: non-CREATOR creator blocked', () => {
-    it('should throw 400 when creator is not CREATOR role', async () => {
+  describe('checkout — D7: any account can receive sponsorships', () => {
+    it('should accept a sponsorship for a regular (user-role) explorer', async () => {
       setupCheckoutMocks({ creatorRole: 'user' });
+      prisma.checkout.create.mockResolvedValue({ id: 101, public_id: 'co_1' });
+      prisma.checkout.update.mockResolvedValue({});
+      stripe.paymentIntents.create.mockResolvedValue({
+        id: 'pi_1',
+        client_secret: 'pi_secret_1',
+      });
+      prisma.paymentMethod.findFirstOrThrow.mockResolvedValue({
+        id: 1,
+        stripe_payment_method_id: 'pm_stripe_123',
+      });
 
-      await expect(
-        service.checkout({
-          session: userSession,
-          payload: {
-            sponsorshipTierId: 'tier_1',
-            creatorId: 'creator',
-            sponsorshipType: 'ONE_TIME_PAYMENT',
-            oneTimePaymentAmount: 10,
-          },
-        } as any),
-      ).rejects.toThrow(/not eligible to receive sponsorships/);
+      const result = await service.checkout({
+        session: userSession,
+        payload: {
+          sponsorshipTierId: 'tier_1',
+          creatorId: 'creator',
+          sponsorshipType: 'one_time_payment',
+          oneTimePaymentAmount: 10,
+          paymentMethodId: 'pm_local_1',
+        },
+      } as any);
+
+      expect(result.clientSecret).toBe('pi_secret_1');
     });
   });
 
@@ -240,6 +251,8 @@ describe('SponsorService', () => {
       expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
         expect.objectContaining({
           transfer_data: { destination: 'acct_creator' },
+          // $50: 10% platform ($5.00) + Stripe 2.9% + $0.30 ($1.75)
+          application_fee_amount: 675,
         }),
         expect.any(Object),
       );

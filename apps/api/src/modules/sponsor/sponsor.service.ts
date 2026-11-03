@@ -11,8 +11,8 @@ import {
   ISponsorshipTierCreatePayload,
   ISponsorshipTierGetAllResponse,
   ISponsorshipTierUpdatePayload,
-  MONTHLY_TIER_SLOTS,
   MIN_SPONSORSHIP_AMOUNT,
+  MONTHLY_TIER_SLOTS,
   ONE_TIME_TIER_SLOTS,
   PayoutMethodPlatform,
   QUICK_SPONSOR_AMOUNT,
@@ -20,7 +20,6 @@ import {
   SponsorshipStatus,
   SponsorshipType,
   UserNotificationContext,
-  UserRole,
   applicationFeePercentFor,
   calculateSponsorshipFees,
   getTierLabel,
@@ -33,8 +32,8 @@ import { dateformat } from '@/lib/date-format';
 import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 import { idOrSlug } from '@/lib/slug';
+import { ensureDefaultSponsorshipTiers } from '@/lib/sponsorship-tiers';
 import { getStaticMediaUrl } from '@/lib/upload';
-import { matchRoles } from '@/lib/utils';
 
 import { EMAIL_TEMPLATES } from '@/common/email-templates';
 import {
@@ -88,7 +87,7 @@ export class SponsorService {
     ISponsorCheckoutPayload
   >): Promise<ISponsorCheckoutResponse> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
       const {
         sponsorshipTierId,
         oneTimePaymentAmount,
@@ -172,13 +171,6 @@ export class SponsorService {
           is_guide: true,
         },
       });
-
-      // Verify creator has Explorer Pro status or is a guide (required to receive payments)
-      if (creator.role !== UserRole.CREATOR && !creator.is_guide) {
-        throw new ServiceBadRequestException(
-          'This explorer is not eligible to receive sponsorships',
-        );
-      }
 
       // Tips can only be sent to guide accounts
       if (sponsorshipType === SponsorshipType.TIP && !creator.is_guide) {
@@ -730,12 +722,6 @@ export class SponsorService {
           role: true,
         },
       });
-
-      if (creator.role !== UserRole.CREATOR) {
-        throw new ServiceBadRequestException(
-          'This explorer is not eligible to receive sponsorships',
-        );
-      }
 
       if (user.id === creator.id) {
         throw new ServiceBadRequestException('You cannot sponsor yourself');
@@ -1511,10 +1497,10 @@ export class SponsorService {
     session,
   }: ISessionQuery): Promise<ISponsorshipTierGetAllResponse> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
 
       // check access
-      const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
+      const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
       const where: Prisma.SponsorshipTierWhereInput = {
@@ -1522,20 +1508,11 @@ export class SponsorService {
         deleted_at: null,
       };
 
-      // get sponsorship tiers
+      // Explorers who set up payouts before every account could receive
+      // sponsorships may have no tier slots yet.
       const results = await this.prisma.sponsorshipTier.count({ where });
-
-      // create a sponsorship tier if it doesn't exist
       if (results < 1) {
-        await this.prisma.sponsorshipTier.create({
-          data: {
-            public_id: generator.publicId(),
-            price: config.sponsorship.default_amount,
-            is_available: false,
-            priority: 1,
-            explorer_id: userId,
-          },
-        });
+        await ensureDefaultSponsorshipTiers(this.prisma, userId);
       }
 
       const data = await this.prisma.sponsorshipTier.findMany({
@@ -1602,11 +1579,11 @@ export class SponsorService {
     id: string;
   }> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
       const { type, price, isAvailable = false, priority } = payload;
 
       // check access
-      const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
+      const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
       // Get tier slot config - slots are pre-defined with fixed labels and price ranges
@@ -1976,11 +1953,10 @@ export class SponsorService {
     skip?: string;
   }>): Promise<ISponsorshipGetAllResponse> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
 
       // check access
-      const access =
-        !!userId && matchRoles(userRole, [UserRole.USER, UserRole.CREATOR]);
+      const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
       // Parse pagination params with sensible defaults
@@ -2143,10 +2119,10 @@ export class SponsorService {
     skip?: string;
   }>): Promise<ISponsorshipGetAllResponse> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
 
       // check access
-      const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
+      const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
       // Parse pagination params with sensible defaults
@@ -2299,10 +2275,10 @@ export class SponsorService {
     }>;
   }> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
 
-      // check access - must be a creator
-      const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
+      // check access
+      const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
       // Query confirmed checkouts from our database (fast, no Stripe API call)
@@ -2465,11 +2441,11 @@ export class SponsorService {
     { chargeId: string; reason?: string }
   >): Promise<{ success: boolean; refundId: string }> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
       const { chargeId, reason } = payload;
 
-      // check access - must be a creator
-      const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
+      // check access
+      const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
       // get the user's payout method (connected account)
@@ -2583,15 +2559,14 @@ export class SponsorService {
     query,
   }: ISessionQuery<{ sponsorshipId: string }>): Promise<void> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
       const { sponsorshipId } = query;
 
       if (!sponsorshipId)
         throw new ServiceNotFoundException('sponsorship not found');
 
       // check access
-      const access =
-        !!userId && matchRoles(userRole, [UserRole.USER, UserRole.CREATOR]);
+      const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
       // get a sponsorship and verify ownership
@@ -2934,7 +2909,7 @@ export class SponsorService {
       const { userId } = session;
       if (!userId) throw new ServiceForbiddenException();
 
-      // Look up entry and verify author is Pro
+      // Look up entry and its author
       const entry = await this.prisma.entry.findFirst({
         where: { ...idOrSlug(entryPublicId), deleted_at: null },
         select: {
@@ -2962,12 +2937,6 @@ export class SponsorService {
       });
 
       if (!entry) throw new ServiceNotFoundException('Entry not found');
-
-      if (entry.author.role !== UserRole.CREATOR) {
-        throw new ServiceBadRequestException(
-          'This explorer is not eligible to receive sponsorships',
-        );
-      }
 
       if (entry.author_id === userId) {
         throw new ServiceBadRequestException('You cannot sponsor yourself');

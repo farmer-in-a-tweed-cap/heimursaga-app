@@ -15,12 +15,11 @@ import {
   PayoutStatus,
   StripeAccountStatus,
   StripePlayformAccountLinkMode,
-  UserRole,
 } from '@repo/types';
 
 import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
-import { matchRoles } from '@/lib/utils';
+import { ensureDefaultSponsorshipTiers } from '@/lib/sponsorship-tiers';
 
 import { CURRENCIES } from '@/common/constants';
 import {
@@ -231,16 +230,13 @@ export class PayoutService {
   >): Promise<IStripePlatformAccountLinkGenerateResponse> {
     try {
       // const { publicId, mode } = query;
-      const { userId, userRole } = session;
+      const { userId } = session;
       const { payoutMethodId, backUrl } = payload;
 
       const mode = StripePlayformAccountLinkMode.ONBOARDING;
 
-      // check access - only Explorer Pro can set up Stripe Connect
-      const access =
-        !!payoutMethodId &&
-        !!userId &&
-        matchRoles(userRole, [UserRole.CREATOR]);
+      // check access
+      const access = !!payoutMethodId && !!userId;
       if (!access) throw new ServiceForbiddenException();
 
       // get a payout method
@@ -314,11 +310,11 @@ export class PayoutService {
     IPayoutMethodCreatePayload
   >): Promise<IPayoutMethodCreateResponse> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
       const { country } = payload;
 
-      // check access - only Explorer Pro can create payout methods
-      const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
+      // check access
+      const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
       // check if the user already has a payout method
@@ -335,6 +331,10 @@ export class PayoutService {
         // Idempotent: return the existing payout method instead of throwing
         return { payoutMethodId: payoutMethod.public_id };
       } else {
+        // Every explorer can receive sponsorships; give them the default tier
+        // slots when they first set up payouts.
+        await ensureDefaultSponsorshipTiers(this.prisma, userId);
+
         // create a stripe account with idempotency
         const stripeAccount = await this.stripeService
           .createAccount({ country, userId })
@@ -373,11 +373,9 @@ export class PayoutService {
     session,
   }: ISessionQuery): Promise<IPayoutBalanceGetResponse> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
 
-      // Only Explorer Pro can view balance
-      if (!userId || !matchRoles(userRole, [UserRole.CREATOR]))
-        throw new ServiceForbiddenException();
+      if (!userId) throw new ServiceForbiddenException();
 
       // get a payout method
       const payoutMethod = await this.prisma.payoutMethod.findFirst({
@@ -433,18 +431,9 @@ export class PayoutService {
 
   async getPayouts({ session }: ISessionQuery): Promise<IPayoutGetResponse> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
 
-      // check access — creators and admins
       if (!userId) throw new ServiceForbiddenException();
-      const explorer = await this.prisma.explorer.findUnique({
-        where: { id: userId },
-        select: { admin: true, role: true },
-      });
-      const access =
-        explorer?.admin ||
-        matchRoles(explorer?.role as UserRole, [UserRole.CREATOR]);
-      if (!access) throw new ServiceForbiddenException();
 
       // Query confirmed checkouts from our database (reliable, no Stripe API dependency)
       const checkouts = await this.prisma.checkout.findMany({
@@ -503,10 +492,10 @@ export class PayoutService {
     IPayoutCreatePayload
   >): Promise<IPayoutCreateResponse> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
 
       // check access
-      const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
+      const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
       // get a user

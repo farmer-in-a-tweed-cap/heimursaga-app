@@ -115,7 +115,6 @@ export class ExplorerService {
 
       // Quick-filter (mirrors /explorers filter buttons).
       // - 'active': has at least one non-blueprint expedition currently active.
-      // - 'pro': role === CREATOR (displayed as "Explorer Pro").
       // - 'guide': is_guide flag set; the existing top-level OR already
       //   requires entries_count > 0 for guides, so the guide filter
       //   surfaces only journaling guides.
@@ -131,9 +130,6 @@ export class ExplorerService {
               },
             },
           };
-          break;
-        case 'pro':
-          where = { ...where, role: UserRole.CREATOR };
           break;
         case 'guide':
           where = { ...where, is_guide: true };

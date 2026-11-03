@@ -10,9 +10,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
-import { UserRole } from '@repo/types';
 
-import { Public, Roles, Session } from '@/common/decorators';
+import { Public, Session } from '@/common/decorators';
 import { IRequest, ISession } from '@/common/interfaces';
 import { PrismaService } from '@/modules/prisma';
 
@@ -47,7 +46,6 @@ export class StripeController {
     return this.stripeService.createSetupIntent({ userId: session.userId });
   }
 
-  @Roles(UserRole.CREATOR)
   @Get('account')
   async getAccount(@Session() session: ISession) {
     // Look up payout method by authenticated user - no need to expose Stripe account IDs
@@ -82,24 +80,6 @@ export class StripeController {
     };
   }
 
-  @Roles(UserRole.CREATOR)
-  @Post('account')
-  async createAccount(
-    @Session() session: ISession,
-    @Body() body: { country: string },
-  ) {
-    // Require authenticated creator
-    if (!session?.userId) {
-      throw new ForbiddenException('Authentication required');
-    }
-
-    return this.stripeService.createAccount({
-      country: body.country || 'US',
-      userId: session.userId,
-    });
-  }
-
-  @Roles(UserRole.CREATOR)
   @Post('account-link')
   async linkAccount(
     @Session() session: ISession,

@@ -18,14 +18,6 @@ export const config = {
   sponsorship: {
     default_amount: 500,
   },
-  premium: {
-    currency: 'usd',
-    monthlyPrice: 5,
-    yearlyPrice: 50,
-  },
-  apple: {
-    iapSharedSecret: process.env.APPLE_IAP_SHARED_SECRET,
-  },
 };
 
 const _rawFee = process.env.APPLICATION_FEE;

@@ -14,7 +14,6 @@ import { Session } from '@/common/decorators';
 import { ISession } from '@/common/interfaces';
 import { AuthGuard } from '@/modules/auth/auth.guard';
 
-import { CreatorRoleGuard } from './creator-role.guard';
 import {
   GetMessagesDto,
   MarkMessageReadDto,
@@ -22,9 +21,9 @@ import {
 } from './message.dto';
 import { MessageService } from './message.service';
 
-@ApiTags('Explorer Pro Messages')
+@ApiTags('Messages')
 @Controller('messages')
-@UseGuards(AuthGuard, CreatorRoleGuard)
+@UseGuards(AuthGuard)
 export class MessageController {
   constructor(private readonly messageService: MessageService) {}
 
@@ -35,15 +34,15 @@ export class MessageController {
     long: { limit: 20, ttl: 60000 },
   })
   @ApiOperation({
-    summary: 'Send message to another Explorer Pro member',
-    description: 'Send a private message to another Explorer Pro member',
+    summary: 'Send message to another explorer',
+    description: 'Send a private message to another explorer',
   })
   @ApiResponse({ status: 201, description: 'Message sent successfully' })
   @ApiResponse({
     status: 403,
-    description: 'Only Explorer Pro members can send messages',
+    description: 'Not signed in',
   })
-  @ApiResponse({ status: 404, description: 'Explorer Pro member not found' })
+  @ApiResponse({ status: 404, description: 'Explorer not found' })
   async sendMessage(
     @Body() payload: SendMessageDto,
     @Session() session: ISession,
@@ -58,7 +57,7 @@ export class MessageController {
   @Get('conversations')
   @ApiOperation({
     summary: 'Get all conversations',
-    description: 'Get all conversations for the current Explorer Pro member',
+    description: 'Get all conversations for the current explorer',
   })
   @ApiResponse({
     status: 200,
@@ -66,7 +65,7 @@ export class MessageController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Only Explorer Pro members can access conversations',
+    description: 'Not signed in',
   })
   async getConversations(@Session() session: ISession) {
     return this.messageService.getConversations({
@@ -76,16 +75,15 @@ export class MessageController {
 
   @Get('conversations/:username')
   @ApiOperation({
-    summary: 'Get conversation with specific Explorer Pro member',
-    description:
-      'Get all messages in a conversation with another Explorer Pro member',
+    summary: 'Get conversation with a specific explorer',
+    description: 'Get all messages in a conversation with another explorer',
   })
   @ApiResponse({ status: 200, description: 'Messages retrieved successfully' })
   @ApiResponse({
     status: 403,
-    description: 'Only Explorer Pro members can access messages',
+    description: 'Not signed in',
   })
-  @ApiResponse({ status: 404, description: 'Explorer Pro member not found' })
+  @ApiResponse({ status: 404, description: 'Explorer not found' })
   async getConversation(
     @Param('username') username: string,
     @Session() session: ISession,
@@ -105,7 +103,7 @@ export class MessageController {
   @ApiResponse({ status: 200, description: 'Message marked as read' })
   @ApiResponse({
     status: 403,
-    description: 'Only Explorer Pro members can mark messages as read',
+    description: 'Not signed in',
   })
   @ApiResponse({
     status: 404,
@@ -125,8 +123,7 @@ export class MessageController {
   @Get('unread-count')
   @ApiOperation({
     summary: 'Get unread message count',
-    description:
-      'Get the number of unread messages for the current Explorer Pro member',
+    description: 'Get the number of unread messages for the current explorer',
   })
   @ApiResponse({
     status: 200,
@@ -134,7 +131,7 @@ export class MessageController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Only Explorer Pro members can access message counts',
+    description: 'Not signed in',
   })
   async getUnreadCount(@Session() session: ISession) {
     return this.messageService.getUnreadCount({

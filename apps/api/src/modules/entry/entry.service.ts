@@ -8,7 +8,6 @@ import {
   IEntryGetByIdResponse,
   IEntryUpdatePayload,
   UserNotificationContext,
-  UserRole,
 } from '@repo/types';
 import { IEntryBookmarkResponse, IEntryLikeResponse } from '@repo/types';
 import {
@@ -22,7 +21,6 @@ import { generator } from '@/lib/generator';
 import { getCountryCodeFromCoordinates } from '@/lib/geocoding';
 import { buildEntrySlugBase, ensureUniqueSlug, idOrSlug } from '@/lib/slug';
 import { getStaticMediaUrl } from '@/lib/upload';
-import { matchRoles } from '@/lib/utils';
 
 import {
   ServiceBadRequestException,
@@ -145,6 +143,7 @@ function sanitizeEntryMetadata(
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
+const MAX_PHOTOS_PER_ENTRY = 10;
 @Injectable()
 export class EntryService {
   constructor(
@@ -379,12 +378,7 @@ export class EntryService {
       // is excluded by the base `where` (NOT entry_type='historical') and
       // surfaces on /historical-archive instead. Including it here would let
       // a caller pass ?entryType=historical and silently get zero results.
-      const allowedEntryTypes = new Set([
-        'standard',
-        'photo',
-        'video',
-        'data',
-      ]);
+      const allowedEntryTypes = new Set(['standard', 'photo', 'video', 'data']);
       if (entryType && allowedEntryTypes.has(entryType)) {
         if (entryType === 'standard') {
           where = {
@@ -1194,7 +1188,7 @@ export class EntryService {
     IEntryCreatePayload
   >): Promise<IEntryCreateResponse> {
     try {
-      const { explorerId, userRole } = session;
+      const { explorerId } = session;
 
       // check access
       const access = !!explorerId;
@@ -1310,18 +1304,6 @@ export class EntryService {
         }
       }
 
-      // Pro-only entry types require Explorer Pro
-      const proEntryTypes = ['photo', 'video', 'data'];
-      if (
-        entryType &&
-        proEntryTypes.includes(entryType) &&
-        !matchRoles(userRole, [UserRole.CREATOR])
-      ) {
-        throw new ServiceForbiddenException(
-          `${entryType} entries require Explorer Pro`,
-        );
-      }
-
       // Video entries don't allow photo uploads
       if (
         entryType === 'video' &&
@@ -1333,11 +1315,10 @@ export class EntryService {
         );
       }
 
-      // Enforce photo upload limits by account type
-      const maxUploads = matchRoles(userRole, [UserRole.CREATOR]) ? 10 : 2;
-      if (payload.uploads && payload.uploads.length > maxUploads) {
+      // Enforce photo upload limit
+      if (payload.uploads && payload.uploads.length > MAX_PHOTOS_PER_ENTRY) {
         throw new ServiceBadRequestException(
-          `Maximum ${maxUploads} photos per entry${matchRoles(userRole, [UserRole.CREATOR]) ? '' : '. Upgrade to Explorer Pro for up to 10'}`,
+          `Maximum ${MAX_PHOTOS_PER_ENTRY} photos per entry`,
         );
       }
 
@@ -1534,7 +1515,7 @@ export class EntryService {
   >): Promise<void> {
     try {
       const { publicId } = query;
-      const { explorerId, userRole } = session;
+      const { explorerId } = session;
       const {
         uploads,
         expeditionId,
@@ -1638,23 +1619,10 @@ export class EntryService {
         }
       }
 
-      // Pro-only entry types require Explorer Pro
-      const proEntryTypes = ['photo', 'video', 'data'];
-      if (
-        entryType &&
-        proEntryTypes.includes(entryType) &&
-        !matchRoles(userRole, [UserRole.CREATOR])
-      ) {
-        throw new ServiceForbiddenException(
-          `${entryType} entries require Explorer Pro`,
-        );
-      }
-
-      // Enforce photo upload limits by account type
-      const maxUploads = matchRoles(userRole, [UserRole.CREATOR]) ? 10 : 2;
-      if (uploads && uploads.length > maxUploads) {
+      // Enforce photo upload limit
+      if (uploads && uploads.length > MAX_PHOTOS_PER_ENTRY) {
         throw new ServiceBadRequestException(
-          `Maximum ${maxUploads} photos per entry${matchRoles(userRole, [UserRole.CREATOR]) ? '' : '. Upgrade to Explorer Pro for up to 10'}`,
+          `Maximum ${MAX_PHOTOS_PER_ENTRY} photos per entry`,
         );
       }
 

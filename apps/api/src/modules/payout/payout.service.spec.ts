@@ -25,6 +25,7 @@ describe('PayoutService', () => {
 
   beforeEach(() => {
     prisma = createMockPrismaService();
+    prisma.sponsorshipTier.findMany.mockResolvedValue([]);
     stripe = createMockStripeService();
     logger = createMockLogger();
 
@@ -148,11 +149,21 @@ describe('PayoutService', () => {
     });
   });
 
-  // ─── F1: getBalance — non-Creator → 403 ───
-  describe('getBalance — F1: non-Creator throws 403', () => {
-    it('should throw forbidden for USER role', async () => {
+  // ─── F1: getBalance — every account, signed in only ───
+  describe('getBalance — F1: any signed-in account can view balance', () => {
+    it('should return a balance for a regular (user-role) account', async () => {
+      prisma.payoutMethod.findFirst.mockResolvedValue(null);
+
+      const result = await service.getBalance({
+        session: userSession,
+      } as any);
+
+      expect(result.available.amount).toBe(0);
+    });
+
+    it('should throw forbidden when signed out', async () => {
       await expect(
-        service.getBalance({ session: userSession } as any),
+        service.getBalance({ session: { sid: 'test-sid' } } as any),
       ).rejects.toThrow();
     });
   });
@@ -323,14 +334,9 @@ describe('PayoutService', () => {
       );
     });
 
-    it('should throw forbidden for a non-creator, non-admin explorer', async () => {
-      prisma.explorer.findUnique.mockResolvedValue({
-        admin: false,
-        role: 'user',
-      });
-
+    it('should throw forbidden when signed out', async () => {
       await expect(
-        service.getPayouts({ session: userSession } as any),
+        service.getPayouts({ session: { sid: 'test-sid' } } as any),
       ).rejects.toThrow();
 
       // Earnings must not be queried at all once access is refused.

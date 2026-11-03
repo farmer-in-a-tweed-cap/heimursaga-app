@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { UserRole } from '@repo/types';
 
 import { generator } from '@/lib/generator';
 import { getStaticMediaUrl } from '@/lib/upload';
@@ -36,21 +35,25 @@ export class MessageService {
     session,
   }: ISessionQueryWithPayload<{}, IMessageSendPayload>): Promise<void> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
       const { content, recipientUsername } = payload;
 
-      // Verify sender is Explorer Pro
-      if (userRole !== UserRole.CREATOR) {
+      // Messaging is open to every account; a verified email keeps
+      // throwaway sign-ups from cold-messaging explorers.
+      const sender = await this.prisma.explorer.findUnique({
+        where: { id: userId },
+        select: { is_email_verified: true },
+      });
+      if (!sender?.is_email_verified) {
         throw new ServiceForbiddenException(
-          'Only Explorer Pro members can send messages',
+          'Verify your email address to send messages',
         );
       }
 
-      // Get recipient and verify they're also Explorer Pro
+      // Get recipient
       const recipient = await this.prisma.explorer.findFirst({
         where: {
           username: recipientUsername,
-          role: UserRole.CREATOR, // Backend role check
           blocked: false,
         },
         select: { id: true, username: true },
@@ -58,7 +61,7 @@ export class MessageService {
 
       if (!recipient) {
         throw new ServiceNotFoundException(
-          'Explorer Pro member not found or not available for messaging',
+          'Explorer not found or not available for messaging',
         );
       }
 
@@ -80,7 +83,7 @@ export class MessageService {
       });
 
       this.logger.log(
-        `Message sent from Explorer Pro ${userId} to Explorer Pro ${recipient.id}`,
+        `Message sent from explorer ${userId} to explorer ${recipient.id}`,
       );
     } catch (e) {
       this.logger.error(e);
@@ -94,28 +97,20 @@ export class MessageService {
     session,
   }: ISessionQueryWithPayload<{}, IMessageGetPayload>): Promise<IMessage[]> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
       const { recipientUsername } = payload;
-
-      // Verify user is Explorer Pro
-      if (userRole !== UserRole.CREATOR) {
-        throw new ServiceForbiddenException(
-          'Only Explorer Pro members can access messages',
-        );
-      }
 
       // Get recipient
       const recipient = await this.prisma.explorer.findFirst({
         where: {
           username: recipientUsername,
-          role: UserRole.CREATOR,
           blocked: false,
         },
         select: { id: true },
       });
 
       if (!recipient) {
-        throw new ServiceNotFoundException('Explorer Pro member not found');
+        throw new ServiceNotFoundException('Explorer not found');
       }
 
       // Get messages between the two users
@@ -197,14 +192,7 @@ export class MessageService {
     session: ISession;
   }): Promise<IConversation[]> {
     try {
-      const { userId, userRole } = session;
-
-      // Verify user is Explorer Pro
-      if (userRole !== UserRole.CREATOR) {
-        throw new ServiceForbiddenException(
-          'Only Explorer Pro members can access conversations',
-        );
-      }
+      const { userId } = session;
 
       // Get latest message for each conversation
       const conversations = await this.prisma.$queryRaw<
@@ -274,7 +262,7 @@ export class MessageService {
         LEFT JOIN user_profiles up ON up.user_id = u.id
         JOIN latest_messages lm ON lm.other_user_id = cp.other_user_id AND lm.rn = 1
         LEFT JOIN unread_counts uc ON uc.other_user_id = cp.other_user_id
-        WHERE u.role = 'creator' AND u.blocked = false
+        WHERE u.blocked = false
         ORDER BY lm.last_created_at DESC
       `;
 
@@ -305,15 +293,8 @@ export class MessageService {
     session,
   }: ISessionQueryWithPayload<{}, IMessageReadPayload>): Promise<void> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
       const { messageId } = payload;
-
-      // Verify user is Explorer Pro
-      if (userRole !== UserRole.CREATOR) {
-        throw new ServiceForbiddenException(
-          'Only Explorer Pro members can access messages',
-        );
-      }
 
       // Update message as read (only if user is the recipient)
       const result = await this.prisma.message.updateMany({
@@ -334,7 +315,7 @@ export class MessageService {
       }
 
       this.logger.log(
-        `Message ${messageId} marked as read by Explorer Pro ${userId}`,
+        `Message ${messageId} marked as read by explorer ${userId}`,
       );
     } catch (e) {
       this.logger.error(e);
@@ -349,14 +330,7 @@ export class MessageService {
     session: ISession;
   }): Promise<{ count: number }> {
     try {
-      const { userId, userRole } = session;
-
-      // Verify user is Explorer Pro
-      if (userRole !== UserRole.CREATOR) {
-        throw new ServiceForbiddenException(
-          'Only Explorer Pro members can access message counts',
-        );
-      }
+      const { userId } = session;
 
       const count = await this.prisma.message.count({
         where: {
@@ -364,7 +338,6 @@ export class MessageService {
           is_read: false,
           deleted_at: null,
           sender: {
-            role: 'creator',
             blocked: false,
           },
         },

@@ -1394,7 +1394,7 @@ export class AuthService {
         `[DELETE_ACCOUNT] Starting account deletion for user ${userId} (${user.username})`,
       );
 
-      // Cancel active Stripe subscriptions (Explorer Pro)
+      // Cancel any legacy paid-plan Stripe subscriptions
       if (user.stripe_customer_id) {
         try {
           const subscriptions = await this.stripeService.subscriptions.list({
