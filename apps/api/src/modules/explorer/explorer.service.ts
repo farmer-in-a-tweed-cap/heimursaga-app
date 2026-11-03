@@ -43,6 +43,7 @@ import {
   ISessionQuery,
   ISessionQueryWithPayload,
 } from '@/common/interfaces';
+import { HIDDEN_EXPLORER_USERNAMES } from '@/config';
 import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
@@ -107,6 +108,9 @@ export class ExplorerService {
       // endpoint that shows blocked users.
       let where: Prisma.ExplorerWhereInput = {
         blocked: false,
+        ...(HIDDEN_EXPLORER_USERNAMES.length > 0 && {
+          username: { notIn: HIDDEN_EXPLORER_USERNAMES, mode: 'insensitive' },
+        }),
         OR: [
           { is_guide: { not: true } },
           { is_guide: true, entries_count: { gt: 0 } },

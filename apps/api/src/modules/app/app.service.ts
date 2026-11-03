@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { IHistoricalArchiveResponse, ISitemapGetResponse } from '@repo/types';
 
 import { splitHistoricalTitle } from '@/lib/slug';
@@ -8,6 +9,7 @@ import {
   ServiceBadRequestException,
   ServiceInternalException,
 } from '@/common/exceptions';
+import { HIDDEN_EXPLORER_USERNAMES } from '@/config';
 import { EVENTS, EventService, IEventSendEmail } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
@@ -28,9 +30,18 @@ export class AppService {
       // drafted, or deleted). `is_draft` is not filtered — explorers can
       // mark `public: true` on in-progress entries and they should be
       // crawlable.
+      // Test / placeholder accounts stay out of the sitemap entirely.
+      const visibleAuthor: Prisma.ExplorerWhereInput = {
+        NOT: { blocked: true },
+        ...(HIDDEN_EXPLORER_USERNAMES.length > 0 && {
+          username: { notIn: HIDDEN_EXPLORER_USERNAMES, mode: 'insensitive' },
+        }),
+      };
+
       const posts = await this.prisma.entry.findMany({
         where: {
           public: true,
+          author: visibleAuthor,
           public_id: { not: null },
           deleted_at: null,
           NOT: { visibility: { in: ['private', 'off-grid'] } },
@@ -55,6 +66,7 @@ export class AppService {
       // expeditions (public, not deleted, not cancelled or drafted).
       const expeditions = await this.prisma.expedition.findMany({
         where: {
+          author: visibleAuthor,
           visibility: 'public',
           deleted_at: null,
           status: { notIn: ['cancelled', 'draft'] },
@@ -66,12 +78,31 @@ export class AppService {
         },
       });
 
-      // explorer journals (exclude blocked users)
+      // explorer journals: visible accounts with something public to read
+      // (empty journals are thin pages that dilute the sitemap)
       const users = await this.prisma.explorer.findMany({
         where: {
-          NOT: {
-            blocked: true,
-          },
+          ...visibleAuthor,
+          OR: [
+            {
+              entries: {
+                some: {
+                  public: true,
+                  deleted_at: null,
+                  NOT: { visibility: { in: ['private', 'off-grid'] } },
+                },
+              },
+            },
+            {
+              expeditions: {
+                some: {
+                  visibility: 'public',
+                  deleted_at: null,
+                  status: { notIn: ['cancelled', 'draft'] },
+                },
+              },
+            },
+          ],
         },
         select: {
           username: true,
@@ -113,121 +144,121 @@ export class AppService {
    * render server-side without N+1 fetches.
    */
   async getHistoricalArchive(): Promise<IHistoricalArchiveResponse> {
-   try {
-    const expeditions = await this.prisma.expedition.findMany({
-      where: {
-        visibility: 'public',
-        deleted_at: null,
-        status: { notIn: ['cancelled', 'draft'] },
-        author: { username: 'explorersfromhistory' },
-      },
-      select: {
-        public_id: true,
-        slug: true,
-        title: true,
-        description: true,
-        cover_image: true,
-        start_date: true,
-        end_date: true,
-        region: true,
-        country_code: true,
-        country_name: true,
-        entries_count: true,
-      },
-      orderBy: { start_date: 'asc' },
-    });
-
-    const entries = await this.prisma.entry.findMany({
-      where: {
-        public: true,
-        is_draft: false,
-        deleted_at: null,
-        public_id: { not: null },
-        NOT: { visibility: { in: ['private', 'off-grid'] } },
-        entry_type: 'historical',
-        author: { username: 'explorersfromhistory' },
-      },
-      select: {
-        public_id: true,
-        slug: true,
-        title: true,
-        content: true,
-        date: true,
-        place: true,
-        lat: true,
-        lon: true,
-        country_code: true,
-        cover_upload: { select: { original: true, thumbnail: true } },
-        media: {
-          take: 1,
-          orderBy: { created_at: 'asc' },
-          select: { upload: { select: { thumbnail: true, original: true } } },
+    try {
+      const expeditions = await this.prisma.expedition.findMany({
+        where: {
+          visibility: 'public',
+          deleted_at: null,
+          status: { notIn: ['cancelled', 'draft'] },
+          author: { username: 'explorersfromhistory' },
         },
-        expedition: { select: { public_id: true, slug: true, title: true } },
-      },
-      orderBy: { date: 'asc' },
-    });
+        select: {
+          public_id: true,
+          slug: true,
+          title: true,
+          description: true,
+          cover_image: true,
+          start_date: true,
+          end_date: true,
+          region: true,
+          country_code: true,
+          country_name: true,
+          entries_count: true,
+        },
+        orderBy: { start_date: 'asc' },
+      });
 
-    return {
-      expeditions: expeditions.map((x) => {
-        const { explorer, title: cleanTitle } = splitHistoricalTitle(x.title);
-        return {
-          publicId: x.public_id,
-          slug: x.slug || undefined,
-          title: x.title,
-          cleanTitle,
-          explorer: explorer || '',
-          description: x.description || '',
-          coverImage: x.cover_image
-            ? getStaticMediaUrl(x.cover_image)
-            : undefined,
-          startDate: x.start_date,
-          endDate: x.end_date,
-          region: x.region || undefined,
-          countryCode: x.country_code || undefined,
-          countryName: x.country_name || undefined,
-          entriesCount: x.entries_count || 0,
-        };
-      }),
-      entries: entries.map((e) => {
-        const { explorer, title: cleanTitle } = splitHistoricalTitle(e.title);
-        const expClean = e.expedition
-          ? splitHistoricalTitle(e.expedition.title).title
-          : undefined;
-        const firstMedia = e.media[0]?.upload;
-        const cover = e.cover_upload?.original
-          ? getStaticMediaUrl(e.cover_upload.original)
-          : firstMedia?.thumbnail
-            ? getStaticMediaUrl(firstMedia.thumbnail)
-            : firstMedia?.original
-              ? getStaticMediaUrl(firstMedia.original)
-              : undefined;
-        return {
-          publicId: e.public_id!,
-          slug: e.slug || undefined,
-          title: e.title || '',
-          cleanTitle,
-          explorer: explorer || '',
-          excerpt: (e.content || '')
-            .replace(/[#*_~`>[\]()!]/g, '')
-            .trim()
-            .slice(0, 220),
-          date: e.date,
-          place: e.place || undefined,
-          lat: typeof e.lat === 'number' ? e.lat : undefined,
-          lon: typeof e.lon === 'number' ? e.lon : undefined,
-          countryCode: e.country_code || undefined,
-          coverImage: cover,
-          expeditionPublicId: e.expedition?.public_id,
-          expeditionSlug: e.expedition?.slug || undefined,
-          expeditionTitle: expClean,
-        };
-      }),
-    };
-   } catch (error) {
-     this.logger.error('getHistoricalArchive failed', error);
-     return { expeditions: [], entries: [] };
-   }
+      const entries = await this.prisma.entry.findMany({
+        where: {
+          public: true,
+          is_draft: false,
+          deleted_at: null,
+          public_id: { not: null },
+          NOT: { visibility: { in: ['private', 'off-grid'] } },
+          entry_type: 'historical',
+          author: { username: 'explorersfromhistory' },
+        },
+        select: {
+          public_id: true,
+          slug: true,
+          title: true,
+          content: true,
+          date: true,
+          place: true,
+          lat: true,
+          lon: true,
+          country_code: true,
+          cover_upload: { select: { original: true, thumbnail: true } },
+          media: {
+            take: 1,
+            orderBy: { created_at: 'asc' },
+            select: { upload: { select: { thumbnail: true, original: true } } },
+          },
+          expedition: { select: { public_id: true, slug: true, title: true } },
+        },
+        orderBy: { date: 'asc' },
+      });
+
+      return {
+        expeditions: expeditions.map((x) => {
+          const { explorer, title: cleanTitle } = splitHistoricalTitle(x.title);
+          return {
+            publicId: x.public_id,
+            slug: x.slug || undefined,
+            title: x.title,
+            cleanTitle,
+            explorer: explorer || '',
+            description: x.description || '',
+            coverImage: x.cover_image
+              ? getStaticMediaUrl(x.cover_image)
+              : undefined,
+            startDate: x.start_date,
+            endDate: x.end_date,
+            region: x.region || undefined,
+            countryCode: x.country_code || undefined,
+            countryName: x.country_name || undefined,
+            entriesCount: x.entries_count || 0,
+          };
+        }),
+        entries: entries.map((e) => {
+          const { explorer, title: cleanTitle } = splitHistoricalTitle(e.title);
+          const expClean = e.expedition
+            ? splitHistoricalTitle(e.expedition.title).title
+            : undefined;
+          const firstMedia = e.media[0]?.upload;
+          const cover = e.cover_upload?.original
+            ? getStaticMediaUrl(e.cover_upload.original)
+            : firstMedia?.thumbnail
+              ? getStaticMediaUrl(firstMedia.thumbnail)
+              : firstMedia?.original
+                ? getStaticMediaUrl(firstMedia.original)
+                : undefined;
+          return {
+            publicId: e.public_id!,
+            slug: e.slug || undefined,
+            title: e.title || '',
+            cleanTitle,
+            explorer: explorer || '',
+            excerpt: (e.content || '')
+              .replace(/[#*_~`>[\]()!]/g, '')
+              .trim()
+              .slice(0, 220),
+            date: e.date,
+            place: e.place || undefined,
+            lat: typeof e.lat === 'number' ? e.lat : undefined,
+            lon: typeof e.lon === 'number' ? e.lon : undefined,
+            countryCode: e.country_code || undefined,
+            coverImage: cover,
+            expeditionPublicId: e.expedition?.public_id,
+            expeditionSlug: e.expedition?.slug || undefined,
+            expeditionTitle: expClean,
+          };
+        }),
+      };
+    } catch (error) {
+      this.logger.error('getHistoricalArchive failed', error);
+      return { expeditions: [], entries: [] };
+    }
   }
 
   async submitContactForm(payload: {

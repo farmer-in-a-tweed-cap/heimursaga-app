@@ -33,3 +33,14 @@ if (_rawFee !== undefined && !_isFeeValid) {
 }
 
 export const APPLICATION_FEE = _isFeeValid ? _parsedFee : 10;
+
+/**
+ * Test / placeholder accounts kept out of public listings and the sitemap.
+ * Comma-separated usernames, e.g. HIDDEN_EXPLORER_USERNAMES=guide1,explorer1
+ */
+export const HIDDEN_EXPLORER_USERNAMES: string[] = (
+  process.env.HIDDEN_EXPLORER_USERNAMES || ''
+)
+  .split(',')
+  .map((u) => u.trim().toLowerCase())
+  .filter(Boolean);
