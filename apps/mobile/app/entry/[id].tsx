@@ -196,7 +196,7 @@ export default function EntryDetailScreen() {
               style={styles.heroAuthor}
               onPress={() => router.replace(`/explorer/${entry.author.username}`)}
             >
-              <Avatar size={20} name={entry.author.username} imageUrl={entry.author.picture} pro={entry.author.creator} />
+              <Avatar size={20} name={entry.author.username} imageUrl={entry.author.picture} />
               <Text style={styles.heroAuthorText}>
                 {entry.author.username}
                 {entry.trip ? ` · ${entry.trip.title}` : ''}

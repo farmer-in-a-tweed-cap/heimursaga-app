@@ -2,14 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
-import { useAuth } from '@/context/AuthContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useApi } from '@/hooks/useApi';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { HCard } from '@/components/ui/HCard';
-import { HButton } from '@/components/ui/HButton';
 import { ConversationItem } from '@/components/ui/ConversationItem';
-import { mono, colors as brandColors, borders } from '@/theme/tokens';
+import { mono, colors as brandColors } from '@/theme/tokens';
 import { NavBar } from '@/components/ui/NavBar';
 import type { Conversation } from '@/types/api';
 
@@ -17,10 +15,8 @@ export default function MessagesScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { ready } = useRequireAuth();
-  const { user } = useAuth();
-  const isPro = !!user?.is_pro;
   const { data: conversations, loading } = useApi<Conversation[]>(
-    ready && isPro ? '/messages/conversations' : null,
+    ready ? '/messages/conversations' : null,
   );
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,19 +46,6 @@ export default function MessagesScreen() {
       <NavBar onBack={() => router.back()} title="MESSAGES" />
 
       <ScrollView>
-        {!isPro ? (
-          <View style={styles.upgradeWrap}>
-            <View style={[styles.upgradeCard, { backgroundColor: colors.card, borderColor: brandColors.copper }]}>
-              <Text style={[styles.upgradeTitle, { color: colors.text }]}>Explorer Pro</Text>
-              <Text style={[styles.upgradeDesc, { color: colors.textSecondary }]}>
-                Upgrade to Explorer Pro to send and receive direct messages with other explorers.
-              </Text>
-              <HButton variant="copper" onPress={() => router.push('/upgrade')}>
-                UPGRADE TO PRO
-              </HButton>
-            </View>
-          </View>
-        ) : (
           <>
             <View style={styles.searchWrap}>
               <SearchBar placeholder="Search conversations..." value={searchQuery} onChangeText={setSearchQuery} />
@@ -95,7 +78,6 @@ export default function MessagesScreen() {
 
             <View style={styles.spacer} />
           </>
-        )}
       </ScrollView>
     </View>
   );
@@ -135,9 +117,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 40,
   },
-  upgradeWrap: { padding: 16, paddingVertical: 24 },
-  upgradeCard: { borderWidth: borders.thick, padding: 20, gap: 14 },
-  upgradeTitle: { fontFamily: mono, fontSize: 16, fontWeight: '700', letterSpacing: 0.4 },
-  upgradeDesc: { fontFamily: mono, fontSize: 12, lineHeight: 18 },
   spacer: { height: 32 },
 });

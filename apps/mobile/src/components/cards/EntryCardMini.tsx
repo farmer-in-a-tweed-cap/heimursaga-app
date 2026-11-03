@@ -69,7 +69,7 @@ export function EntryCardMini({ entry, onPress, showAuthor = true }: EntryCardMi
           </Text>
           {showAuthor && (
             <View style={styles.authorRow}>
-              <Avatar size={16} name={entry.author.username} imageUrl={entry.author.picture} pro={entry.author.creator} />
+              <Avatar size={16} name={entry.author.username} imageUrl={entry.author.picture} />
               <Text style={styles.authorName}>{entry.author.username}</Text>
               {expeditionRef && (
                 <Text style={[styles.expeditionName, { color: colors.textTertiary }]}>

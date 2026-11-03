@@ -1335,7 +1335,7 @@ export default function ExpeditionDetailScreen() {
               onPress={() => router.push(`/explorer/${expedition.author!.username}`)}
               style={styles.explorerRow}
             >
-              <Avatar size={28} name={expedition.author.username} imageUrl={expedition.author.picture} pro={expedition.author.creator} />
+              <Avatar size={28} name={expedition.author.username} imageUrl={expedition.author.picture} />
               <Text style={[styles.explorerName, { color: brandColors.copper }]}>
                 {expedition.author.username}
               </Text>

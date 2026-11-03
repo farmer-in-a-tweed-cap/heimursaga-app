@@ -41,7 +41,6 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
   })();
 
   const sponsorable =
-    expedition.author?.creator &&
     expedition.author?.stripeAccountConnected &&
     (expedition.goal ?? 0) > 0;
 
@@ -130,7 +129,7 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
         <View style={styles.body}>
           {expedition.author && (
             <View style={styles.authorRow}>
-              <Avatar size={20} name={expedition.author.username} imageUrl={expedition.author.picture} pro={expedition.author.creator} />
+              <Avatar size={20} name={expedition.author.username} imageUrl={expedition.author.picture} />
               <Text style={styles.authorName}>
                 {expedition.author.username}
               </Text>

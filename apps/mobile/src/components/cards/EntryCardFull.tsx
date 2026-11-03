@@ -72,7 +72,7 @@ export function EntryCardFull({ entry, onPress, showAuthor = true }: EntryCardFu
         <View style={[styles.footer, { borderTopColor: colors.borderThin }]}>
           {showAuthor && (
             <View style={styles.authorRow}>
-              <Avatar size={22} name={entry.author.username} imageUrl={entry.author.picture} pro={entry.author.creator} />
+              <Avatar size={22} name={entry.author.username} imageUrl={entry.author.picture} />
               <Text style={styles.authorName}>{entry.author.username}</Text>
             </View>
           )}

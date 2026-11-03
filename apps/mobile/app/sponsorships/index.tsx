@@ -4,7 +4,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
-import { useAuth } from '@/context/AuthContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useApi } from '@/hooks/useApi';
 import { NavBar } from '@/components/ui/NavBar';
@@ -15,26 +14,22 @@ import { StatsBar } from '@/components/ui/StatsBar';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { SectionDivider } from '@/components/ui/SectionDivider';
 import { payoutApi } from '@/services/api';
-import { mono, colors as brandColors, borders } from '@/theme/tokens';
+import { mono, colors as brandColors } from '@/theme/tokens';
 import type { Sponsorship, SponsorshipTier, Balance, Payout } from '@/types/api';
 
 const TABS = ['OVERVIEW', 'SPONSORS', 'TIERS', 'PAYOUTS', 'OUTGOING'];
-const PRO_TABS = new Set(['OVERVIEW', 'SPONSORS', 'TIERS', 'PAYOUTS']);
 
 export default function SponsorshipsScreen() {
   const { dark, colors } = useTheme();
   const router = useRouter();
   const { ready } = useRequireAuth();
-  const { user } = useAuth();
-  const isPro = !!user?.is_pro;
   const [activeTab, setActiveTab] = useState(0);
   const activeTabName = TABS[activeTab];
-  const needsUpgrade = !isPro && PRO_TABS.has(activeTabName);
 
-  const { data: receivedData } = useApi<{ data: Sponsorship[]; results: number }>(ready && isPro ? '/sponsorships' : null);
+  const { data: receivedData } = useApi<{ data: Sponsorship[]; results: number }>(ready ? '/sponsorships' : null);
   const { data: givenData } = useApi<{ data: Sponsorship[]; results: number }>(ready && activeTabName === 'OUTGOING' ? '/sponsorships/given' : null);
   const { data: tiersData } = useApi<{ data: SponsorshipTier[]; results: number }>(ready && activeTabName === 'TIERS' ? '/sponsorship-tiers' : null);
-  const { data: balance } = useApi<Balance>(ready && isPro ? '/balance' : null);
+  const { data: balance } = useApi<Balance>(ready ? '/balance' : null);
   const { data: payoutsData } = useApi<{ data: Payout[]; results: number }>(ready && activeTabName === 'PAYOUTS' ? '/payouts' : null);
 
   const received = receivedData?.data ?? [];
@@ -101,23 +96,9 @@ export default function SponsorshipsScreen() {
 
       <ScrollView>
         <View style={styles.content}>
-          {/* Upgrade prompt for free users on Pro tabs */}
-          {needsUpgrade && (
-            <View style={styles.upgradeWrap}>
-              <View style={[styles.upgradeCard, { backgroundColor: colors.card, borderColor: brandColors.copper }]}>
-                <Text style={[styles.upgradeTitle, { color: colors.text }]}>Explorer Pro</Text>
-                <Text style={[styles.upgradeDesc, { color: colors.textSecondary }]}>
-                  Upgrade to Explorer Pro to receive sponsorships, manage tiers, view analytics, and request payouts.
-                </Text>
-                <HButton variant="copper" onPress={() => router.push('/upgrade')}>
-                  UPGRADE TO PRO
-                </HButton>
-              </View>
-            </View>
-          )}
 
           {/* OVERVIEW */}
-          {!needsUpgrade && activeTabName === 'OVERVIEW' && (
+          {activeTabName === 'OVERVIEW' && (
             <>
               <StatsBar
                 stats={[
@@ -181,7 +162,7 @@ export default function SponsorshipsScreen() {
           )}
 
           {/* SPONSORS */}
-          {!needsUpgrade && activeTabName === 'SPONSORS' && (
+          {activeTabName === 'SPONSORS' && (
             <>
               {received.map((s) => {
                 const sponsor = s.user;
@@ -211,7 +192,7 @@ export default function SponsorshipsScreen() {
           )}
 
           {/* TIERS */}
-          {!needsUpgrade && activeTabName === 'TIERS' && (
+          {activeTabName === 'TIERS' && (
             <>
               {(['ONE_TIME', 'MONTHLY'] as const).map((tierType) => {
                 const filtered = tiers.filter((t) => t.type === tierType);
@@ -251,7 +232,7 @@ export default function SponsorshipsScreen() {
           )}
 
           {/* PAYOUTS */}
-          {!needsUpgrade && activeTabName === 'PAYOUTS' && (
+          {activeTabName === 'PAYOUTS' && (
             <>
               {balance && (
                 <StatsBar
@@ -380,10 +361,6 @@ const styles = StyleSheet.create({
   tabItemActive: { borderBottomColor: brandColors.copper },
   tabLabel: { fontFamily: mono, fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
   content: { padding: 16 },
-  upgradeWrap: { paddingVertical: 24 },
-  upgradeCard: { borderWidth: borders.thick, padding: 20, gap: 14 },
-  upgradeTitle: { fontFamily: mono, fontSize: 16, fontWeight: '700', letterSpacing: 0.4 },
-  upgradeDesc: { fontFamily: mono, fontSize: 12, lineHeight: 18 },
   pad: { paddingHorizontal: 0 },
   empty: { fontFamily: mono, fontSize: 12, fontWeight: '600', textAlign: 'center', paddingVertical: 24 },
   balanceCard: { padding: 16, alignItems: 'center' },

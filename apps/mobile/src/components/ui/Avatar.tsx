@@ -5,14 +5,13 @@ import { colors as brandColors, mono } from '@/theme/tokens';
 interface AvatarProps {
   size?: number;
   name: string;
-  pro?: boolean;
   imageUrl?: string;
 }
 
-export function Avatar({ size = 32, name, pro, imageUrl }: AvatarProps) {
+export function Avatar({ size = 32, name, imageUrl }: AvatarProps) {
   const [imgError, setImgError] = useState(false);
   const initial = name.charAt(0).toUpperCase();
-  const borderColor = pro ? brandColors.copper : brandColors.lightGray;
+  const borderColor = brandColors.lightGray;
   const bw = size >= 48 ? 3 : 2;
   const innerSize = size - bw * 2;
   const showImage = imageUrl && !imgError;

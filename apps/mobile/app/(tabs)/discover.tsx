@@ -16,7 +16,7 @@ import type { Expedition, ExplorerProfile, Entry } from '@/types/api';
 const TABS = ['EXPLORERS', 'EXPEDITIONS', 'ENTRIES'];
 
 const EXPEDITION_FILTERS = ['ALL', 'ACTIVE', 'PLANNED', 'COMPLETED', 'BLUEPRINTS'];
-const EXPLORER_FILTERS = ['ALL', 'ACTIVE NOW', 'PRO'];
+const EXPLORER_FILTERS = ['ALL', 'ACTIVE NOW'];
 const ENTRY_FILTERS = ['ALL', 'STANDARD', 'PHOTO', 'VIDEO', 'DATA'];
 
 function QuickFilters({ options, active, onSelect, colors }: {
@@ -122,7 +122,6 @@ export default function DiscoverScreen() {
   const filteredExplorers = useMemo(() => {
     let source = allExplorers;
     if (explorerFilter === 1) source = source.filter(e => !!e.activeExpeditionLocation);
-    else if (explorerFilter === 2) source = source.filter(e => !!e.creator);
 
     if (q) {
       source = source.filter(e =>

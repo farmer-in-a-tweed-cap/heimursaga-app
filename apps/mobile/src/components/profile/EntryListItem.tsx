@@ -48,7 +48,7 @@ export function EntryListItem({ entry, showAuthor = false }: EntryListItemProps)
           <View style={[styles.footer, { borderTopColor: colors.borderThin }]}>
             {showAuthor && (
               <View style={styles.authorRow}>
-                <Avatar size={18} name={entry.author.username} imageUrl={entry.author.picture} pro={entry.author.creator} />
+                <Avatar size={18} name={entry.author.username} imageUrl={entry.author.picture} />
                 <Text style={styles.authorName}>{entry.author.username}</Text>
                 {expeditionRef && (
                   <Text style={[styles.expeditionName, { color: colors.textTertiary }]}>

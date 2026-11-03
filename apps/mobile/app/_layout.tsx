@@ -583,7 +583,6 @@ function RootNav() {
         <Stack.Screen name="messages/[username]" />
         <Stack.Screen name="sponsor/[id]" />
         <Stack.Screen name="sponsorships/index" />
-        <Stack.Screen name="upgrade" />
       </Stack>
     </>
   );

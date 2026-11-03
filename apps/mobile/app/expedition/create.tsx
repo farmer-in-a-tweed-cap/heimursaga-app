@@ -7,7 +7,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
-import { useApi } from '@/hooks/useApi';
 import { NavBar } from '@/components/ui/NavBar';
 import { HTextField } from '@/components/ui/HTextField';
 import { HButton } from '@/components/ui/HButton';
@@ -99,34 +98,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
   const [editExpedition, setEditExpedition] = useState<Expedition | null>(null);
   const [originalVisibility, setOriginalVisibility] = useState<string | null>(null);
 
-  // Check for existing active/planned expeditions (skip in edit mode)
-  const { data: userTripsData, loading: tripsLoading } = useApi<{ data: Expedition[] }>(
-    ready && !isEditMode ? '/user/trips' : null,
-  );
-  const userExpeditions = userTripsData?.data ?? [];
-  const blockingExpedition = !isEditMode ? userExpeditions.find(e => e.status === 'active' || e.status === 'planned') : undefined;
 
-  const handleCompleteExpedition = useCallback(async (exp: Expedition) => {
-    Alert.alert(
-      'Complete Expedition',
-      `Mark "${exp.title}" as completed so you can start a new one?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Complete',
-          onPress: async () => {
-            try {
-              await expeditionApi.updateExpedition(exp.id, { status: 'completed' } as any);
-              router.replace('/expedition/create');
-            } catch (err: any) {
-              const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
-              Alert.alert('Error', msg);
-            }
-          },
-        },
-      ],
-    );
-  }, [router]);
 
   const [step, setStepRaw] = useState(0);
   const setStep = useCallback((s: number | ((prev: number) => number)) => {
@@ -936,56 +908,11 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
   const isVisibilityPrivateDisabled = isEditMode && originalVisibility !== 'private';
   const isSponsorshipLocked = isEditMode && editExpedition?.status === 'completed';
 
-  if (!ready || (!isEditMode && tripsLoading) || editLoading) {
+  if (!ready || editLoading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <NavBar onBack={() => router.back()} title={isEditMode ? 'EDIT EXPEDITION' : 'NEW EXPEDITION'} />
         <ActivityIndicator color={brandColors.copper} style={styles.loader} />
-      </View>
-    );
-  }
-
-  if (!isEditMode && blockingExpedition) {
-    const isActive = blockingExpedition.status === 'active';
-    const endDatePassed = blockingExpedition.endDate && new Date(blockingExpedition.endDate) < new Date();
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <NavBar onBack={() => router.back()} title="NEW EXPEDITION" />
-        <View style={styles.blockedWrap}>
-          <HCard>
-            <View style={styles.blockedInner}>
-              <Text style={[styles.blockedTitle, { color: colors.text }]}>
-                {isActive ? 'ACTIVE' : 'PLANNED'} EXPEDITION IN PROGRESS
-              </Text>
-              <Text style={[styles.blockedName, { color: brandColors.copper }]}>
-                {blockingExpedition.title}
-              </Text>
-              <Text style={[styles.blockedDesc, { color: colors.textSecondary }]}>
-                You can only have one active or planned expedition at a time. Complete or cancel your current expedition to start a new one.
-              </Text>
-              <View style={styles.blockedActions}>
-                <HButton
-                  variant="copper"
-                  outline
-                  onPress={() => router.push(`/expedition/${blockingExpedition.id}`)}
-                >
-                  VIEW EXPEDITION
-                </HButton>
-                {(isActive || endDatePassed) && (
-                  <>
-                    <View style={styles.blockedGap} />
-                    <HButton
-                      variant="copper"
-                      onPress={() => handleCompleteExpedition(blockingExpedition)}
-                    >
-                      MARK AS COMPLETED
-                    </HButton>
-                  </>
-                )}
-              </View>
-            </View>
-          </HCard>
-        </View>
       </View>
     );
   }
@@ -1991,8 +1918,8 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                 </View>
               </HCard>
 
-              {/* Notes visibility — only for Pro users with Stripe Connect and non-private expeditions */}
-              {user?.is_pro && user?.stripeAccountConnected && visibility !== 2 && (
+              {/* Notes visibility — only with Stripe Connect and non-private expeditions */}
+              {user?.stripeAccountConnected && visibility !== 2 && (
                 <>
                   <View style={[styles.sectionHeader, { marginTop: 16 }]}>
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>EXPEDITION NOTES</Text>
@@ -2258,13 +2185,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingBottom: 120 },
   loader: { flex: 1 },
-  blockedWrap: { padding: 16, paddingTop: 24 },
-  blockedInner: { padding: 16 },
-  blockedTitle: { fontFamily: mono, fontSize: 14, fontWeight: '700', letterSpacing: 0.8 },
-  blockedName: { fontSize: 18, fontWeight: '700', marginTop: 8 },
-  blockedDesc: { fontSize: 14, lineHeight: 20, marginTop: 12 },
-  blockedActions: { marginTop: 20 },
-  blockedGap: { height: 8 },
   scroll: { flex: 1 },
   form: { padding: 16 },
   infoBanner: {

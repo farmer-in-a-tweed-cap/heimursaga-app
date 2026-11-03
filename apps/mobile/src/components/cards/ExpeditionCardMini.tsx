@@ -39,7 +39,6 @@ export function ExpeditionCardMini({ expedition, onPress }: ExpeditionCardMiniPr
     : '';
 
   const sponsorable =
-    expedition.author?.creator &&
     expedition.author?.stripeAccountConnected &&
     (expedition.goal ?? 0) > 0;
 

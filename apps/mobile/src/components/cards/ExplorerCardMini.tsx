@@ -33,7 +33,7 @@ export function ExplorerCardMini({ explorer, onPress, action }: ExplorerCardMini
             size={44}
             name={explorer.username}
             imageUrl={explorer.picture}
-            pro={explorer.creator}
+           
           />
           <Text style={styles.username} numberOfLines={1}>
             {explorer.username}

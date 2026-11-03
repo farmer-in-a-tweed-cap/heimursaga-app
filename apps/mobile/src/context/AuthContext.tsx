@@ -28,7 +28,6 @@ interface User {
   display_name?: string;
   avatar_url?: string;
   picture?: string;
-  is_pro?: boolean;
   isPremium?: boolean;
   role?: string;
   isGuide?: boolean;
@@ -60,7 +59,7 @@ interface AuthContextValue {
   register: (email: string, username: string, password: string, inviteCode?: string) => Promise<void>;
   logout: () => Promise<void>;
   setBiometricEnabled: (enabled: boolean) => Promise<void>;
-  /** Re-fetch the current user from API (e.g. after upgrading to Pro) */
+  /** Re-fetch the current user from API */
   refreshUser: () => Promise<void>;
 }
 
@@ -69,9 +68,6 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUserRaw] = useState<User | null>(null);
   const setUser = (u: User | null) => {
-    if (u) {
-      u.is_pro = u.role === 'creator' || u.is_pro || u.isPremium || false;
-    }
     setUserRaw(u);
   };
   const [loading, setLoading] = useState(true);
@@ -111,7 +107,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(res.data);
         analytics.identify(String(res.data.id), {
           username: res.data.username,
-          is_pro: res.data.is_pro,
         });
       } catch (err) {
         if (__DEV__) console.log('[Auth] auto-login failed:', err instanceof ApiError ? `${err.status}: ${err.message}` : err);
@@ -137,7 +132,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setHasStoredSession(false);
       analytics.identify(String(res.data.user.id), {
         username: res.data.user.username,
-        is_pro: res.data.user.is_pro,
       });
       analytics.track('login', { method: 'password' });
     },
@@ -169,7 +163,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setHasStoredSession(false);
       analytics.identify(String(res.data.user.id), {
         username: res.data.user.username,
-        is_pro: res.data.user.is_pro,
       });
       analytics.track('signup', { method: 'email' });
     },

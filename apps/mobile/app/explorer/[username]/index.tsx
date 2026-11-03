@@ -153,7 +153,7 @@ export default function ExplorerProfileScreen() {
           locationFrom={profile.locationFrom}
           locationLives={profile.locationLives}
           memberSince={memberSince}
-          isPro={profile.creator}
+         
           avatarUrl={profile.picture}
           coverPhotoUrl={profile.coverPhoto}
         />
@@ -408,7 +408,7 @@ export default function ExplorerProfileScreen() {
         <View style={styles.sectionContent}>
           <HCard>
             {[
-              { label: 'Account Type', value: profile.creator ? 'Explorer Pro' : 'Explorer' },
+              { label: 'Account Type', value: profile.isGuide ? 'Expedition Guide' : 'Explorer' },
               { label: 'Member Since', value: memberSince ?? 'Unknown' },
               ...(profile.locationFrom ? [{ label: 'From', value: profile.locationFrom }] : []),
               ...(profile.locationLives ? [{ label: 'Based In', value: profile.locationLives }] : []),

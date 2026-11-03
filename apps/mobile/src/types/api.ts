@@ -21,12 +21,12 @@ export interface User {
   email: string;
   display_name?: string;
   avatar_url?: string;
-  is_pro?: boolean;
   created_at?: string;
 }
 
 export interface ExplorerProfile {
   username: string;
+  isGuide?: boolean;
   name?: string;
   picture?: string;
   coverPhoto?: string;
@@ -291,7 +291,6 @@ export interface Conversation {
   last_message?: string;
   last_message_at?: string;
   unread_count?: number;
-  is_pro?: boolean;
 }
 
 export interface Message {

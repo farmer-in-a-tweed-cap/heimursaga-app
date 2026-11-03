@@ -241,7 +241,7 @@ export default function HomeScreen() {
           resizeMode="contain"
         />
         <View style={styles.headerRight}>
-          {user && <Avatar size={36} name={user.username} imageUrl={user.picture ?? user.avatar_url} pro={user.is_pro} />}
+          {user && <Avatar size={36} name={user.username} imageUrl={user.picture ?? user.avatar_url} />}
           {user && (
             <Pressable onPress={() => router.push('/notifications')} hitSlop={8} style={styles.bellWrap} accessibilityRole="button" accessibilityLabel={`Notifications${badgeCount > 0 ? `, ${badgeCount} unread` : ''}`}>
               <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#e5e5e5" strokeWidth={1.8}>
@@ -344,7 +344,7 @@ export default function HomeScreen() {
                   size={40}
                   name={explorer.username}
                   imageUrl={explorer.picture}
-                  pro={explorer.creator}
+                 
                 />
                 <Text style={[styles.followStripName, { color: colors.text }]} numberOfLines={1}>
                   {explorer.username}

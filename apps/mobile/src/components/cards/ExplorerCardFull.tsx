@@ -30,14 +30,13 @@ export function ExplorerCardFull({ explorer, onPress }: ExplorerCardFullProps) {
           status="active"
           label={statusCfg.label}
           dotColor={statusCfg.color}
-          right={explorer.creator ? 'PRO' : undefined}
         />
         <View style={styles.body}>
           <Avatar
             size={72}
             name={explorer.username}
             imageUrl={explorer.picture}
-            pro={explorer.creator}
+           
           />
           <Text style={styles.username}>{explorer.username}</Text>
           {explorer.name && (

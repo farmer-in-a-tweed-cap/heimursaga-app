@@ -13,7 +13,6 @@ interface ProfileBannerProps {
   locationFrom?: string;
   locationLives?: string;
   memberSince?: string;
-  isPro?: boolean;
   avatarUrl?: string;
   coverPhotoUrl?: string;
   activeExpedition?: string;
@@ -29,7 +28,6 @@ export function ProfileBanner({
   locationFrom,
   locationLives,
   memberSince,
-  isPro,
   avatarUrl,
   coverPhotoUrl,
   activeExpedition,
@@ -73,7 +71,7 @@ export function ProfileBanner({
         )}
         <View style={styles.bannerOverlay}>
           <View style={styles.avatarRow}>
-            <Avatar size={72} name={username} pro={isPro} imageUrl={avatarUrl} />
+            <Avatar size={72} name={username} imageUrl={avatarUrl} />
             <View style={styles.nameCol}>
               <Text style={styles.username}>{username}</Text>
               {displayName && (

@@ -12,7 +12,7 @@ import { HCard } from '@/components/ui/HCard';
 import { HButton } from '@/components/ui/HButton';
 import { Avatar } from '@/components/ui/Avatar';
 import { paymentMethodApi, type PaymentMethodInfo } from '@/services/api';
-import { mono, colors as brandColors, borders } from '@/theme/tokens';
+import { colors as brandColors } from '@/theme/tokens';
 
 interface SettingsItem {
   label: string;
@@ -88,7 +88,7 @@ export default function SettingsScreen() {
     },
     {
       label: 'Billing',
-      value: savedCard ? `${savedCard.label} •••• ${savedCard.last4}` : user.is_pro ? 'Explorer Pro' : 'Explorer',
+      value: savedCard ? `${savedCard.label} •••• ${savedCard.last4}` : 'No saved card',
       onPress: () => router.push('/settings/billing'),
     },
   ];
@@ -100,38 +100,15 @@ export default function SettingsScreen() {
       <ScrollView>
         {/* Profile header */}
         <View style={styles.header}>
-          <Avatar size={56} name={user.username} pro={user.is_pro} imageUrl={user.avatar_url || user.picture} />
+          <Avatar size={56} name={user.username} imageUrl={user.avatar_url || user.picture} />
           <View>
             <Text style={[styles.headerName, { color: colors.text }]}>{user.username}</Text>
-            {user.is_pro && (
-              <Text style={styles.proBadge}>EXPLORER PRO</Text>
-            )}
             <Text style={[styles.memberSince, { color: colors.textTertiary }]}>
               Member since {memberSince}
             </Text>
           </View>
         </View>
 
-        {/* Upgrade banner (free users only) */}
-        {!user.is_pro && (
-          <View style={styles.sectionContent}>
-            <TouchableOpacity
-              style={[styles.upgradeBanner, { backgroundColor: colors.card, borderColor: brandColors.copper }]}
-              onPress={() => router.push('/upgrade')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.upgradeBannerLeft}>
-                <View>
-                  <Text style={[styles.upgradeBannerTitle, { color: colors.text }]}>Upgrade to Explorer Pro</Text>
-                  <Text style={[styles.upgradeBannerDesc, { color: colors.textTertiary }]}>
-                    Sponsorships, direct messages, and more
-                  </Text>
-                </View>
-              </View>
-              <Chevron color={brandColors.copper} />
-            </TouchableOpacity>
-          </View>
-        )}
 
         {/* Settings items */}
         <View style={styles.sectionContent}>
@@ -189,14 +166,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
-  proBadge: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    color: brandColors.copper,
-    fontFamily: mono,
-    marginTop: 3,
-  },
   memberSince: {
     fontSize: 13,
     marginTop: 2,
@@ -223,30 +192,6 @@ const styles = StyleSheet.create({
   },
   itemValue: {
     fontSize: 12,
-  },
-  upgradeBanner: {
-    borderWidth: borders.thick,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  upgradeBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  upgradeBannerTitle: {
-    fontFamily: mono,
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  upgradeBannerDesc: {
-    fontFamily: mono,
-    fontSize: 11,
-    marginTop: 2,
   },
   spacer: { height: 32 },
 });

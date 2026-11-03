@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CardField, useStripe } from '@stripe/stripe-react-native';
@@ -18,7 +18,6 @@ import {
   type PaymentMethodInfo,
 } from '@/services/api';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
-import { useRestorePurchases } from '@/hooks/useRestorePurchases';
 
 export default function BillingScreen() {
   const { colors } = useTheme();
@@ -34,9 +33,6 @@ export default function BillingScreen() {
   const [addingCard, setAddingCard] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [defaultingId, setDefaultingId] = useState<string | null>(null);
-
-  // ─── Restore Purchases (Apple Guideline 3.1.1) ───
-  const { restore, restoring } = useRestorePurchases();
 
   const fetchMethods = useCallback(async () => {
     try {
@@ -136,17 +132,17 @@ export default function BillingScreen() {
           {/* Current Plan */}
           <HCard>
             <View style={styles.planRow}>
-              <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>CURRENT PLAN</Text>
+              <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>YOUR ACCOUNT</Text>
               <Text style={[styles.planValue, { color: colors.text }]}>
-                {user.is_pro ? 'Explorer Pro' : 'Explorer'}
+                Every feature, free
               </Text>
-              <Text style={user.is_pro ? styles.proBadge : [styles.proBadge, { color: colors.textTertiary }]}>
-                {user.is_pro ? 'ACTIVE' : 'STANDARD'}
+              <Text style={[styles.proBadge, { color: colors.textTertiary }]}>
+                HEIMURSAGA KEEPS 10% OF SPONSORSHIPS YOU RECEIVE
               </Text>
             </View>
           </HCard>
 
-          {/* Subscription — Restore Purchases (Apple Guideline 3.1.1) */}
+          {/* Legacy Apple subscriptions — managed by Apple, not sold here */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
@@ -157,14 +153,14 @@ export default function BillingScreen() {
             </View>
             <View style={[styles.sectionLine, { backgroundColor: colors.border }]} />
             <Text style={[styles.restoreDesc, { color: colors.textTertiary }]}>
-              If you previously subscribed to Explorer Pro on this Apple ID, restore the subscription on this device.
+              Paid subscriptions are no longer needed. If you bought one through Apple before all features became free, you can cancel it in your Apple account. Cancelling changes nothing about your Heimursaga account.
             </Text>
             <HButton
               variant="blue"
-              onPress={restore}
-              disabled={restoring}
+              outline
+              onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions')}
             >
-              {restoring ? 'RESTORING…' : 'RESTORE PURCHASES'}
+              MANAGE APPLE SUBSCRIPTIONS
             </HButton>
           </View>
 
