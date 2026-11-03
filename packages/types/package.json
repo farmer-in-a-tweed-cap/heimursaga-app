@@ -13,6 +13,10 @@
     "./sponsorship-tiers": {
       "types": "./dist/sponsorship-tiers.d.ts",
       "default": "./dist/sponsorship-tiers.js"
+    },
+    "./sponsorship-fees": {
+      "types": "./dist/sponsorship-fees.d.ts",
+      "default": "./dist/sponsorship-fees.js"
     }
   },
   "scripts": {

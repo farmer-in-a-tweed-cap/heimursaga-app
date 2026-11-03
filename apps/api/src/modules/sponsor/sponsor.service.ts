@@ -12,20 +12,23 @@ import {
   ISponsorshipTierGetAllResponse,
   ISponsorshipTierUpdatePayload,
   MONTHLY_TIER_SLOTS,
+  MIN_SPONSORSHIP_AMOUNT,
   ONE_TIME_TIER_SLOTS,
   PayoutMethodPlatform,
+  QUICK_SPONSOR_AMOUNT,
   SponsorshipBillingPeriod,
   SponsorshipStatus,
   SponsorshipType,
   UserNotificationContext,
   UserRole,
+  applicationFeePercentFor,
+  calculateSponsorshipFees,
   getTierLabel,
   getTierSlotConfig,
   isValidTierPrice,
 } from '@repo/types';
 import Stripe from 'stripe';
 
-import { calculateFee } from '@/lib/calculator';
 import { dateformat } from '@/lib/date-format';
 import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
@@ -112,7 +115,7 @@ export class SponsorService {
 
       // Server-side amount validation for tips
       if (sponsorshipType === SponsorshipType.TIP) {
-        const MIN_TIP_AMOUNT = 2; // $2 minimum
+        const MIN_TIP_AMOUNT = MIN_SPONSORSHIP_AMOUNT;
         const MAX_TIP_AMOUNT = 500; // $500 maximum
 
         if (!oneTimePaymentAmount || oneTimePaymentAmount < MIN_TIP_AMOUNT) {
@@ -129,7 +132,7 @@ export class SponsorService {
 
       // Server-side amount validation for one-time payments
       if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
-        const MIN_ONE_TIME_AMOUNT = 5; // $5 minimum
+        const MIN_ONE_TIME_AMOUNT = MIN_SPONSORSHIP_AMOUNT;
         const MAX_ONE_TIME_AMOUNT = 10000; // $10,000 maximum
 
         if (
@@ -305,12 +308,10 @@ export class SponsorService {
         sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT ||
         sponsorshipType === SponsorshipType.TIP
       ) {
-        const applicationFeeAmount = decimalToInteger(
-          calculateFee({
-            amount: oneTimePaymentAmount,
-            percent: APPLICATION_FEE,
-          }),
-        );
+        const applicationFeeAmount = calculateSponsorshipFees(
+          decimalToInteger(oneTimePaymentAmount),
+          APPLICATION_FEE,
+        ).applicationFee;
 
         const amount = decimalToInteger(oneTimePaymentAmount);
 
@@ -421,7 +422,6 @@ export class SponsorService {
 
           let stripePriceId: string | null;
           let subscriptionAmount: number;
-          const applicationFeePercent = APPLICATION_FEE;
 
           // Tier-based amount: use pre-set Stripe price or create dynamically
           {
@@ -544,7 +544,10 @@ export class SponsorService {
               items: [{ price: stripePriceId }],
               default_payment_method: stripePaymentMethodId,
               transfer_data: { destination: creatorStripeAccountId },
-              application_fee_percent: applicationFeePercent,
+              application_fee_percent: applicationFeePercentFor(
+                subscriptionAmount,
+                APPLICATION_FEE,
+              ),
               collection_method: 'charge_automatically',
               payment_behavior: 'allow_incomplete',
               metadata: {
@@ -684,9 +687,12 @@ export class SponsorService {
 
       // Validate one-time payment amounts
       if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
-        if (!oneTimePaymentAmount || oneTimePaymentAmount < 5) {
+        if (
+          !oneTimePaymentAmount ||
+          oneTimePaymentAmount < MIN_SPONSORSHIP_AMOUNT
+        ) {
           throw new ServiceBadRequestException(
-            'One-time payment must be at least $5',
+            `One-time payment must be at least $${MIN_SPONSORSHIP_AMOUNT}`,
           );
         }
         if (oneTimePaymentAmount > 10000) {
@@ -802,12 +808,10 @@ export class SponsorService {
           let paymentIntentId = '';
 
           if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
-            const applicationFeeAmount = decimalToInteger(
-              calculateFee({
-                amount: oneTimePaymentAmount,
-                percent: APPLICATION_FEE,
-              }),
-            );
+            const applicationFeeAmount = calculateSponsorshipFees(
+              decimalToInteger(oneTimePaymentAmount),
+              APPLICATION_FEE,
+            ).applicationFee;
             const amount = decimalToInteger(oneTimePaymentAmount);
 
             const checkout = await tx.checkout.create({
@@ -995,7 +999,10 @@ export class SponsorService {
               items: [{ price: stripePriceId }],
               // No default_payment_method — PaymentSheet handles collection
               transfer_data: { destination: creatorStripeAccountId },
-              application_fee_percent: APPLICATION_FEE,
+              application_fee_percent: applicationFeePercentFor(
+                subscriptionAmount,
+                APPLICATION_FEE,
+              ),
               collection_method: 'charge_automatically',
               payment_behavior: 'default_incomplete',
               payment_settings: {
@@ -1276,11 +1283,12 @@ export class SponsorService {
 
           if (creator && creator.is_email_verified && sponsor) {
             const amount = integerToDecimal(checkoutData.total);
-            const processingFee =
-              Math.round(
-                calculateFee({ amount, percent: APPLICATION_FEE }) * 100,
-              ) / 100;
-            const netAmount = Math.round((amount - processingFee) * 100) / 100;
+            const fees = calculateSponsorshipFees(
+              checkoutData.total,
+              APPLICATION_FEE,
+            );
+            const processingFee = integerToDecimal(fees.applicationFee);
+            const netAmount = integerToDecimal(fees.explorerReceives);
             const expedition = creator.expeditions[0];
 
             this.eventService.trigger<IEventSendEmail>({
@@ -3276,8 +3284,11 @@ export class SponsorService {
     creatorStripeAccountId: string;
     expeditionPublicId?: string;
   }) {
-    const QUICK_SPONSOR_AMOUNT = 300; // $3.00 in cents
-    const applicationFeeAmount = 30; // 10% of 300
+    const quickSponsorAmount = decimalToInteger(QUICK_SPONSOR_AMOUNT);
+    const applicationFeeAmount = calculateSponsorshipFees(
+      quickSponsorAmount,
+      APPLICATION_FEE,
+    ).applicationFee;
 
     // Create checkout record first
     const checkout = await this.prisma.checkout.create({
@@ -3286,7 +3297,7 @@ export class SponsorService {
         status: CheckoutStatus.PENDING,
         transaction_type: PaymentTransactionType.SPONSORSHIP,
         sponsorship_type: SponsorshipType.QUICK_SPONSOR,
-        total: QUICK_SPONSOR_AMOUNT,
+        total: quickSponsorAmount,
         explorer_id: userId,
         sponsored_explorer_id: entry.author.id,
         entry_public_id: entry.public_id,
@@ -3300,7 +3311,7 @@ export class SponsorService {
     // Create PaymentIntent with transfer to connected account
     const paymentIntent = await this.stripeService.paymentIntents.create(
       {
-        amount: QUICK_SPONSOR_AMOUNT,
+        amount: quickSponsorAmount,
         currency: CurrencyCode.USD,
         customer: stripeCustomer.id,
         payment_method: stripePaymentMethodId,
@@ -3336,7 +3347,7 @@ export class SponsorService {
           public_id: generator.publicId(),
           type: SponsorshipType.QUICK_SPONSOR,
           status: SponsorshipStatus.CONFIRMED,
-          amount: QUICK_SPONSOR_AMOUNT,
+          amount: quickSponsorAmount,
           currency: CurrencyCode.USD,
           sponsor_id: userId,
           sponsored_explorer_id: entry.author.id,
@@ -3353,7 +3364,7 @@ export class SponsorService {
         where: { id: entry.id },
         data: {
           quick_sponsors_count: { increment: 1 },
-          quick_sponsors_total: { increment: QUICK_SPONSOR_AMOUNT },
+          quick_sponsors_total: { increment: quickSponsorAmount },
         },
       });
 
@@ -3362,7 +3373,7 @@ export class SponsorService {
         await tx.expedition.updateMany({
           where: { public_id: expeditionPublicId, deleted_at: null },
           data: {
-            raised: { increment: QUICK_SPONSOR_AMOUNT },
+            raised: { increment: quickSponsorAmount },
           },
         });
       }
@@ -3379,7 +3390,7 @@ export class SponsorService {
         mentionUserId: userId,
         mentionPostId: entry.id,
         sponsorshipType: SponsorshipType.QUICK_SPONSOR,
-        sponsorshipAmount: QUICK_SPONSOR_AMOUNT,
+        sponsorshipAmount: quickSponsorAmount,
         sponsorshipCurrency: CurrencyCode.USD,
       },
     });
@@ -3400,7 +3411,11 @@ export class SponsorService {
               ? entry.expedition?.title || undefined
               : undefined,
             expeditionId: expeditionPublicId || undefined,
-            netAmount: '$2.70',
+            amount: `$${QUICK_SPONSOR_AMOUNT.toFixed(2)}`,
+            netAmount: `$${integerToDecimal(
+              calculateSponsorshipFees(quickSponsorAmount, APPLICATION_FEE)
+                .explorerReceives,
+            ).toFixed(2)}`,
           },
         },
       });

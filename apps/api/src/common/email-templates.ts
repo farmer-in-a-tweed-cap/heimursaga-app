@@ -728,7 +728,7 @@ const templates: {
             { label: 'EXPEDITION', value: v.expeditionName },
             { label: 'AMOUNT', value: `${v.currency}${v.amount.toFixed(2)}` },
             {
-              label: 'PROCESSING FEE',
+              label: 'FEES (PLATFORM + STRIPE)',
               value: `${v.currency}${v.processingFee.toFixed(2)}`,
             },
             {
@@ -755,7 +755,7 @@ const templates: {
 
           <div style="font-size: 12px; color: #616161; margin-top: 24px; padding: 12px; background-color: #f5f5f5; border: 1px solid #b5bcc4; line-height: 1.6;">
             <strong style="display: block; margin-bottom: 4px; color: #202020;">PAYOUT INFORMATION</strong>
-            Funds will be transferred to your connected payout method within 3-5 business days. View payout status in your <a href="${APP_BASE_URL}/settings/billing" style="color: #4676ac;">billing settings</a>.
+            Funds are paid out weekly to your connected payout method once Stripe releases them. View payout status in your <a href="${APP_BASE_URL}/settings/billing" style="color: #4676ac;">billing settings</a>.
           </div>
         `)}
       `;
@@ -1292,8 +1292,8 @@ const templates: {
   },
   {
     key: EMAIL_TEMPLATES.QUICK_SPONSOR_RECEIVED,
-    subject: (v: { sponsorUsername: string }) =>
-      `${v.sponsorUsername} sent you a $3 quick sponsor`,
+    subject: (v: { sponsorUsername: string; amount: string }) =>
+      `${v.sponsorUsername} sent you a ${v.amount} quick sponsor`,
     html: (v: {
       recipientUsername: string;
       sponsorUsername: string;
@@ -1301,6 +1301,7 @@ const templates: {
       entryId: string;
       expeditionName?: string;
       expeditionId?: string;
+      amount: string;
       netAmount: string;
     }) => {
       const content = `
@@ -1309,7 +1310,7 @@ const templates: {
           <div style="font-size: 12px; font-weight: bold; color: #4676ac; margin-bottom: 8px; letter-spacing: 0.5px;">
             QUICK SPONSOR RECEIVED
           </div>
-          ${emailHeading(`$3.00 FROM ${v.sponsorUsername.toUpperCase()}`, 1)}
+          ${emailHeading(`${v.amount} FROM ${v.sponsorUsername.toUpperCase()}`, 1)}
         `,
           '#f0f4f8',
         )}
@@ -1320,13 +1321,13 @@ const templates: {
           </p>
 
           <p style="margin: 0 0 16px 0; line-height: 1.6;">
-            <strong>${v.sponsorUsername}</strong> sent you a $3.00 quick sponsor for your journal entry <strong>${v.entryTitle}</strong>.
+            <strong>${v.sponsorUsername}</strong> sent you a ${v.amount} quick sponsor for your journal entry <strong>${v.entryTitle}</strong>.
           </p>
 
           ${emailDataTable([
             { label: 'SPONSOR', value: v.sponsorUsername },
             { label: 'ENTRY', value: v.entryTitle },
-            { label: 'AMOUNT', value: '$3.00' },
+            { label: 'AMOUNT', value: v.amount },
             { label: 'YOU RECEIVE', value: v.netAmount },
             ...(v.expeditionName
               ? [{ label: 'EXPEDITION', value: v.expeditionName }]
@@ -1350,13 +1351,13 @@ const templates: {
 
           <div style="font-size: 12px; color: #616161; margin-top: 24px; padding: 12px; background-color: #f5f5f5; border: 1px solid #b5bcc4; line-height: 1.6;">
             <strong style="display: block; margin-bottom: 4px; color: #202020;">PAYOUT INFORMATION</strong>
-            Funds will be transferred to your connected payout method within 3-5 business days. View payout status in your <a href="${APP_BASE_URL}/settings/billing" style="color: #4676ac;">billing settings</a>.
+            Funds are paid out weekly to your connected payout method once Stripe releases them. View payout status in your <a href="${APP_BASE_URL}/settings/billing" style="color: #4676ac;">billing settings</a>.
           </div>
         `)}
       `;
       return emailWrapper(
         content,
-        `${v.sponsorUsername} sent you a $3 quick sponsor`,
+        `${v.sponsorUsername} sent you a ${v.amount} quick sponsor`,
       );
     },
   },

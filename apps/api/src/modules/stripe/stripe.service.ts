@@ -430,6 +430,13 @@ export class StripeService {
             transfers: { requested: true },
             card_payments: { requested: true },
           },
+          // Weekly payouts: Connect bills per payout, so daily payouts of
+          // small sponsorships cost more than they're worth.
+          settings: {
+            payouts: {
+              schedule: { interval: 'weekly', weekly_anchor: 'monday' },
+            },
+          },
           country,
         },
         { idempotencyKey },
